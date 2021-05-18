@@ -13,6 +13,8 @@ jobs:
       matrix:
         go: ['1.16']
     env:
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
       VALIDATE_GO: true
       VALIDATE_YAML: true
       VALIDATE_ALL_CODEBASE: false
