@@ -38,7 +38,6 @@ func TelemetryWithConfig(config TelemetryConfig) Middleware {
 
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			// wrap response write to get access to status & size
 			wr := wrapResponseWriter(w)
 
