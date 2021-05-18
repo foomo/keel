@@ -8,7 +8,7 @@ check: test lint
 .PHONY: test
 ## Run tests
 test:
-	gotestsum ./...
+	gotestsum --format short-verbose ./...
 
 .PHONY: lint
 ## Run linter
