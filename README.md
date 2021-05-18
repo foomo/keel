@@ -1,4 +1,6 @@
 # keel
+[![GitHub Super-Linter](https://github.com/foomo/keel/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+
 
 > Opinionated way to run services.
 

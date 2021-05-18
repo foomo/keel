@@ -12,6 +12,10 @@ jobs:
     strategy:
       matrix:
         go: ['1.16']
+    env:
+      VALIDATE_GO: true
+      VALIDATE_YAML: true
+      VALIDATE_ALL_CODEBASE: false
     name: Go ${{ matrix.go }}
 
     steps:

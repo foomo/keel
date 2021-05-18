@@ -1,4 +1,3 @@
-#!/bin/bash
 .DEFAULT_GOAL:=help
 
 .PHONY: check
