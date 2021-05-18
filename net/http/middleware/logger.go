@@ -27,13 +27,12 @@ func LoggerWithConfig(config LoggerConfig) Middleware {
 
 			next.ServeHTTP(wr, r)
 
-			fields := []zap.Field{
+			log.WithHTTPRequest(l, r).Info(
+				"handled http request",
+				log.FDuration(time.Since(start)),
 				log.FHTTPStatusCode(wr.StatusCode()),
 				log.FHTTPWroteBytes(int64(wr.Size())),
-				log.FDuration(time.Since(start)),
-			}
-
-			log.WithHTTPRequest(l, r).Info("handled http request", fields...)
+			)
 		})
 	}
 }
