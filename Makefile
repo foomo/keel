@@ -1,5 +1,7 @@
 .DEFAULT_GOAL:=help
 
+## === Tasks ===
+
 .PHONY: check
 ## Run tests and linters
 check: test lint
@@ -18,7 +20,6 @@ lint:
 ## Fix lint violations
 lint.fix:
 	golangci-lint run --fix
-
 
 ## === Utils ===
 

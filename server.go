@@ -16,6 +16,7 @@ import (
 
 	"github.com/foomo/keel/config"
 	"github.com/foomo/keel/log"
+	"github.com/foomo/keel/telemetry"
 )
 
 // Server struct
@@ -161,7 +162,10 @@ func (s *Server) Run() {
 		)
 		defer timeoutCancel()
 
-		for _, closer := range s.closers {
+		// append internal closers
+		closers := append(s.closers, log.Logger(), telemetry.Provider())
+
+		for _, closer := range closers {
 			switch c := closer.(type) {
 			case Closer:
 				if err := c.Close(); err != nil {
