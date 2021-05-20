@@ -166,30 +166,32 @@ func (s *Server) Run() {
 		closers := append(s.closers, log.Logger(), telemetry.Provider())
 
 		for _, closer := range closers {
-			switch c := closer.(type) {
-			case Closer:
-				if err := c.Close(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Closer")
-				}
-			case CloserWithContext:
-				if err := c.Close(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop CloserWithContext")
-				}
-			case Syncer:
-				if err := c.Sync(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Syncer")
-				}
-			case SyncerWithContext:
-				if err := c.Sync(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop SyncerWithContext")
-				}
-			case Shutdowner:
-				if err := c.Shutdown(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Shutdowner")
-				}
-			case ShutdownerWithContext:
-				if err := c.Shutdown(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ShutdownerWithContext")
+			if closer != nil {
+				switch c := closer.(type) {
+				case Closer:
+					if err := c.Close(); err != nil {
+						log.WithError(s.l, err).Error("failed to gracefully stop Closer")
+					}
+				case CloserWithContext:
+					if err := c.Close(timeoutCtx); err != nil {
+						log.WithError(s.l, err).Error("failed to gracefully stop CloserWithContext")
+					}
+				case Syncer:
+					if err := c.Sync(); err != nil {
+						log.WithError(s.l, err).Error("failed to gracefully stop Syncer")
+					}
+				case SyncerWithContext:
+					if err := c.Sync(timeoutCtx); err != nil {
+						log.WithError(s.l, err).Error("failed to gracefully stop SyncerWithContext")
+					}
+				case Shutdowner:
+					if err := c.Shutdown(); err != nil {
+						log.WithError(s.l, err).Error("failed to gracefully stop Shutdowner")
+					}
+				case ShutdownerWithContext:
+					if err := c.Shutdown(timeoutCtx); err != nil {
+						log.WithError(s.l, err).Error("failed to gracefully stop ShutdownerWithContext")
+					}
 				}
 			}
 		}
