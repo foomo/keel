@@ -29,6 +29,7 @@ func init() {
 		config = zap.NewProductionConfig()
 		config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	}
+	config.EncoderConfig.TimeKey = "time"
 	config.DisableStacktrace = env.GetBool("LOG_DISABLE_STACKTRACE", true)
 	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", true)
 	if l, err := config.Build(); err != nil {
