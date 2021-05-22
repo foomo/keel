@@ -36,6 +36,20 @@ func MustGetBool(c *viper.Viper, key string, fallback bool) func() bool {
 	}
 }
 
+func GetInt(c *viper.Viper, key string, fallback int) func() int {
+	c.SetDefault(key, fallback)
+	return func() int {
+		return c.GetInt(key)
+	}
+}
+
+func MustGetInt(c *viper.Viper, key string) func() int {
+	must(c, key)
+	return func() int {
+		return c.GetInt(key)
+	}
+}
+
 func GetString(c *viper.Viper, key, fallback string) func() string {
 	c.SetDefault(key, fallback)
 	return func() string {
