@@ -2,7 +2,6 @@ package keel
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,21 +24,32 @@ type Server struct {
 	shutdownTimeout time.Duration
 	closers         []interface{}
 	ctx             context.Context
+	cancelFn        context.CancelFunc
 	l               *zap.Logger
 	c               *viper.Viper
 }
 
 func NewServer(opts ...Option) *Server {
+
+	// context
+	defaultCtx, cancel := signal.NotifyContext(context.Background(),
+		os.Interrupt, // kill -SIGINT XXXX or Ctrl+c
+		// os.Kill,				// kill -SIGINT XXXX or Ctrl+c // no graceful shutdown if system needs to kill process // @TODO optional interrupts
+		syscall.SIGHUP,  // kill -SIGHUP XXXX
+		syscall.SIGTERM, // kill -SIGTERM XXXX
+		syscall.SIGQUIT, // kill -SIGQUIT XXXX
+	)
+
 	var (
 		defaultShutdownTimeout = 5 * time.Second
-		defaultContext         = context.Background() // TODO context.WithCancel
 		defaultConfig          = config.Config()
 		defaultLogger          = log.Logger()
 	)
 
 	inst := &Server{
 		shutdownTimeout: defaultShutdownTimeout,
-		ctx:             defaultContext,
+		ctx:             defaultCtx,
+		cancelFn:        cancel,
 		c:               defaultConfig,
 		l:               defaultLogger,
 	}
@@ -64,6 +74,15 @@ func (s *Server) Config() *viper.Viper {
 // Context returns server context
 func (s *Server) Context() context.Context {
 	return s.ctx
+}
+
+// ContextCancel returns server context cancel func
+func (s *Server) ContextCancel() context.CancelFunc {
+	return s.cancelFn
+}
+
+func (s *Server) Shutdown() {
+	s.cancelFn()
 }
 
 // AddServices adds multiple service
@@ -111,31 +130,7 @@ func (s *Server) AddCloser(closer interface{}) {
 func (s *Server) Run() {
 	s.l.Info("starting server")
 
-	ctx, cancel := context.WithCancel(s.ctx)
-	defer cancel()
-
-	g, gctx := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(
-			signalChan,
-			syscall.SIGHUP,  // kill -SIGHUP XXXX
-			syscall.SIGINT,  // kill -SIGINT XXXX or Ctrl+c
-			syscall.SIGTERM, // kill -SIGTERM XXXX
-			syscall.SIGQUIT, // kill -SIGQUIT XXXX
-		)
-
-		// handle termination
-		select {
-		case sig := <-signalChan:
-			s.l.Debug(fmt.Sprintf("go signal: %s", sig))
-			cancel()
-			return nil
-		case <-gctx.Done():
-			return gctx.Err()
-		}
-	})
+	g, gctx := errgroup.WithContext(s.ctx)
 
 	for _, service := range s.services {
 		service := service
@@ -163,7 +158,10 @@ func (s *Server) Run() {
 		defer timeoutCancel()
 
 		// append internal closers
-		closers := append(s.closers, log.Logger(), telemetry.Provider())
+		closers := append(s.closers, log.Logger())
+		if provider := telemetry.Provider(); provider != nil {
+			closers = append(closers, provider)
+		}
 
 		for _, closer := range closers {
 			if closer != nil {
