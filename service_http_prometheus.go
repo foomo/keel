@@ -23,12 +23,12 @@ func NewServiceHTTPPrometheus(l *zap.Logger, addr, path string) *ServiceHTTP {
 			EnableOpenMetrics: true,
 		},
 	))
-	return NewServiceHTTP(l, addr, handler)
+	return NewServiceHTTP(l, addr, handler).SetName("prometheus")
 }
 
 func NewDefaultServiceHTTPPrometheus() *ServiceHTTP {
 	return NewServiceHTTPPrometheus(
-		log.Logger().With(log.FServiceName("prometheus")),
+		log.Logger(),
 		DefaultServiceHTTPPrometheusAddr,
 		DefaultServiceHTTPPrometheusPath,
 	)

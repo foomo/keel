@@ -16,12 +16,12 @@ const (
 func NewServiceHTTPZap(l *zap.Logger, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.Handle(path, zap.NewAtomicLevel())
-	return NewServiceHTTP(l, addr, handler)
+	return NewServiceHTTP(l, addr, handler).SetName("zap")
 }
 
 func NewDefaultServiceHTTPZap() *ServiceHTTP {
 	return NewServiceHTTPZap(
-		log.Logger().With(log.FServiceName("zap")),
+		log.Logger(),
 		DefaultServiceHTTPZapAddr,
 		DefaultServiceHTTPZapPath,
 	)
