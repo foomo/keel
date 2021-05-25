@@ -23,6 +23,7 @@ func Config() *viper.Viper {
 }
 
 func GetBool(c *viper.Viper, key string, fallback bool) func() bool {
+	c = ensure(c)
 	c.SetDefault(key, fallback)
 	return func() bool {
 		return c.GetBool(key)
@@ -30,6 +31,7 @@ func GetBool(c *viper.Viper, key string, fallback bool) func() bool {
 }
 
 func MustGetBool(c *viper.Viper, key string, fallback bool) func() bool {
+	c = ensure(c)
 	must(c, key)
 	return func() bool {
 		return c.GetBool(key)
@@ -37,6 +39,7 @@ func MustGetBool(c *viper.Viper, key string, fallback bool) func() bool {
 }
 
 func GetString(c *viper.Viper, key, fallback string) func() string {
+	c = ensure(c)
 	c.SetDefault(key, fallback)
 	return func() string {
 		return c.GetString(key)
@@ -44,6 +47,7 @@ func GetString(c *viper.Viper, key, fallback string) func() string {
 }
 
 func MustGetString(c *viper.Viper, key string) func() string {
+	c = ensure(c)
 	must(c, key)
 	return func() string {
 		return c.GetString(key)
@@ -51,10 +55,18 @@ func MustGetString(c *viper.Viper, key string) func() string {
 }
 
 func GetStringSlice(c *viper.Viper, key string, fallback []string) func() []string {
+	c = ensure(c)
 	c.SetDefault(key, fallback)
 	return func() []string {
 		return c.GetStringSlice(key)
 	}
+}
+
+func ensure(c *viper.Viper) *viper.Viper {
+	if c == nil {
+		c = config
+	}
+	return c
 }
 
 func must(c *viper.Viper, key string) {
