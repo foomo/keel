@@ -35,6 +35,11 @@ func NewServiceHTTP(l *zap.Logger, addr string, handler http.Handler, middleware
 	}
 }
 
+func (s *ServiceHTTP) SetName(name string) *ServiceHTTP {
+	s.l = s.l.With(log.FServiceName(name))
+	return s
+}
+
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
 	if value := strings.Split(s.server.Addr, ":"); len(value) == 2 {

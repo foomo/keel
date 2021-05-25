@@ -43,12 +43,12 @@ func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, addr, path string) *Serv
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
-	return NewServiceHTTP(l, addr, handler)
+	return NewServiceHTTP(l, addr, handler).SetName("viper")
 }
 
 func NewDefaultServiceHTTPViper() *ServiceHTTP {
 	return NewServiceHTTPViper(
-		log.Logger().With(log.FServiceName("viper")),
+		log.Logger(),
 		config.Config(),
 		DefaultServiceHTTPViperAddr,
 		DefaultServiceHTTPViperPath,
