@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -24,32 +23,21 @@ type Server struct {
 	shutdownTimeout time.Duration
 	closers         []interface{}
 	ctx             context.Context
-	cancelFn        context.CancelFunc
 	l               *zap.Logger
 	c               *viper.Viper
 }
 
 func NewServer(opts ...Option) *Server {
-
-	// context
-	defaultCtx, cancel := signal.NotifyContext(context.Background(),
-		os.Interrupt, // kill -SIGINT XXXX or Ctrl+c
-		// os.Kill,				// kill -SIGINT XXXX or Ctrl+c // no graceful shutdown if system needs to kill process // @TODO optional interrupts
-		syscall.SIGHUP,  // kill -SIGHUP XXXX
-		syscall.SIGTERM, // kill -SIGTERM XXXX
-		syscall.SIGQUIT, // kill -SIGQUIT XXXX
-	)
-
 	var (
 		defaultShutdownTimeout = 5 * time.Second
 		defaultConfig          = config.Config()
 		defaultLogger          = log.Logger()
+		defaultCtx             = context.Background()
 	)
 
 	inst := &Server{
 		shutdownTimeout: defaultShutdownTimeout,
 		ctx:             defaultCtx,
-		cancelFn:        cancel,
 		c:               defaultConfig,
 		l:               defaultLogger,
 	}
@@ -74,15 +62,6 @@ func (s *Server) Config() *viper.Viper {
 // Context returns server context
 func (s *Server) Context() context.Context {
 	return s.ctx
-}
-
-// ContextCancel returns server context cancel func
-func (s *Server) ContextCancel() context.CancelFunc {
-	return s.cancelFn
-}
-
-func (s *Server) Shutdown() {
-	s.cancelFn()
 }
 
 // AddServices adds multiple service
@@ -130,7 +109,10 @@ func (s *Server) AddCloser(closer interface{}) {
 func (s *Server) Run() {
 	s.l.Info("starting server")
 
-	g, gctx := errgroup.WithContext(s.ctx)
+	ctx, cancel := signal.NotifyContext(s.ctx, os.Interrupt)
+	defer cancel()
+
+	g, gctx := errgroup.WithContext(ctx)
 
 	for _, service := range s.services {
 		service := service
@@ -164,6 +146,7 @@ func (s *Server) Run() {
 		}
 
 		for _, closer := range closers {
+			// TODO nil check fails on interface types
 			if closer != nil {
 				switch c := closer.(type) {
 				case Closer:
