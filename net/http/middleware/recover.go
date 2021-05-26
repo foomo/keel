@@ -14,7 +14,7 @@ type RecoverConfig struct {
 }
 
 var DefaultRecoverConfig = RecoverConfig{
-	DisablePrintStack: false,
+	DisablePrintStack: true,
 }
 
 func Recover() Middleware {
@@ -32,7 +32,7 @@ func RecoverWithConfig(config RecoverConfig) Middleware {
 					}
 					l = log.WithError(l, err)
 					if !config.DisablePrintStack {
-						l = l.With(log.FStackSkip(2))
+						l = l.With(log.FStackSkip(3))
 					}
 					l.Error("recovering from panic")
 				}
