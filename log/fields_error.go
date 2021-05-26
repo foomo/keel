@@ -1,6 +1,8 @@
 package log
 
 import (
+	"reflect"
+
 	"go.uber.org/zap"
 )
 
@@ -14,8 +16,8 @@ func FError(err error) zap.Field {
 	return zap.NamedError(ErrorMessageKey, err)
 }
 
-func FErrorType(errType string) zap.Field {
-	return zap.String(ErrorTypeKey, errType)
+func FErrorType(err error) zap.Field {
+	return zap.String(ErrorTypeKey, reflect.TypeOf(err).String())
 }
 
 func FStackSkip(skip int) zap.Field {
