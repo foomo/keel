@@ -140,39 +140,33 @@ func (s *Server) Run() {
 		defer timeoutCancel()
 
 		// append internal closers
-		closers := append(s.closers, log.Logger())
-		if provider := telemetry.Provider(); provider != nil {
-			closers = append(closers, provider)
-		}
+		closers := append(s.closers, log.Logger(), telemetry.Provider())
 
 		for _, closer := range closers {
-			// TODO nil check fails on interface types
-			if closer != nil {
-				switch c := closer.(type) {
-				case Closer:
-					if err := c.Close(); err != nil {
-						log.WithError(s.l, err).Error("failed to gracefully stop Closer")
-					}
-				case CloserWithContext:
-					if err := c.Close(timeoutCtx); err != nil {
-						log.WithError(s.l, err).Error("failed to gracefully stop CloserWithContext")
-					}
-				case Syncer:
-					if err := c.Sync(); err != nil {
-						log.WithError(s.l, err).Error("failed to gracefully stop Syncer")
-					}
-				case SyncerWithContext:
-					if err := c.Sync(timeoutCtx); err != nil {
-						log.WithError(s.l, err).Error("failed to gracefully stop SyncerWithContext")
-					}
-				case Shutdowner:
-					if err := c.Shutdown(); err != nil {
-						log.WithError(s.l, err).Error("failed to gracefully stop Shutdowner")
-					}
-				case ShutdownerWithContext:
-					if err := c.Shutdown(timeoutCtx); err != nil {
-						log.WithError(s.l, err).Error("failed to gracefully stop ShutdownerWithContext")
-					}
+			switch c := closer.(type) {
+			case Closer:
+				if err := c.Close(); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop Closer")
+				}
+			case CloserWithContext:
+				if err := c.Close(timeoutCtx); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop CloserWithContext")
+				}
+			case Syncer:
+				if err := c.Sync(); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop Syncer")
+				}
+			case SyncerWithContext:
+				if err := c.Sync(timeoutCtx); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop SyncerWithContext")
+				}
+			case Shutdowner:
+				if err := c.Shutdown(); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop Shutdowner")
+				}
+			case ShutdownerWithContext:
+				if err := c.Shutdown(timeoutCtx); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop ShutdownerWithContext")
 				}
 			}
 		}

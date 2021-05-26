@@ -23,7 +23,7 @@ const (
 
 var (
 	tracer   trace.Tracer
-	provider *sdktrace.TracerProvider
+	provider trace.TracerProvider
 )
 
 var (
@@ -33,7 +33,8 @@ var (
 
 func init() {
 	if !env.GetBool("OTEL_ENABLED", false) {
-		tracer = sdktrace.NewTracerProvider().Tracer(TracerName)
+		provider = trace.NewNoopTracerProvider()
+		tracer = provider.Tracer(TracerName)
 		return
 	}
 
@@ -72,7 +73,7 @@ func init() {
 	tracer = provider.Tracer(TracerName)
 }
 
-func Provider() *sdktrace.TracerProvider {
+func Provider() trace.TracerProvider {
 	return provider
 }
 
