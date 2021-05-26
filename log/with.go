@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"go.opentelemetry.io/otel/trace"
@@ -15,7 +14,7 @@ import (
 )
 
 func WithError(l *zap.Logger, err error) *zap.Logger {
-	return l.With(FError(err), FErrorType(reflect.TypeOf(err).String()))
+	return l.With(FError(err))
 }
 
 func WithServiceName(l *zap.Logger, name string) *zap.Logger {
