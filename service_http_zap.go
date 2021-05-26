@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	DefaultServiceHTTPZapName = "zap"
 	DefaultServiceHTTPZapAddr = "localhost:9100"
 	DefaultServiceHTTPZapPath = "/log"
 )
@@ -16,12 +17,12 @@ const (
 func NewServiceHTTPZap(l *zap.Logger, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.Handle(path, zap.NewAtomicLevel())
-	return NewServiceHTTP(l, addr, handler).SetName("zap")
+	return NewServiceHTTP(l, addr, handler)
 }
 
 func NewDefaultServiceHTTPZap() *ServiceHTTP {
 	return NewServiceHTTPZap(
-		log.Logger(),
+		log.Logger().With(log.FServiceName(DefaultServiceHTTPZapName)),
 		DefaultServiceHTTPZapAddr,
 		DefaultServiceHTTPZapPath,
 	)

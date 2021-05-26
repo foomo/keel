@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	DefaultServiceHTTPViperName = "viper"
 	DefaultServiceHTTPViperAddr = "localhost:9300"
 	DefaultServiceHTTPViperPath = "/config"
 )
@@ -43,12 +44,12 @@ func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, addr, path string) *Serv
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
-	return NewServiceHTTP(l, addr, handler).SetName("viper")
+	return NewServiceHTTP(l, addr, handler)
 }
 
 func NewDefaultServiceHTTPViper() *ServiceHTTP {
 	return NewServiceHTTPViper(
-		log.Logger(),
+		log.Logger().With(log.FServiceName(DefaultServiceHTTPViperName)),
 		config.Config(),
 		DefaultServiceHTTPViperAddr,
 		DefaultServiceHTTPViperPath,
