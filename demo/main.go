@@ -1,20 +1,3 @@
-# keel
-
-[![GitHub Super-Linter](https://github.com/foomo/keel/workflows/CI/badge.svg)](https://github.com/marketplace/actions/super-linter)
-
-
-> Opinionated way to run services.
-
-## Stack
-
-- Metrics:        Prometheus
-- Logging:        Zap
-- Telemetry:      Open Telemetry
-- Configuration:  Viper
-
-## Example
-
-```go
 package main
 
 import (
@@ -59,5 +42,3 @@ func newService() *http.ServeMux {
 	})
 	return s
 }
-
-```
