@@ -109,8 +109,8 @@ func (s *Server) AddCloser(closer interface{}) {
 func (s *Server) Run() {
 	s.l.Info("starting server")
 
-	ctx, cancel := signal.NotifyContext(s.ctx, os.Interrupt)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(s.ctx, os.Interrupt)
+	defer stop()
 
 	g, gctx := errgroup.WithContext(ctx)
 
@@ -118,7 +118,7 @@ func (s *Server) Run() {
 		service := service
 		g.Go(func() error {
 			// TODO handle other 'positive' errors
-			if err := service.Start(gctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			if err := service.Start(s.ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Error("failed to start service")
 				return err
 			}
