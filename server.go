@@ -140,7 +140,7 @@ func (s *Server) Run() {
 		defer timeoutCancel()
 
 		// append internal closers
-		closers := append(s.closers, log.Logger(), telemetry.Provider())
+		closers := append(s.closers, telemetry.Provider())
 
 		for _, closer := range closers {
 			switch c := closer.(type) {

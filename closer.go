@@ -2,16 +2,6 @@ package keel
 
 import "context"
 
-// Syncer interface
-type Syncer interface {
-	Sync() error
-}
-
-// SyncerWithContext interface
-type SyncerWithContext interface {
-	Sync(ctx context.Context) error
-}
-
 // Closer interface
 type Closer interface {
 	Close() error

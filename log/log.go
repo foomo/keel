@@ -44,16 +44,6 @@ func Logger() *zap.Logger {
 	return logger
 }
 
-func Sync() error {
-	return logger.Sync()
-}
-
-func MustSync() {
-	if err := logger.Sync(); err != nil {
-		fmt.Println(err)
-	}
-}
-
 // Must logs a fatal error if given
 func Must(l *zap.Logger, err error, msg string) {
 	if err != nil {
