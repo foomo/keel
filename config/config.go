@@ -13,8 +13,8 @@ var config *viper.Viper
 // Init sets up the configuration
 func init() {
 	config = viper.New()
-	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	config.AutomaticEnv()
+	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 }
 
 // Config return the config instance
@@ -84,7 +84,7 @@ func ensure(c *viper.Viper) *viper.Viper {
 }
 
 func must(c *viper.Viper, key string) {
-	if !c.InConfig(key) {
+	if !c.IsSet(key) {
 		panic(fmt.Sprintf("missing required config key: %s", key))
 	}
 }
