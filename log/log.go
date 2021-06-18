@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"time"
 
 	"go.uber.org/zap"
