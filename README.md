@@ -1,5 +1,7 @@
 # keel
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/foomo/keel)](https://goreportcard.com/report/github.com/foomo/keel)
+[![godoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
 [![GitHub Super-Linter](https://github.com/foomo/keel/workflows/CI/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
 
