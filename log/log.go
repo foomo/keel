@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -42,16 +41,6 @@ func init() {
 // Logger return the logger instance
 func Logger() *zap.Logger {
 	return logger
-}
-
-func Sync() error {
-	return logger.Sync()
-}
-
-func MustSync() {
-	if err := logger.Sync(); err != nil {
-		fmt.Println(err)
-	}
 }
 
 // Must logs a fatal error if given

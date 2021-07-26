@@ -94,8 +94,6 @@ func (s *Server) AddCloser(closer interface{}) {
 		switch closer.(type) {
 		case Closer,
 			CloserWithContext,
-			Syncer,
-			SyncerWithContext,
 			Shutdowner,
 			ShutdownerWithContext:
 			s.closers = append(s.closers, closer)
@@ -140,7 +138,7 @@ func (s *Server) Run() {
 		defer timeoutCancel()
 
 		// append internal closers
-		closers := append(s.closers, log.Logger(), telemetry.Provider())
+		closers := append(s.closers, telemetry.Provider())
 
 		for _, closer := range closers {
 			switch c := closer.(type) {
@@ -151,14 +149,6 @@ func (s *Server) Run() {
 			case CloserWithContext:
 				if err := c.Close(timeoutCtx); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop CloserWithContext")
-				}
-			case Syncer:
-				if err := c.Sync(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Syncer")
-				}
-			case SyncerWithContext:
-				if err := c.Sync(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop SyncerWithContext")
 				}
 			case Shutdowner:
 				if err := c.Shutdown(); err != nil {
