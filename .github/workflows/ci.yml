@@ -12,11 +12,6 @@ jobs:
     env:
       GOFLAGS: -mod=readonly
       GOPROXY: https://proxy.golang.org
-      VALIDATE_GO: true
-      VALIDATE_YAML: true
-      VALIDATE_ALL_CODEBASE: false
-    name: Go ${{ matrix.go }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -31,12 +26,6 @@ jobs:
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
-
-      - name: Lint Code Base
-        uses: github/super-linter@v3
-        env:
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test
         run: go test ./...
