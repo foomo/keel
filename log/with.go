@@ -21,7 +21,7 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 	return l.With(FServiceName(name))
 }
 
-func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger { //nolint:golint
+func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger { //nolint:revive
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
 		l = l.With(FTraceID(spanCtx.TraceID().String()))
 	}
