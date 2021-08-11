@@ -1,0 +1,207 @@
+package keel_test
+
+import (
+	"bytes"
+	"context"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/foomo/keel"
+	"github.com/foomo/keel/log"
+)
+
+type KeelTestSuite struct {
+	suite.Suite
+	l      *zap.Logger
+	svr    *keel.Server
+	mux    *http.ServeMux
+	cancel context.CancelFunc
+}
+
+func (s *KeelTestSuite) SetupSuite() {
+	s.l = zaptest.NewLogger(s.T())
+}
+
+func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
+	s.mux = http.NewServeMux()
+	s.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	s.mux.HandleFunc("/sleep", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Second * 1)
+		w.WriteHeader(http.StatusOK)
+	})
+	s.mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
+		panic("foobar")
+	})
+	s.mux.HandleFunc("/log/info", func(w http.ResponseWriter, r *http.Request) {
+		log.Logger().Info("logging info")
+	})
+	s.mux.HandleFunc("/log/debug", func(w http.ResponseWriter, r *http.Request) {
+		log.Logger().Debug("logging debug")
+	})
+	s.mux.HandleFunc("/log/warn", func(w http.ResponseWriter, r *http.Request) {
+		log.Logger().Warn("logging warn")
+	})
+	s.mux.HandleFunc("/log/error", func(w http.ResponseWriter, r *http.Request) {
+		log.Logger().Error("logging error")
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	s.svr = keel.NewServer(keel.WithContext(ctx))
+	s.cancel = cancel
+}
+
+func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
+	s.cancel()
+}
+
+func (s *KeelTestSuite) TearDownSuite() {
+}
+
+func (s *KeelTestSuite) TestServiceHTTP() {
+	s.svr.AddServices(
+		keel.NewServiceHTTP(log.Logger(), ":55000", s.mux),
+	)
+
+	go s.svr.Run()
+
+	if statusCode, _, err := s.Get("http://localhost:55000/ok"); s.NoError(err) {
+		s.Equal(http.StatusOK, statusCode)
+	}
+}
+
+func (s *KeelTestSuite) TestServiceHTTPZap() {
+	s.svr.AddServices(
+		keel.NewDefaultServiceHTTPZap(),
+		keel.NewServiceHTTP(log.Logger(), ":55000", s.mux),
+	)
+
+	go s.svr.Run()
+
+	s.Run("default", func() {
+		if statusCode, body, err := s.Get("http://localhost:9100/log"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+			s.Equal(body, `{"level":"info","disableCaller":true,"disableStacktrace":true}`)
+		}
+		if statusCode, _, err := s.Get("http://localhost:55000/log/info"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+		}
+		if statusCode, _, err := s.Get("http://localhost:55000/log/debug"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+		}
+	})
+
+	s.Run("set debug level", func() {
+		if statusCode, body, err := s.Put("http://localhost:9100/log", `{"level":"debug"}`); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+			s.Equal(body, `{"level":"debug","disableCaller":true,"disableStacktrace":true}`)
+		}
+		if statusCode, _, err := s.Get("http://localhost:55000/log/info"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+		}
+		if statusCode, _, err := s.Get("http://localhost:55000/log/debug"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+		}
+	})
+
+	s.Run("enable caller", func() {
+		if statusCode, body, err := s.Put("http://localhost:9100/log", `{"disableCaller":false}`); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":true}`)
+		}
+		if statusCode, _, err := s.Get("http://localhost:55000/log/error"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+		}
+	})
+
+	s.Run("enable stacktrace", func() {
+		if statusCode, body, err := s.Put("http://localhost:9100/log", `{"disableStacktrace":false}`); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":false}`)
+		}
+		if statusCode, _, err := s.Get("http://localhost:55000/log/error"); s.NoError(err) {
+			s.Equal(http.StatusOK, statusCode)
+		}
+	})
+}
+
+func (s *KeelTestSuite) TestGraceful() {
+	s.svr.AddServices(
+		keel.NewServiceHTTP(log.Logger(), ":55000", s.mux),
+	)
+
+	go s.svr.Run()
+
+	if statusCode, _, err := s.Get("http://localhost:55000/ok"); s.NoError(err) {
+		s.l.Info("receiveds from ok")
+		s.Equal(http.StatusOK, statusCode)
+	}
+
+	go func() {
+		s.l.Info("calling sleep")
+		if statusCode, _, err := s.Get("http://localhost:55000/sleep"); s.NoError(err) {
+			s.l.Info("received resom sleep")
+			s.Equal(http.StatusOK, statusCode)
+		}
+	}()
+
+	go func() {
+		time.Sleep(time.Second)
+		s.cancel()
+	}()
+
+	time.Sleep(time.Second * 3)
+
+	_, _, err := s.Get("http://localhost:55000/ok")
+	s.Error(err)
+
+	s.l.Info("done")
+}
+
+func (s *KeelTestSuite) Get(url string) (int, string, error) {
+	if req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil); err != nil {
+		return 0, "", err
+	} else if resp, err := http.DefaultClient.Do(req); err != nil {
+		return 0, "", err
+	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return 0, "", err
+	} else if err := resp.Body.Close(); err != nil {
+		return 0, "", err
+	} else {
+		return resp.StatusCode, string(bytes.TrimSpace(body)), nil
+	}
+}
+
+func (s *KeelTestSuite) Put(url, data string) (int, string, error) {
+	if req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, url, strings.NewReader(data)); err != nil {
+		return 0, "", err
+	} else if resp, err := http.DefaultClient.Do(req); err != nil {
+		return 0, "", err
+	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return 0, "", err
+	} else if err := resp.Body.Close(); err != nil {
+		return 0, "", err
+	} else {
+		return resp.StatusCode, string(bytes.TrimSpace(body)), nil
+	}
+}
+
+func (s *KeelTestSuite) EqualBody(resp *http.Response, expected string) {
+	if body, err := ioutil.ReadAll(resp.Body); s.NoError(err) {
+		s.Equal(expected, string(bytes.TrimSpace(body)))
+	}
+}
+
+// In order for 'go test' to run this suite, we need to create
+// a normal test function and pass our suite to suite.Run
+func TestCartTestSuite(t *testing.T) {
+	suite.Run(t, new(KeelTestSuite))
+}

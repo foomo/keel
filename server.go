@@ -115,8 +115,9 @@ func (s *Server) Run() {
 	for _, service := range s.services {
 		service := service
 		g.Go(func() error {
-			// TODO handle other 'positive' errors
-			if err := service.Start(s.ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			if err := service.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
+				log.WithError(s.l, err).Debug("server has closed")
+			} else if err != nil {
 				log.WithError(s.l, err).Error("failed to start service")
 				return err
 			}
