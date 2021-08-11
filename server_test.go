@@ -25,10 +25,12 @@ type KeelTestSuite struct {
 	cancel context.CancelFunc
 }
 
+// SetupSuite hook
 func (s *KeelTestSuite) SetupSuite() {
 	s.l = zaptest.NewLogger(s.T())
 }
 
+// BeforeTest hook
 func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 	s.mux = http.NewServeMux()
 	s.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
@@ -59,12 +61,13 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 	s.cancel = cancel
 }
 
+// AfterTest hook
 func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
 	s.cancel()
 }
 
-func (s *KeelTestSuite) TearDownSuite() {
-}
+// TearDownSuite hook
+func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(
@@ -73,7 +76,7 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 
 	go s.svr.Run()
 
-	if statusCode, _, err := s.Get("http://localhost:55000/ok"); s.NoError(err) {
+	if statusCode, _, err := s.httpGet("http://localhost:55000/ok"); s.NoError(err) {
 		s.Equal(http.StatusOK, statusCode)
 	}
 }
@@ -87,47 +90,47 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	go s.svr.Run()
 
 	s.Run("default", func() {
-		if statusCode, body, err := s.Get("http://localhost:9100/log"); s.NoError(err) {
+		if statusCode, body, err := s.httpGet("http://localhost:9100/log"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 			s.Equal(body, `{"level":"info","disableCaller":true,"disableStacktrace":true}`)
 		}
-		if statusCode, _, err := s.Get("http://localhost:55000/log/info"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
-		if statusCode, _, err := s.Get("http://localhost:55000/log/debug"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/log/debug"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
 	})
 
 	s.Run("set debug level", func() {
-		if statusCode, body, err := s.Put("http://localhost:9100/log", `{"level":"debug"}`); s.NoError(err) {
+		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"level":"debug"}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 			s.Equal(body, `{"level":"debug","disableCaller":true,"disableStacktrace":true}`)
 		}
-		if statusCode, _, err := s.Get("http://localhost:55000/log/info"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
-		if statusCode, _, err := s.Get("http://localhost:55000/log/debug"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/log/debug"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
 	})
 
 	s.Run("enable caller", func() {
-		if statusCode, body, err := s.Put("http://localhost:9100/log", `{"disableCaller":false}`); s.NoError(err) {
+		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableCaller":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":true}`)
 		}
-		if statusCode, _, err := s.Get("http://localhost:55000/log/error"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
 	})
 
 	s.Run("enable stacktrace", func() {
-		if statusCode, body, err := s.Put("http://localhost:9100/log", `{"disableStacktrace":false}`); s.NoError(err) {
+		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableStacktrace":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":false}`)
 		}
-		if statusCode, _, err := s.Get("http://localhost:55000/log/error"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
 	})
@@ -140,14 +143,14 @@ func (s *KeelTestSuite) TestGraceful() {
 
 	go s.svr.Run()
 
-	if statusCode, _, err := s.Get("http://localhost:55000/ok"); s.NoError(err) {
+	if statusCode, _, err := s.httpGet("http://localhost:55000/ok"); s.NoError(err) {
 		s.l.Info("receiveds from ok")
 		s.Equal(http.StatusOK, statusCode)
 	}
 
 	go func() {
 		s.l.Info("calling sleep")
-		if statusCode, _, err := s.Get("http://localhost:55000/sleep"); s.NoError(err) {
+		if statusCode, _, err := s.httpGet("http://localhost:55000/sleep"); s.NoError(err) {
 			s.l.Info("received resom sleep")
 			s.Equal(http.StatusOK, statusCode)
 		}
@@ -160,13 +163,14 @@ func (s *KeelTestSuite) TestGraceful() {
 
 	time.Sleep(time.Second * 3)
 
-	_, _, err := s.Get("http://localhost:55000/ok")
+	_, _, err := s.httpGet("http://localhost:55000/ok")
 	s.Error(err)
 
 	s.l.Info("done")
 }
 
-func (s *KeelTestSuite) Get(url string) (int, string, error) {
+// httpGet helper
+func (s *KeelTestSuite) httpGet(url string) (int, string, error) {
 	if req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil); err != nil {
 		return 0, "", err
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
@@ -180,7 +184,8 @@ func (s *KeelTestSuite) Get(url string) (int, string, error) {
 	}
 }
 
-func (s *KeelTestSuite) Put(url, data string) (int, string, error) {
+// httpPut helper
+func (s *KeelTestSuite) httpPut(url, data string) (int, string, error) {
 	if req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, url, strings.NewReader(data)); err != nil {
 		return 0, "", err
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
@@ -191,12 +196,6 @@ func (s *KeelTestSuite) Put(url, data string) (int, string, error) {
 		return 0, "", err
 	} else {
 		return resp.StatusCode, string(bytes.TrimSpace(body)), nil
-	}
-}
-
-func (s *KeelTestSuite) EqualBody(resp *http.Response, expected string) {
-	if body, err := ioutil.ReadAll(resp.Body); s.NoError(err) {
-		s.Equal(expected, string(bytes.TrimSpace(body)))
 	}
 }
 
