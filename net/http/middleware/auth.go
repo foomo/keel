@@ -11,19 +11,6 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-func BearerSplit(bearerToken string) string {
-	authHeader := strings.Split(bearerToken, "Bearer ")
-	return authHeader[1]
-}
-
-func BearerSplitWow(bearerToken string) string {
-	if !strings.HasPrefix(bearerToken, "Bearer ") {
-		return ""
-	}
-
-	return strings.Replace(bearerToken, "Bearer ", "", 1)
-}
-
 func BearerAuth(bearerToken string) Middleware {
 	bearerPrefix := "Bearer "
 	return func(l *zap.Logger, next http.Handler) http.Handler {
