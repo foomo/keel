@@ -68,6 +68,13 @@ func BasicAuthBcryptHash(hashedUser, hashedPassword string) Middleware {
 			// Compare the username and password hash with the ones in the request
 			errU := bcrypt.CompareHashAndPassword([]byte(hashedUser), []byte(u))
 			errP := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(p))
+			// TODO: Remove
+			if errU != nil {
+				l.Info("username authentication failed", zap.Error(errU))
+			}
+			if errP != nil {
+				l.Info("password authentication failed", zap.Error(errP))
+			}
 			if errU != nil || errP != nil {
 				unauthorised(rw)
 				return
