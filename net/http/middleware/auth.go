@@ -11,58 +11,72 @@ import (
 	"github.com/foomo/keel/log"
 )
 
+func BearerSplit(bearerToken string) string {
+	authHeader := strings.Split(bearerToken, "Bearer ")
+	return authHeader[1]
+}
+
+func BearerSplitWow(bearerToken string) string {
+	if !strings.HasPrefix(bearerToken, "Bearer ") {
+		return ""
+	}
+
+	return strings.Replace(bearerToken, "Bearer ", "", 1)
+}
+
 func BearerAuth(bearerToken string) Middleware {
+	bearerPrefix := "Bearer "
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := strings.Split(r.Header.Get("Authorization"), "Bearer ")
-			if len(authHeader) != 2 {
+			if !strings.HasPrefix(bearerToken, bearerPrefix) {
 				w.WriteHeader(http.StatusUnauthorized)
 				if _, err := w.Write([]byte("malformed token")); err != nil {
 					log.WithError(l, err).Error("failed to write http response")
 				}
-			} else {
-				if authHeader[1] == bearerToken {
-					next.ServeHTTP(w, r)
-				} else {
-					w.WriteHeader(http.StatusUnauthorized)
-					if _, err := w.Write([]byte("Unauthorized")); err != nil {
-						log.WithError(l, err).Error("failed to write http response")
-					}
-				}
+				return
+			}
+
+			authHeader := strings.Replace(bearerToken, bearerPrefix, "", 1)
+			if subtle.ConstantTimeCompare([]byte(authHeader), []byte(bearerToken)) == 1 {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			w.WriteHeader(http.StatusUnauthorized)
+			if _, err := w.Write([]byte("Unauthorized")); err != nil {
+				log.WithError(l, err).Error("failed to write http response")
 			}
 		})
 	}
 }
 
+// BasicAuth hashes the password when called and returns a middleware.
+// NOTE: The error handling only takes place on incomming http requests.
+// Therefore (and because of security) it is adviced to hash the password
+// beforehand and use BasicAuthBcryptHash.
 func BasicAuth(user, password string) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, rq *http.Request) {
-			u, p, ok := rq.BasicAuth()
-			if !ok || len(strings.TrimSpace(u)) < 1 || len(strings.TrimSpace(p)) < 1 {
-				unauthorised(rw)
-				return
-			}
-
-			// This is a dummy check for credentials.
-			if u != user || p != password {
-				unauthorised(rw)
-				return
-			}
-
-			// If required, Context could be updated to include authentication
-			// related data so that it could be used in consequent steps.
-			next.ServeHTTP(rw, rq)
-		})
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return func(l *zap.Logger, next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				l.Error("unable to create password hash", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+			})
+		}
 	}
+
+	return BasicAuthBcryptHash(user, string(hashedPassword))
 }
 
+// BasicAuthBcryptHash uses a plain text user name an a bcrypt salted hash of
+// the password in order to authenticate the incomming http request.
 func BasicAuthBcryptHash(user, hashedPassword string) Middleware {
 	return func(l *zap.Logger, next http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, rq *http.Request) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			u, p, ok := rq.BasicAuth()
+			u, p, ok := r.BasicAuth()
 			if !ok || len(strings.TrimSpace(u)) < 1 || len(strings.TrimSpace(p)) < 1 {
-				unauthorised(rw)
+				unauthorised(w)
 				return
 			}
 
@@ -70,13 +84,13 @@ func BasicAuthBcryptHash(user, hashedPassword string) Middleware {
 			userMatch := (subtle.ConstantTimeCompare([]byte(u), []byte(user)) == 1)
 			errP := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(p))
 			if !userMatch || errP != nil {
-				unauthorised(rw)
+				unauthorised(w)
 				return
 			}
 
 			// If required, Context could be updated to include authentication
 			// related data so that it could be used in consequent steps.
-			next.ServeHTTP(rw, rq)
+			next.ServeHTTP(w, r)
 		})
 	}
 }
