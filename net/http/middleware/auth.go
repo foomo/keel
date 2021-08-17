@@ -39,7 +39,7 @@ func BearerAuth(bearerToken string) Middleware {
 
 // BasicAuth hashes the password when called and returns a middleware.
 // NOTE: The error handling only takes place on incomming http requests.
-// Therefore (and because of security) it is adviced to hash the password
+// Therefore (and because of security) it is advised to hash the password
 // beforehand and use BasicAuthBcryptHash.
 func BasicAuth(user, password string) Middleware {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -60,7 +60,7 @@ func BasicAuth(user, password string) Middleware {
 func BasicAuthBcryptHash(user, hashedPassword string) Middleware {
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+			// basic auth from request header
 			u, p, ok := r.BasicAuth()
 			if !ok || len(strings.TrimSpace(u)) < 1 || len(strings.TrimSpace(p)) < 1 {
 				unauthorised(w)
