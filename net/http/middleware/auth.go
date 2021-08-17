@@ -70,10 +70,10 @@ func BasicAuthBcryptHash(hashedUser, hashedPassword string) Middleware {
 			errP := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(p))
 			// TODO: Remove
 			if errU != nil {
-				l.Info("username authentication failed", zap.Error(errU), zap.String("hashed user", hashedUser))
+				l.Info("username authentication failed", zap.Error(errU), zap.Int("length hashed user", len(hashedUser)), zap.Int("length user", len(u)))
 			}
 			if errP != nil {
-				l.Info("password authentication failed", zap.Error(errP), zap.String("hashed password", hashedPassword))
+				l.Info("password authentication failed", zap.Error(errP), zap.Int("hashed password", len(hashedPassword)), zap.Int("length password", len(p)))
 			}
 			if errU != nil || errP != nil {
 				unauthorised(rw)
