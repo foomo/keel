@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"strings"
 
@@ -55,7 +56,7 @@ func BasicAuth(user, password string) Middleware {
 	}
 }
 
-func BasicAuthBcryptHash(hashedUser, hashedPassword string) Middleware {
+func BasicAuthBcryptHash(user, hashedPassword string) Middleware {
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, rq *http.Request) {
 
@@ -66,16 +67,9 @@ func BasicAuthBcryptHash(hashedUser, hashedPassword string) Middleware {
 			}
 
 			// Compare the username and password hash with the ones in the request
-			errU := bcrypt.CompareHashAndPassword([]byte(hashedUser), []byte(u))
+			userMatch := (subtle.ConstantTimeCompare([]byte(u), []byte(user)) == 1)
 			errP := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(p))
-			// TODO: Remove
-			if errU != nil {
-				l.Info("username authentication failed", zap.Error(errU), zap.Int("length hashed user", len(hashedUser)), zap.Int("length user", len(u)))
-			}
-			if errP != nil {
-				l.Info("password authentication failed", zap.Error(errP), zap.Int("hashed password", len(hashedPassword)), zap.Int("length password", len(p)))
-			}
-			if errU != nil || errP != nil {
+			if !userMatch || errP != nil {
 				unauthorised(rw)
 				return
 			}
