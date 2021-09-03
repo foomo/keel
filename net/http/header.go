@@ -26,6 +26,7 @@ const (
 	HeaderXRealIP             = "X-Real-IP"
 	HeaderXRequestID          = "X-Request-ID"
 	HeaderXRequestedWith      = "X-Requested-With"
+	HeaderXSessionID          = "X-Session-ID"
 	HeaderServer              = "Server"
 	HeaderOrigin              = "Origin"
 

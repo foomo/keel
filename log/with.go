@@ -42,6 +42,9 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get(httputils.HeaderXRequestID); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
 	}
+	if id := r.Header.Get(httputils.HeaderXSessionID); id != "" {
+		fields = append(fields, FHTTPSessionID(id))
+	}
 	if r.TLS != nil {
 		fields = append(fields, FHTTPScheme("https"))
 	} else {

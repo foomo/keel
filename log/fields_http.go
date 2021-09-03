@@ -39,10 +39,17 @@ const (
 
 	// HTTPRequestIDKey represents the HTTP request id if known (e.g from X-Request-ID).
 	HTTPRequestIDKey = "http_request_id"
+
+	// HTTPSessionIDKey represents the HTTP session id if known (e.g from X-Session-ID).
+	HTTPSessionIDKey = "http_session_id"
 )
 
 func FHTTPRequestID(id string) zap.Field {
 	return zap.String(HTTPRequestIDKey, id)
+}
+
+func FHTTPSessionID(id string) zap.Field {
+	return zap.String(HTTPSessionIDKey, id)
 }
 
 func FHTTPRequestContentLength(bytes int64) zap.Field {
