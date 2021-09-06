@@ -5,6 +5,9 @@ import (
 )
 
 const (
+	// HTTPServerNameKey represents the name of the service handling the request
+	HTTPServerNameKey = "http_server_name"
+
 	// HTTPMethodKey represents the HTTP request method.
 	HTTPMethodKey = "http_method"
 
@@ -43,6 +46,10 @@ const (
 	// HTTPSessionIDKey represents the HTTP session id if known (e.g from X-Session-ID).
 	HTTPSessionIDKey = "http_session_id"
 )
+
+func FHTTPServerName(id string) zap.Field {
+	return zap.String(HTTPServerNameKey, id)
+}
 
 func FHTTPRequestID(id string) zap.Field {
 	return zap.String(HTTPRequestIDKey, id)
