@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	keelhttp "github.com/foomo/keel/net/http"
 )
 
 // InternalServerError http response
@@ -31,7 +32,8 @@ func NotFoundServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, 
 // ServerError http response
 func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int, err error) {
 	if err != nil {
-		log.Configure(l).HTTPRequest(r).Error(err).Logger().Error("http server error", zap.Int("code", code))
-		http.Error(w, http.StatusText(code), code) // TODO enrich headers
+		log.WithHTTPRequest(l, r).Error("http server error", log.FError(err), log.FHTTPStatusCode(code))
+		w.Header().Set(keelhttp.HeaderXError, err.Error())
+		http.Error(w, http.StatusText(code), code)
 	}
 }
