@@ -4,24 +4,47 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	httputils "github.com/foomo/keel/utils/net/http"
 )
 
-type RecoverConfig struct {
-	DisablePrintStack bool
+type (
+	RecoverOptions struct {
+		DisablePrintStack bool
+	}
+	RecoverOption func(*RecoverOptions)
+)
+
+// GetDefaultRecoverOptions returns the default options
+func GetDefaultRecoverOptions() RecoverOptions {
+	return RecoverOptions{
+		DisablePrintStack: false,
+	}
 }
 
-var DefaultRecoverConfig = RecoverConfig{
-	DisablePrintStack: false,
+// RecoverWithDisablePrintStack middleware option
+func RecoverWithDisablePrintStack(v bool) RecoverOption {
+	return func(o *RecoverOptions) {
+		o.DisablePrintStack = v
+	}
 }
 
-func Recover() Middleware {
-	return RecoverWithConfig(DefaultRecoverConfig)
+// Recover middleware
+func Recover(opts ...RecoverOption) Middleware {
+	options := GetDefaultRecoverOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&options)
+		}
+	}
+	return RecoverWithOptions(options)
 }
 
-func RecoverWithConfig(config RecoverConfig) Middleware {
+// RecoverWithOptions middleware
+func RecoverWithOptions(opts RecoverOptions) Middleware {
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
@@ -31,11 +54,10 @@ func RecoverWithConfig(config RecoverConfig) Middleware {
 						err = fmt.Errorf("%v", e)
 					}
 					l = log.WithError(l, err)
-					if !config.DisablePrintStack {
+					if !opts.DisablePrintStack {
 						l = l.With(log.FStackSkip(3))
 					}
-					l.Error("recovering from panic")
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					httputils.InternalServerError(l, w, r, errors.Wrap(err, "recovering from panic"))
 				}
 			}()
 			next.ServeHTTP(w, r)

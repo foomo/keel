@@ -9,15 +9,29 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-type LoggerConfig struct{}
+type (
+	LoggerOptions struct{}
+	LoggerOption  func(*LoggerOptions)
+)
 
-var DefaultLoggerConfig = LoggerConfig{}
-
-func Logger() Middleware {
-	return LoggerWithConfig(DefaultLoggerConfig)
+// GetDefaultLoggerOptions returns the default options
+func GetDefaultLoggerOptions() LoggerOptions {
+	return LoggerOptions{}
 }
 
-func LoggerWithConfig(config LoggerConfig) Middleware {
+// Logger middleware
+func Logger(opts ...LoggerOption) Middleware {
+	options := GetDefaultLoggerOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&options)
+		}
+	}
+	return LoggerWithOptions(options)
+}
+
+// LoggerWithOptions middleware
+func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

@@ -11,36 +11,83 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 )
 
-type CORSConfig struct {
-	AllowOrigins     []string
-	AllowMethods     []string
-	AllowHeaders     []string
-	AllowCredentials bool
-	ExposeHeaders    []string
-	MaxAge           int
-}
-
-var DefaultCORSConfig = CORSConfig{
-	AllowOrigins: []string{"*"},
-	AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
-}
-
-// CORS returns a http middleware with default configuration
-func CORS() Middleware {
-	return CORSWithConfig(DefaultCORSConfig)
-}
-
-// CORSWithConfig returns a http middleware
-func CORSWithConfig(config CORSConfig) Middleware {
-	if len(config.AllowOrigins) == 0 {
-		config.AllowOrigins = DefaultCORSConfig.AllowOrigins
+type (
+	CORSOptions struct {
+		AllowOrigins     []string
+		AllowMethods     []string
+		AllowHeaders     []string
+		AllowCredentials bool
+		ExposeHeaders    []string
+		MaxAge           int
 	}
-	if len(config.AllowMethods) == 0 {
-		config.AllowMethods = DefaultCORSConfig.AllowMethods
-	}
+	CORSOption func(*CORSOptions)
+)
 
-	allowOriginPatterns := make([]string, len(config.AllowOrigins))
-	for i, origin := range config.AllowOrigins {
+// GetDefaultCORSOptions returns the default options
+func GetDefaultCORSOptions() CORSOptions {
+	return CORSOptions{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete},
+	}
+}
+
+// CORSWithAllowOrigins middleware option
+func CORSWithAllowOrigins(v ...string) CORSOption {
+	return func(o *CORSOptions) {
+		o.AllowOrigins = v
+	}
+}
+
+// CORSWithAllowMethods middleware option
+func CORSWithAllowMethods(v ...string) CORSOption {
+	return func(o *CORSOptions) {
+		o.AllowMethods = v
+	}
+}
+
+// CORSWithAllowHeaders middleware option
+func CORSWithAllowHeaders(v ...string) CORSOption {
+	return func(o *CORSOptions) {
+		o.AllowHeaders = v
+	}
+}
+
+// CORSWithAllowCredentials middleware option
+func CORSWithAllowCredentials(v bool) CORSOption {
+	return func(o *CORSOptions) {
+		o.AllowCredentials = v
+	}
+}
+
+// CORSWithExposeHeaders middleware option
+func CORSWithExposeHeaders(v ...string) CORSOption {
+	return func(o *CORSOptions) {
+		o.ExposeHeaders = v
+	}
+}
+
+// CORSWithMaxAge middleware option
+func CORSWithMaxAge(v int) CORSOption {
+	return func(o *CORSOptions) {
+		o.MaxAge = v
+	}
+}
+
+// CORS middleware
+func CORS(opts ...CORSOption) Middleware {
+	options := GetDefaultCORSOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&options)
+		}
+	}
+	return CORSWithOptions(options)
+}
+
+// CORSWithOptions middleware
+func CORSWithOptions(opts CORSOptions) Middleware {
+	allowOriginPatterns := make([]string, len(opts.AllowOrigins))
+	for i, origin := range opts.AllowOrigins {
 		pattern := regexp.QuoteMeta(origin)
 		pattern = strings.ReplaceAll(pattern, "\\*", ".*")
 		pattern = strings.ReplaceAll(pattern, "\\?", ".")
@@ -48,10 +95,10 @@ func CORSWithConfig(config CORSConfig) Middleware {
 		allowOriginPatterns[i] = pattern
 	}
 
-	allowMethods := strings.Join(config.AllowMethods, ",")
-	allowHeaders := strings.Join(config.AllowHeaders, ",")
-	exposeHeaders := strings.Join(config.ExposeHeaders, ",")
-	maxAge := strconv.Itoa(config.MaxAge)
+	allowMethods := strings.Join(opts.AllowMethods, ",")
+	allowHeaders := strings.Join(opts.AllowHeaders, ",")
+	exposeHeaders := strings.Join(opts.ExposeHeaders, ",")
+	maxAge := strconv.Itoa(opts.MaxAge)
 
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +119,8 @@ func CORSWithConfig(config CORSConfig) Middleware {
 			}
 
 			// Check allowed origins
-			for _, value := range config.AllowOrigins {
-				if value == "*" && config.AllowCredentials {
+			for _, value := range opts.AllowOrigins {
+				if value == "*" && opts.AllowCredentials {
 					allowOrigin = origin
 					break
 				}
@@ -118,7 +165,7 @@ func CORSWithConfig(config CORSConfig) Middleware {
 			// Simple request
 			if !preflight {
 				r.Header.Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
-				if config.AllowCredentials {
+				if opts.AllowCredentials {
 					r.Header.Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
 				}
 				if exposeHeaders != "" {
@@ -133,7 +180,7 @@ func CORSWithConfig(config CORSConfig) Middleware {
 			r.Header.Add(keelhttp.HeaderVary, keelhttp.HeaderAccessControlRequestHeaders)
 			r.Header.Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
 			r.Header.Set(keelhttp.HeaderAccessControlAllowMethods, allowMethods)
-			if config.AllowCredentials {
+			if opts.AllowCredentials {
 				r.Header.Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
 			}
 			if allowHeaders != "" {
@@ -141,7 +188,7 @@ func CORSWithConfig(config CORSConfig) Middleware {
 			} else if h := r.Header.Get(keelhttp.HeaderAccessControlRequestHeaders); h != "" {
 				r.Header.Set(keelhttp.HeaderAccessControlAllowHeaders, h)
 			}
-			if config.MaxAge > 0 {
+			if opts.MaxAge > 0 {
 				r.Header.Set(keelhttp.HeaderAccessControlMaxAge, maxAge)
 			}
 			w.WriteHeader(http.StatusNoContent)
