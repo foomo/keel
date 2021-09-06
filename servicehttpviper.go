@@ -17,7 +17,7 @@ const (
 	DefaultServiceHTTPViperPath = "/config"
 )
 
-func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, addr, path string) *ServiceHTTP {
+func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		type payload struct {
@@ -44,13 +44,14 @@ func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, addr, path string) *Serv
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
-	return NewServiceHTTP(l, addr, handler)
+	return NewServiceHTTP(l, name, addr, handler)
 }
 
 func NewDefaultServiceHTTPViper() *ServiceHTTP {
 	return NewServiceHTTPViper(
-		log.Logger().With(log.FServiceName(DefaultServiceHTTPViperName)),
+		log.Logger(),
 		config.Config(),
+		DefaultServiceHTTPViperName,
 		DefaultServiceHTTPViperAddr,
 		DefaultServiceHTTPViperPath,
 	)

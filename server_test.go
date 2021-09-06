@@ -71,7 +71,7 @@ func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(
-		keel.NewServiceHTTP(log.Logger(), ":55000", s.mux),
+		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
 	)
 
 	go s.svr.Run()
@@ -84,7 +84,7 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.svr.AddServices(
 		keel.NewDefaultServiceHTTPZap(),
-		keel.NewServiceHTTP(log.Logger(), ":55000", s.mux),
+		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
 	)
 
 	go s.svr.Run()
@@ -138,7 +138,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 
 func (s *KeelTestSuite) TestGraceful() {
 	s.svr.AddServices(
-		keel.NewServiceHTTP(log.Logger(), ":55000", s.mux),
+		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
 	)
 
 	go s.svr.Run()

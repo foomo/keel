@@ -17,7 +17,7 @@ const (
 	DefaultServiceHTTPZapPath = "/log"
 )
 
-func NewServiceHTTPZap(l *zap.Logger, addr, path string) *ServiceHTTP {
+func NewServiceHTTPZap(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		type errorResponse struct {
@@ -91,12 +91,13 @@ func NewServiceHTTPZap(l *zap.Logger, addr, path string) *ServiceHTTP {
 			})
 		}
 	})
-	return NewServiceHTTP(l, addr, handler)
+	return NewServiceHTTP(l, name, addr, handler)
 }
 
 func NewDefaultServiceHTTPZap() *ServiceHTTP {
 	return NewServiceHTTPZap(
-		log.Logger().With(log.FServiceName(DefaultServiceHTTPZapName)),
+		log.Logger(),
+		DefaultServiceHTTPZapName,
 		DefaultServiceHTTPZapAddr,
 		DefaultServiceHTTPZapPath,
 	)

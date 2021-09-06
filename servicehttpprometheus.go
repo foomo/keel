@@ -16,7 +16,7 @@ const (
 	DefaultServiceHTTPPrometheusPath = "/metrics"
 )
 
-func NewServiceHTTPPrometheus(l *zap.Logger, addr, path string) *ServiceHTTP {
+func NewServiceHTTPPrometheus(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.Handle(path, promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
@@ -24,12 +24,13 @@ func NewServiceHTTPPrometheus(l *zap.Logger, addr, path string) *ServiceHTTP {
 			EnableOpenMetrics: true,
 		},
 	))
-	return NewServiceHTTP(l, addr, handler)
+	return NewServiceHTTP(l, name, addr, handler)
 }
 
 func NewDefaultServiceHTTPPrometheus() *ServiceHTTP {
 	return NewServiceHTTPPrometheus(
-		log.Logger().With(log.FServiceName(DefaultServiceHTTPPrometheusName)),
+		log.Logger(),
+		DefaultServiceHTTPPrometheusName,
 		DefaultServiceHTTPPrometheusAddr,
 		DefaultServiceHTTPPrometheusPath,
 	)

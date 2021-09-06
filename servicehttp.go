@@ -18,11 +18,14 @@ type ServiceHTTP struct {
 	l      *zap.Logger
 }
 
-func NewServiceHTTP(l *zap.Logger, addr string, handler http.Handler, middlewares ...middleware.Middleware) *ServiceHTTP {
+func NewServiceHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...middleware.Middleware) *ServiceHTTP {
 	if l == nil {
 		l = log.Logger()
 	}
-	errorLog, err := zap.NewStdLogAt(l, zap.ErrorLevel)
+	// enrich the log
+	l = log.WithHTTPServerName(l, name)
+
+	errorLog, err := zap.NewStdLogAt(l, zap.WarnLevel)
 	log.Must(l, err, "failed to create std logger")
 
 	return &ServiceHTTP{
