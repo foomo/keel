@@ -27,6 +27,8 @@ const (
 	HeaderXRequestID          = "X-Request-ID"
 	HeaderXRequestedWith      = "X-Requested-With"
 	HeaderXSessionID          = "X-Session-ID"
+	HeaderXError              = "X-Error"
+	HeaderXRuntime            = "X-Runtime"
 	HeaderServer              = "Server"
 	HeaderOrigin              = "Origin"
 
@@ -49,4 +51,8 @@ const (
 	HeaderContentSecurityPolicyReportOnly = "Content-Security-Policy-Report-Only"
 	HeaderXCSRFToken                      = "X-CSRF-Token" //nolint:gosec
 	HeaderReferrerPolicy                  = "Referrer-Policy"
+
+	// Telementry
+	HeaderTraceParent = "Traceparent"
+	HeaderTraceState  = "Tracestate"
 )
