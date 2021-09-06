@@ -1,5 +1,7 @@
 run:
   timeout: 5m
+  skip-dirs:
+    - tmp
 
 linters-settings:
   gci:
@@ -8,6 +10,10 @@ linters-settings:
     min-confidence: 0
   goimports:
     local-prefixes: github.com/foomo/keel
+  revive:
+    rules:
+      - name: indent-error-flow
+        disabled: true
   gocritic:
     enabled-tags:
       - diagnostic
@@ -16,6 +22,8 @@ linters-settings:
     disabled-tags:
       - experimental
       - opinionated
+    disabled-checks:
+      - ifElseChain
     settings:
       hugeParam:
         sizeThreshold: 512
