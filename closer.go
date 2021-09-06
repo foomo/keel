@@ -21,3 +21,13 @@ type Shutdowner interface {
 type ShutdownerWithContext interface {
 	Shutdown(ctx context.Context) error
 }
+
+// Unsubscriber interface
+type Unsubscriber interface {
+	Unsubscribe() error
+}
+
+// UnsubscriberWithContext interface
+type UnsubscriberWithContext interface {
+	Unsubscribe(ctx context.Context) error
+}

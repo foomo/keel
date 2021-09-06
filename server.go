@@ -88,18 +88,18 @@ func (s *Server) AddClosers(closers ...interface{}) {
 	}
 }
 
-// AddCloser adds an closer to be called on shutdown
+// AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	if closer != nil {
-		switch closer.(type) {
-		case Closer,
-			CloserWithContext,
-			Shutdowner,
-			ShutdownerWithContext:
-			s.closers = append(s.closers, closer)
-		default:
-			panic("unsupported closer")
-		}
+	switch closer.(type) {
+	case Closer,
+		CloserWithContext,
+		Shutdowner,
+		ShutdownerWithContext,
+		Unsubscriber,
+		UnsubscriberWithContext:
+		s.closers = append(s.closers, closer)
+	default:
+		s.l.Warn("unable to add closer")
 	}
 }
 
@@ -158,6 +158,14 @@ func (s *Server) Run() {
 			case ShutdownerWithContext:
 				if err := c.Shutdown(timeoutCtx); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ShutdownerWithContext")
+				}
+			case Unsubscriber:
+				if err := c.Unsubscribe(); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop Unsubscriber")
+				}
+			case UnsubscriberWithContext:
+				if err := c.Unsubscribe(timeoutCtx); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop UnsubscriberWithContext")
 				}
 			}
 		}
