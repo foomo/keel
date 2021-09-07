@@ -139,7 +139,7 @@ func (s *Server) Run() {
 		defer timeoutCancel()
 
 		// append internal closers
- 		closers := append(s.closers, telemetry.Exporter(), telemetry.Controller()) //nolint:gocritic
+		closers := append(s.closers, telemetry.Exporter(), telemetry.Controller()) //nolint:gocritic
 
 		for _, closer := range closers {
 			switch c := closer.(type) {
