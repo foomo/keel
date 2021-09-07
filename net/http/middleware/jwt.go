@@ -14,6 +14,7 @@ import (
 
 type (
 	JWTOptions struct {
+		SetContext          bool
 		TokenProvider       TokenProvider
 		ClaimsProvider      JWTClaimsProvider
 		MissingTokenHandler JWTMissingTokenHandler
@@ -58,6 +59,7 @@ func DefaultJWTClaimsProvider() jwt2.Claims {
 // GetDefaultJWTOptions returns the default options
 func GetDefaultJWTOptions() JWTOptions {
 	return JWTOptions{
+		SetContext:          true,
 		TokenProvider:       HeaderTokenProvider(),
 		ClaimsProvider:      DefaultJWTClaimsProvider,
 		ErrorHandler:        DefaultJWTErrorHandler,
@@ -101,6 +103,12 @@ func JWTWithErrorHandler(v JWTErrorHandler) JWTOption {
 	}
 }
 
+func JWTWithSetContext(v bool) JWTOption {
+	return func(o *JWTOptions) {
+		o.SetContext = v
+	}
+}
+
 // JWT middleware
 func JWT(jwt *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
 	options := GetDefaultJWTOptions()
@@ -123,11 +131,13 @@ func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middl
 			} else if value, err := opts.TokenProvider(r); err != nil {
 				httputils.BadRequestServerError(l, w, r, errors.Wrap(err, "failed to retrieve token"))
 			} else if value == "" {
-				if claims, resume := opts.MissingTokenHandler(l, w, r); resume && claims != nil {
+				if claims, resume := opts.MissingTokenHandler(l, w, r); resume && claims != nil && opts.SetContext {
 					next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey, claims)))
 				} else if resume {
 					next.ServeHTTP(w, r)
 				}
+			} else if !opts.SetContext {
+				next.ServeHTTP(w, r)
 			} else if token, err := jwt.ParseWithClaims(value, claims); err != nil {
 				// TODO check if type matches the existing
 				if opts.ErrorHandler(l, w, r, err) {
