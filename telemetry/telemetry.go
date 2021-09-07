@@ -20,6 +20,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
 	"github.com/foomo/keel/env"
 )
@@ -34,6 +35,7 @@ var (
 	traceProvider trace.TracerProvider
 	exporter      sdktrace.SpanExporter
 	controller    *otelcontroller.Controller
+	errorHandler *ErrorHandler
 )
 
 var (
@@ -42,7 +44,8 @@ var (
 )
 
 func init() {
-	// TODO otel.SetErrorHandler()
+	errorHandler = &ErrorHandler{}
+	otel.SetErrorHandler(errorHandler)
 
 	resource, err := otelresource.New(
 		context.Background(),
@@ -103,6 +106,10 @@ func Exporter() sdktrace.SpanExporter {
 
 func TracerProvider() trace.TracerProvider {
 	return traceProvider
+}
+
+func SetLogger(l *zap.Logger) {
+	errorHandler.SetLogger(l)
 }
 
 func newStdOut(resource *otelresource.Resource) (*sdktrace.TracerProvider, *otelcontroller.Controller, *otelstdout.Exporter, error) {
