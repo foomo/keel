@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -70,6 +71,10 @@ func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
 func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
+	if os.Getenv("CI") != "" {
+		s.T().Skip()
+	}
+
 	s.svr.AddServices(
 		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
 	)
@@ -82,6 +87,10 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 }
 
 func (s *KeelTestSuite) TestServiceHTTPZap() {
+	if os.Getenv("CI") != "" {
+		s.T().Skip()
+	}
+
 	s.svr.AddServices(
 		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "log"),
 		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
@@ -137,7 +146,9 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 }
 
 func (s *KeelTestSuite) TestGraceful() {
-	s.T().Skip()
+	if os.Getenv("CI") != "" {
+		s.T().Skip()
+	}
 
 	s.svr.AddServices(
 		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
