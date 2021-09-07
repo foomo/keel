@@ -83,7 +83,7 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 
 func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.svr.AddServices(
-		keel.NewDefaultServiceHTTPZap(),
+		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "log"),
 		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
 	)
 
@@ -203,6 +203,6 @@ func (s *KeelTestSuite) httpPut(url, data string) (int, string, error) {
 
 // In order for 'go test' to run this suite, we need to create
 // a normal test function and pass our suite to suite.Run
-func TestCartTestSuite(t *testing.T) {
+func TestKeelTestSuite(t *testing.T) {
 	suite.Run(t, new(KeelTestSuite))
 }
