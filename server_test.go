@@ -136,7 +136,9 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	})
 }
 
-func (s *KeelTestSuite) _TestGraceful() {
+func (s *KeelTestSuite) TestGraceful() {
+	s.T().Skip()
+
 	s.svr.AddServices(
 		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
 	)
