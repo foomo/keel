@@ -113,19 +113,23 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 	return func(l *zap.Logger, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var sessionID string
-			if c, err := opts.Cookie.Get(r); errors.Is(err, http.ErrNoCookie) && !opts.SetCookie {
+			if value := r.Header.Get(opts.Header); value != "" {
+				sessionID = value
+			} else if cookie, err := opts.Cookie.Get(r); errors.Is(err, http.ErrNoCookie) && !opts.SetCookie {
 				// do nothing
 			} else if errors.Is(err, http.ErrNoCookie) && opts.SetCookie {
 				sessionID = opts.Generator()
-				if err := opts.Cookie.Set(w, r, sessionID); err != nil {
+				if c, err := opts.Cookie.Set(w, r, sessionID); err != nil {
 					httputils.InternalServerError(l, w, r, errors.Wrap(err, "failed to set session id cookie"))
 					return
+				} else {
+					r.AddCookie(c)
 				}
 			} else if err != nil {
 				httputils.InternalServerError(l, w, r, errors.Wrap(err, "failed to read session id cookie"))
 				return
 			} else {
-				sessionID = c.Value
+				sessionID = cookie.Value
 			}
 			if sessionID != "" && opts.SetHeader {
 				r.Header.Set(opts.Header, sessionID)
