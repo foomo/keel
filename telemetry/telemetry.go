@@ -35,7 +35,7 @@ var (
 	traceProvider trace.TracerProvider
 	exporter      sdktrace.SpanExporter
 	controller    *otelcontroller.Controller
-	errorHandler *ErrorHandler
+	errorHandler  *ErrorHandler
 )
 
 var (
