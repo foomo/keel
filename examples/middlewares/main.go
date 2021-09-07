@@ -148,7 +148,7 @@ func ExampleJWTFromToken() {
 	svr.Run()
 }
 
-func ExampleJWTFromCookie() {
+func main() {
 	svr := keel.NewServer()
 
 	// get logger
@@ -207,9 +207,11 @@ func ExampleJWTFromCookie() {
 					if token, err := jwtInst.GetSignedToken(claims); err != nil {
 						httputils.InternalServerError(l, w, r, err)
 						return nil, false
-					} else if err := jwtCookie.Set(w, r, token); err != nil {
+					} else if c, err := jwtCookie.Set(w, r, token); err != nil {
 						httputils.InternalServerError(l, w, r, err)
 						return nil, false
+					} else {
+						r.AddCookie(c)
 					}
 					return claims, true
 				}),
@@ -219,7 +221,7 @@ func ExampleJWTFromCookie() {
 						httputils.InternalServerError(l, w, r, err)
 						return false
 					}
-					http.Redirect(w, r, r.URL.String(), http.StatusFound)
+					http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
 					return false
 				}),
 			),
@@ -460,7 +462,7 @@ func ExmampleResponseTime() {
 		keel.NewServiceHTTP(l, "demo", ":8080", svs,
 			middleware.ResponseTime(
 				// automatically set cookie if not exists
-				middleware.ResponseTimeWithMaxDuration(time.Millisecond * 500),
+				middleware.ResponseTimeWithMaxDuration(time.Millisecond*500),
 			),
 		),
 	)

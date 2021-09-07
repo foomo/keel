@@ -122,10 +122,10 @@ func (c Cookie) Get(r *http.Request) (*http.Cookie, error) {
 	return r.Cookie(c.Name)
 }
 
-func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts ...Option) error {
+func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts ...Option) (*http.Cookie, error) {
 	domain, err := c.DomainProvider(r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	options := c
 	for _, opt := range opts {
@@ -145,5 +145,5 @@ func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts .
 		cookie.Expires = options.TimeProvider().Add(options.Expires)
 	}
 	http.SetCookie(w, cookie)
-	return nil
+	return cookie, nil
 }
