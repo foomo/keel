@@ -3,23 +3,34 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
+
+	http2 "github.com/foomo/keel/net/http"
 )
 
 // responseWriter is a wrapper that includes that http statusCode and size for logging
 type responseWriter struct {
 	http.ResponseWriter
-	wroteHeader bool
-	statusCode  int
-	size        int
+	writeResponseTimeHeader bool
+	wroteHeader             bool
+	statusCode              int
+	start                   time.Time
+	size                    int
 }
 
-func wrapResponseWriter(w http.ResponseWriter) *responseWriter {
+func WrapResponseWriter(w http.ResponseWriter) *responseWriter {
 	if wr, ok := w.(*responseWriter); ok {
 		return wr
 	}
 	return &responseWriter{
 		ResponseWriter: w,
+		start:          time.Now(),
 	}
+}
+
+func (w *responseWriter) SetWriteResponseTimeHeader(write bool) {
+	w.writeResponseTimeHeader = write
 }
 
 func (w *responseWriter) Size() int {
@@ -38,9 +49,12 @@ func (w *responseWriter) Status() string {
 }
 
 func (w *responseWriter) WriteHeader(statusCode int) {
-	w.wroteHeader = true
-	w.statusCode = statusCode
+	if w.writeResponseTimeHeader {
+		w.Header().Set(http2.HeaderXResponseTime, strconv.FormatInt(time.Since(w.start).Microseconds(), 10))
+	}
 	w.ResponseWriter.WriteHeader(statusCode)
+	w.statusCode = statusCode
+	w.wroteHeader = true
 }
 
 func (w *responseWriter) Write(b []byte) (int, error) {

@@ -37,7 +37,7 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 			start := time.Now()
 
 			// wrap response write to get access to status & size
-			wr := wrapResponseWriter(w)
+			wr := WrapResponseWriter(w)
 
 			next.ServeHTTP(wr, r)
 
