@@ -13,21 +13,28 @@ import (
 	httputils "github.com/foomo/keel/net/http"
 )
 
+func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
+	if l == nil {
+		l = Logger()
+	}
+	return l.With(fields...)
+}
+
 func WithError(l *zap.Logger, err error) *zap.Logger {
-	return l.With(FError(err))
+	return With(l, FError(err))
 }
 
 func WithHTTPServerName(l *zap.Logger, name string) *zap.Logger {
-	return l.With(FHTTPServerName(name))
+	return With(l, FHTTPServerName(name))
 }
 
 func WithServiceName(l *zap.Logger, name string) *zap.Logger {
-	return l.With(FServiceName(name))
+	return With(l, FServiceName(name))
 }
 
 func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		l = l.With(FTraceID(spanCtx.TraceID().String()))
+		l = With(l, FTraceID(spanCtx.TraceID().String()))
 	}
 	return l
 }
@@ -82,5 +89,5 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 		fields = append(fields, FTraceID(spanCtx.TraceID().String()))
 	}
 
-	return l.With(fields...)
+	return With(l, fields...)
 }
