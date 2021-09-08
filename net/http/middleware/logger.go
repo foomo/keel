@@ -10,13 +10,17 @@ import (
 )
 
 type (
-	LoggerOptions struct{}
-	LoggerOption  func(*LoggerOptions)
+	LoggerOptions struct {
+		Message string
+	}
+	LoggerOption func(*LoggerOptions)
 )
 
 // GetDefaultLoggerOptions returns the default options
 func GetDefaultLoggerOptions() LoggerOptions {
-	return LoggerOptions{}
+	return LoggerOptions{
+		Message: "handled http request",
+	}
 }
 
 // Logger middleware
@@ -28,6 +32,12 @@ func Logger(opts ...LoggerOption) Middleware {
 		}
 	}
 	return LoggerWithOptions(options)
+}
+
+func LoggerWithMessage(v string) LoggerOption {
+	return func(o *LoggerOptions) {
+		o.Message = v
+	}
 }
 
 // LoggerWithOptions middleware
@@ -42,7 +52,7 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 			next.ServeHTTP(wr, r)
 
 			log.WithHTTPRequest(l, r).Info(
-				"handled http request",
+				opts.Message,
 				log.FDuration(time.Since(start)),
 				log.FHTTPStatusCode(wr.StatusCode()),
 				log.FHTTPWroteBytes(int64(wr.Size())),
