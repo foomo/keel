@@ -103,6 +103,9 @@ func New(name string, opts ...Option) Cookie {
 	if inst.DomainProvider == nil {
 		inst.DomainProvider = NewDomainProvider()
 	}
+	if inst.TimeProvider == nil {
+		inst.TimeProvider = NewTimeProvider()
+	}
 	return inst
 }
 
