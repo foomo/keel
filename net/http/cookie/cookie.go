@@ -110,13 +110,12 @@ func New(name string, opts ...Option) Cookie {
 }
 
 func (c Cookie) Delete(w http.ResponseWriter, r *http.Request) error {
-	if cookie, err := r.Cookie(c.Name); errors.Is(err, http.ErrNoCookie) {
+	if _, err := r.Cookie(c.Name); errors.Is(err, http.ErrNoCookie) {
 		return nil
 	} else if err != nil {
 		return err
 	} else {
-		cookie.MaxAge = -1
-		http.SetCookie(w, cookie)
+		c.Set(w, r, "", WithMaxAge(-1))
 	}
 	return nil
 }
