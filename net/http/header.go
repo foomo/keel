@@ -25,6 +25,7 @@ const (
 	HeaderXHTTPMethodOverride = "X-HTTP-Method-Override"
 	HeaderXRealIP             = "X-Real-IP"
 	HeaderXResponseTime       = "X-Response-Time"
+	HeaderXPoweredBy          = "X-Powered-By"
 	HeaderXRequestID          = "X-Request-ID"
 	HeaderXRequestedWith      = "X-Requested-With"
 	HeaderXSessionID          = "X-Session-ID"
