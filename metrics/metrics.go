@@ -5,6 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// Deprecated: NewRequestSizeSummaryVec use telemetry.Meter(...)
 func NewRequestSizeSummaryVec(namespace, subsystem string, labelNames []string) *prometheus.SummaryVec {
 	return promauto.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -17,6 +18,7 @@ func NewRequestSizeSummaryVec(namespace, subsystem string, labelNames []string) 
 	)
 }
 
+// Deprecated: NewResponseSizeSummaryVec use telemetry.Meter(...)
 func NewResponseSizeSummaryVec(namespace, subsystem string, labelNames []string) *prometheus.SummaryVec {
 	return promauto.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -29,6 +31,7 @@ func NewResponseSizeSummaryVec(namespace, subsystem string, labelNames []string)
 	)
 }
 
+// Deprecated: NewRequestsCounterVec use telemetry.Meter(...)
 func NewRequestsCounterVec(namespace, subsystem string, labelNames []string) *prometheus.CounterVec {
 	return promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -41,6 +44,7 @@ func NewRequestsCounterVec(namespace, subsystem string, labelNames []string) *pr
 	)
 }
 
+// Deprecated: NewRequestDurationHistogram use telemetry.Meter(...)
 func NewRequestDurationHistogram(namespace, subsystem string) prometheus.Histogram {
 	return promauto.NewHistogram(prometheus.HistogramOpts{
 		Namespace: namespace,
