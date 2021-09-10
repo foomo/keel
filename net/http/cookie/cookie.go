@@ -114,8 +114,8 @@ func (c Cookie) Delete(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	} else if err != nil {
 		return err
-	} else {
-		c.Set(w, r, "", WithMaxAge(-1))
+	} else if _, err := c.Set(w, r, "", WithMaxAge(-1)); err != nil {
+		return err
 	}
 	return nil
 }
