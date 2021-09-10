@@ -110,7 +110,7 @@ func SessionID(opts ...SessionIDOption) Middleware {
 
 // SessionIDWithOptions middleware
 func SessionIDWithOptions(opts SessionIDOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var sessionID string
 			if value := r.Header.Get(opts.Header); value != "" {

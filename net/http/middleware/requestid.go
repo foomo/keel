@@ -67,7 +67,7 @@ func RequestID(opts ...RequestIDOption) Middleware {
 
 // RequestIDWithOptions middleware
 func RequestIDWithOptions(opts RequestIDOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			requestID := r.Header.Get(opts.ResponseHeader)
 			if requestID == "" {

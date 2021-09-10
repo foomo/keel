@@ -34,6 +34,7 @@ func Logger(opts ...LoggerOption) Middleware {
 	return LoggerWithOptions(options)
 }
 
+// LoggerWithMessage middleware option
 func LoggerWithMessage(v string) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.Message = v
@@ -42,7 +43,7 @@ func LoggerWithMessage(v string) LoggerOption {
 
 // LoggerWithOptions middleware
 func LoggerWithOptions(opts LoggerOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 

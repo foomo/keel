@@ -100,7 +100,7 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 	exposeHeaders := strings.Join(opts.ExposeHeaders, ",")
 	maxAge := strconv.Itoa(opts.MaxAge)
 
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get(keelhttp.HeaderOrigin)
 			allowOrigin := ""

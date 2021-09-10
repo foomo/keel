@@ -32,7 +32,7 @@ func NewServiceHTTP(l *zap.Logger, name, addr string, handler http.Handler, midd
 		server: &http.Server{
 			Addr:     addr,
 			ErrorLog: errorLog,
-			Handler:  middleware.Compose(l, handler, middlewares...),
+			Handler:  middleware.Compose(l, name, handler, middlewares...),
 		},
 		l: l,
 	}

@@ -45,7 +45,7 @@ func TokenAuth(token string, opts ...TokenAuthOption) Middleware {
 
 // TokenAuthWithOptions middleware
 func TokenAuthWithOptions(token string, opts TokenAuthOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if value, err := opts.TokenProvider(r); err != nil {
 				httputils.UnauthorizedServerError(l, w, r, errors.Wrap(err, "failed to retrieve token"))

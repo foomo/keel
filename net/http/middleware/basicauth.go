@@ -47,7 +47,7 @@ func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) Mi
 
 // BasicAuthWithOptions middleware
 func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// basic auth from request header
 			u, p, ok := r.BasicAuth()

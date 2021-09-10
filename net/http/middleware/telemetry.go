@@ -9,6 +9,7 @@ import (
 
 type (
 	TelemetryOptions struct {
+		Name     string
 		OtelOpts []otelhttp.Option
 	}
 	TelemetryOption func(*TelemetryOptions)
@@ -22,19 +23,35 @@ func GetDefaultTelemetryOptions() TelemetryOptions {
 }
 
 // Telemetry middleware
-func Telemetry(name string, opts ...TelemetryOption) Middleware {
+func Telemetry(opts ...TelemetryOption) Middleware {
 	options := GetDefaultTelemetryOptions()
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
-	return TelemetryWithOptions(name, options)
+	return TelemetryWithOptions(options)
+}
+
+func TelemetryWithName(v string) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.Name = v
+	}
+}
+
+// TelemetryWithOtelOpts middleware options
+func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.OtelOpts = v
+	}
 }
 
 // TelemetryWithOptions middleware
-func TelemetryWithOptions(name string, opts TelemetryOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+func TelemetryWithOptions(opts TelemetryOptions) Middleware {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
+		if opts.Name != "" {
+			name = opts.Name
+		}
 		return otelhttp.NewHandler(next, name, opts.OtelOpts...)
 	}
 }

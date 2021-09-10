@@ -10,7 +10,7 @@ import (
 
 type (
 	PoweredByHeaderOptions struct {
-		Header string
+		Header  string
 		Message string
 	}
 	PoweredByHeaderOption func(*PoweredByHeaderOptions)
@@ -19,7 +19,7 @@ type (
 // GetDefaultPoweredByHeaderOptions returns the default options
 func GetDefaultPoweredByHeaderOptions() PoweredByHeaderOptions {
 	return PoweredByHeaderOptions{
-		Header: httputils.HeaderXPoweredBy,
+		Header:  httputils.HeaderXPoweredBy,
 		Message: "a lot of LOVE",
 	}
 }

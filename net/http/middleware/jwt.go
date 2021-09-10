@@ -122,7 +122,7 @@ func JWT(jwt *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
 
 // JWTWithOptions middleware
 func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims := opts.ClaimsProvider()
 			if value := r.Context().Value(contextKey); value != nil {

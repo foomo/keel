@@ -45,7 +45,7 @@ func Recover(opts ...RecoverOption) Middleware {
 
 // RecoverWithOptions middleware
 func RecoverWithOptions(opts RecoverOptions) Middleware {
-	return func(l *zap.Logger, next http.Handler) http.Handler {
+	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if e := recover(); e != nil {

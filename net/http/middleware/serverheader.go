@@ -11,6 +11,7 @@ import (
 type (
 	ServerHeaderOptions struct {
 		Header string
+		Name   string
 	}
 	ServerHeaderOption func(*ServerHeaderOptions)
 )
@@ -33,6 +34,13 @@ func ServerHeader(opts ...ServerHeaderOption) Middleware {
 	return ServerHeaderWithOptions(options)
 }
 
+// ServerHeaderWithName middleware option
+func ServerHeaderWithName(v string) ServerHeaderOption {
+	return func(o *ServerHeaderOptions) {
+		o.Name = v
+	}
+}
+
 // ServerHeaderWithHeader middleware option
 func ServerHeaderWithHeader(v string) ServerHeaderOption {
 	return func(o *ServerHeaderOptions) {
@@ -43,6 +51,9 @@ func ServerHeaderWithHeader(v string) ServerHeaderOption {
 // ServerHeaderWithOptions middleware
 func ServerHeaderWithOptions(opts ServerHeaderOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
+		if opts.Name != "" {
+			name = opts.Name
+		}
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(opts.Header, name)
 			next.ServeHTTP(w, r)
