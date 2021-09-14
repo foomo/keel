@@ -92,8 +92,8 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	}
 
 	s.svr.AddServices(
-		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "log"),
-		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
+		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "/log"),
+		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
 	)
 
 	go s.svr.Run()

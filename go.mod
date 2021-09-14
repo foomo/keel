@@ -3,9 +3,9 @@ module github.com/foomo/keel
 go 1.16
 
 require (
-	github.com/davecgh/go-spew v1.1.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.1.2
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/nats-io/nats.go v1.12.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
@@ -25,5 +25,4 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
