@@ -33,6 +33,7 @@ const (
 	HeaderXRuntime            = "X-Runtime"
 	HeaderServer              = "Server"
 	HeaderOrigin              = "Origin"
+	HeaderUserAgent           = "User-Agent"
 
 	// Access control
 	HeaderAccessControlRequestMethod    = "Access-Control-Request-Method"
