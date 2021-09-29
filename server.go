@@ -2,6 +2,7 @@ package keel
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -92,11 +93,17 @@ func (s *Server) AddClosers(closers ...interface{}) {
 func (s *Server) AddCloser(closer interface{}) {
 	switch closer.(type) {
 	case Closer,
+		ErrorCloser,
 		CloserWithContext,
+		ErrorCloserWithContext,
 		Shutdowner,
+		ErrorShutdowner,
 		ShutdownerWithContext,
+		ErrorShutdownerWithContext,
 		Unsubscriber,
-		UnsubscriberWithContext:
+		ErrorUnsubscriber,
+		UnsubscriberWithContext,
+		ErrorUnsubscriberWithContext:
 		s.closers = append(s.closers, closer)
 	default:
 		s.l.Warn("unable to add closer")
@@ -144,30 +151,49 @@ func (s *Server) Run() {
 		for _, closer := range closers {
 			switch c := closer.(type) {
 			case Closer:
+				c.Close()
+			case ErrorCloser:
 				if err := c.Close(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Closer")
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
+					continue
 				}
 			case CloserWithContext:
+				c.Close(timeoutCtx)
+			case ErrorCloserWithContext:
 				if err := c.Close(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop CloserWithContext")
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")
+					continue
 				}
 			case Shutdowner:
+				c.Shutdown()
+			case ErrorShutdowner:
 				if err := c.Shutdown(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Shutdowner")
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorShutdowner")
+					continue
 				}
 			case ShutdownerWithContext:
+				c.Shutdown(timeoutCtx)
+			case ErrorShutdownerWithContext:
 				if err := c.Shutdown(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ShutdownerWithContext")
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
+					continue
 				}
 			case Unsubscriber:
+				c.Unsubscribe()
+			case ErrorUnsubscriber:
 				if err := c.Unsubscribe(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop Unsubscriber")
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorUnsubscriber")
+					continue
 				}
 			case UnsubscriberWithContext:
+				c.Unsubscribe(timeoutCtx)
+			case ErrorUnsubscriberWithContext:
 				if err := c.Unsubscribe(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop UnsubscriberWithContext")
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
+					continue
 				}
 			}
+			s.l.Info("stopped registered closer", log.FName(fmt.Sprintf("%T", closer)))
 		}
 		return gctx.Err()
 	})
