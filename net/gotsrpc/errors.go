@@ -1,4 +1,4 @@
-package gotsrpc
+package keelgotsrpc
 
 // Error type
 type Error string
