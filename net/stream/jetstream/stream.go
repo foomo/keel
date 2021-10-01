@@ -22,7 +22,6 @@ type (
 		natsOptions []nats.Option
 	}
 	Option           func(*Stream)
-	Initializer      func(*zap.Logger, nats.JetStreamContext) error
 	PublisherOption  func(*Publisher)
 	SubscriberOption func(*Subscriber)
 )
