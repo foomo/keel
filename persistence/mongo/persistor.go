@@ -27,35 +27,35 @@ type (
 		ClientOptions   *options.ClientOptions
 		DatabaseOptions *options.DatabaseOptions
 	}
-	Option func(o Options)
+	Option func(o *Options)
 )
 
 func WithOtelEnabled(v bool) Option {
-	return func(o Options) {
+	return func(o *Options) {
 		o.OtelEnabled = v
 	}
 }
 
 func WithOtelServiceName(v string) Option {
-	return func(o Options) {
+	return func(o *Options) {
 		o.OtelServiceName = v
 	}
 }
 
 func WithOtelOptions(v ...otelmongo.Option) Option {
-	return func(o Options) {
+	return func(o *Options) {
 		o.OtelOptions = append(o.OtelOptions, v...)
 	}
 }
 
 func WithClientOptions(v *options.ClientOptions) Option {
-	return func(o Options) {
+	return func(o *Options) {
 		o.ClientOptions = options.MergeClientOptions(o.ClientOptions, v)
 	}
 }
 
 func WithDatabaseOptions(v *options.DatabaseOptions) Option {
-	return func(o Options) {
+	return func(o *Options) {
 		o.DatabaseOptions = options.MergeDatabaseOptions(o.DatabaseOptions, v)
 	}
 }
@@ -85,11 +85,12 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 		return nil, errors.Errorf("missing database name in uri: %s", uri)
 	}
 
+	// apply uri
 	o.ClientOptions.ApplyURI(uri)
 
 	// apply options
 	for _, opt := range opts {
-		opt(o)
+		opt(&o)
 	}
 
 	// setup otel
@@ -126,7 +127,7 @@ func (p Persistor) Collection(name string, opts ...CollectionOption) (*Collectio
 func (p Persistor) HasCollection(ctx context.Context, name string) (bool, error) {
 	names, err := p.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
-		return false, errors.Wrapf(err, "getting collections for db %s", p.db)
+		return false, err
 	}
 	for i := range names {
 		if names[i] == name {

@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/example/persistence/mongo/repository"
@@ -15,11 +16,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// docker run -it --rm -p 27017:27017 mongo
 func main() {
 	svr := keel.NewServer()
 
 	// get the logger
 	l := svr.Logger()
+
+	cDateTime := &store.DateTimeCodec{}
+	rb := bson.NewRegistryBuilder()
+	rb.RegisterCodec(store.TDateTime, cDateTime)
 
 	// create persistor
 	persistor, err := keelmongo.New(
@@ -27,6 +33,9 @@ func main() {
 		"mongodb://localhost:27017/dummy",
 		// enable telemetry (enabled by default)
 		keelmongo.WithOtelEnabled(true),
+		keelmongo.WithClientOptions(
+			options.Client().SetRegistry(rb.Build()),
+		),
 	)
 	// use log must helper to exit on error
 	log.Must(l, err, "failed to create persistor")
@@ -48,77 +57,36 @@ func main() {
 	log.Must(l, err, "failed to create collection")
 	repo := repository.NewDummyRepository(col)
 
+	// --- version example ---
 
-
-	spew.Dump("=== 0 =======================")
-
+	// insert entity
 	newEntity := &store.Dummy{
 		Entity: store.NewEntity(uuid.New().String()),
 	}
 	log.Must(l, repo.Upsert(context.Background(), newEntity), "failed to insert")
 
+	// fail insert for duplicate entity
 	duplicateEntity := &store.Dummy{
 		Entity: store.NewEntity(newEntity.ID),
 	}
 	if err := repo.Upsert(context.Background(), duplicateEntity); err != nil {
 		l.Info("OK: expected error", log.FValue(err.Error()))
-	} else {
-		l.Error("missing duplicate error")
 	}
 
+	// get entity x2
 	newEntityA, err := repo.Get(context.Background(), newEntity.ID)
 	log.Must(l, err, "failed to load new entity")
-	spew.Dump(newEntityA.ID, newEntityA.Version)
 
 	newEntityB, err := repo.Get(context.Background(), newEntity.ID)
 	log.Must(l, err, "failed to load new entity")
-	spew.Dump(newEntityB.ID, newEntityB.Version)
 
-	spew.Dump("=== 1 =======================")
-
+	// update entity A
 	if err := repo.Upsert(context.Background(), newEntityA); err != nil {
 		l.Error("ERROR: failed to load new entity")
-	} else {
-		l.Info("updated newEntityA")
-		spew.Dump(newEntityA.ID, newEntityA.Version)
-		spew.Dump(newEntityB.ID, newEntityB.Version)
 	}
+	// update entity B
 	if err := repo.Upsert(context.Background(), newEntityB); err != nil {
 		l.Info("OK: expected error", log.FValue(err.Error()))
-	} else {
-		l.Error("ERROR: missing dirty write error")
-		spew.Dump(newEntityA.ID, newEntityA.Version)
-		spew.Dump(newEntityB.ID, newEntityB.Version)
-	}
-
-	spew.Dump("=== 2 =======================")
-
-	if err := repo.Upsert(context.Background(), newEntityA); err != nil {
-		l.Error("ERROR: failed to load new entity")
-	} else {
-		l.Info("updated newEntityA")
-	}
-	if err := repo.Upsert(context.Background(), newEntityB); err != nil {
-		l.Info("OK: expected error", log.FValue(err.Error()))
-	} else {
-		l.Error("ERROR: missing dirty write error")
-		spew.Dump(newEntityA.ID, newEntityA.Version)
-		spew.Dump(newEntityB.ID, newEntityB.Version)
-	}
-
-	spew.Dump("=== 3 =======================")
-
-	if err := repo.Upsert(context.Background(), newEntityA); err != nil {
-		l.Error("ERROR: failed to load new entity")
-	} else {
-		l.Info("updated newEntityA")
-	}
-	if err := repo.Upsert(context.Background(), newEntityB); err != nil {
-		l.Info("OK: expected error", log.FValue(err.Error()))
-	} else {
-		l.Error("ERROR: missing dirty write error")
-		spew.Dump(newEntityA.ID, newEntityA.Version)
-		spew.Dump(newEntityB.ID, newEntityB.Version)
 	}
 
 	svr.Run()

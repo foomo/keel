@@ -280,7 +280,12 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, res
 	return err
 }
 
-func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeline, handler IterateHandlerFn, opts ...*options.AggregateOptions) error {
+func (c *Collection) AggregateIterate(
+	ctx context.Context,
+	pipeline mongo.Pipeline,
+	handler IterateHandlerFn,
+	opts ...*options.AggregateOptions,
+) error {
 	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err

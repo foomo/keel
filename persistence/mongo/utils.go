@@ -7,7 +7,7 @@ import (
 )
 
 // CloseCursor with defer
-func CloseCursor(ctx context.Context, cursor *mongo.Cursor, err *error) { //nolint:gocritic // ptrToRefParam.
+func CloseCursor(ctx context.Context, cursor *mongo.Cursor, err *error) {
 	cErr := cursor.Close(ctx)
 	if *err == nil {
 		*err = cErr

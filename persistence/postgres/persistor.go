@@ -5,11 +5,10 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-
-	"github.com/pkg/errors"
 )
 
 // Persistor exported to used also for embedding into other types in foreign packages.
