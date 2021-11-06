@@ -2,7 +2,6 @@ package jetstream
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/nats-io/nats.go"
 
@@ -10,10 +9,13 @@ import (
 	"github.com/foomo/keel/net/stream"
 )
 
+type unmarshalerFn func(data []byte, v interface{}) error
+
 type Subscriber struct {
 	stream    *Stream
 	subject   string
 	namespace string
+	unmarshal unmarshalerFn
 	opts      []nats.SubOpt
 }
 
@@ -50,8 +52,8 @@ func (s *Subscriber) QueueSubscribe(queue string, handler stream.MsgHandler, opt
 	}, s.SubOpts(opts...)...)
 }
 
-func (s *Subscriber) Unmarshall(msg *nats.Msg, v interface{}) error {
-	return json.Unmarshal(msg.Data, v)
+func (s *Subscriber) Unmarshal(msg *nats.Msg, v interface{}) error {
+	return s.unmarshal(msg.Data, v)
 }
 
 func (s *Subscriber) errorHandler(err error) {

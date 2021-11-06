@@ -1,6 +1,7 @@
 package jetstream
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -52,6 +53,12 @@ func PublisherWithPubOpts(v ...nats.PubOpt) PublisherOption {
 	}
 }
 
+func PublisherWithMarshaler(marshal marshalerFn) PublisherOption {
+	return func(o *Publisher) {
+		o.marshal = marshal
+	}
+}
+
 func PublisherWithHeader(v nats.Header) PublisherOption {
 	return func(o *Publisher) {
 		o.header = v
@@ -67,6 +74,12 @@ func SubscriberWithNamespace(v string) SubscriberOption {
 func SubscriberWithSubOpts(v ...nats.SubOpt) SubscriberOption {
 	return func(o *Subscriber) {
 		o.opts = v
+	}
+}
+
+func SubscriberWithUnmarshaler(unmarshal unmarshalerFn) SubscriberOption {
+	return func(o *Subscriber) {
+		o.unmarshal = unmarshal
 	}
 }
 
@@ -154,6 +167,7 @@ func (s *Stream) Publisher(subject string, opts ...PublisherOption) *Publisher {
 		stream:    s,
 		subject:   subject,
 		namespace: s.namespace,
+		marshal:   json.Marshal,
 	}
 	for _, opt := range opts {
 		if opt != nil {
@@ -168,6 +182,7 @@ func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscribe
 		stream:    s,
 		subject:   subject,
 		namespace: s.namespace,
+		unmarshal: json.Unmarshal,
 	}
 	for _, opt := range opts {
 		if opt != nil {
