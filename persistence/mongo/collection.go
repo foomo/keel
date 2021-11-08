@@ -194,29 +194,6 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	return nil
 }
 
-//
-// // UpsertDirty inserts/updates without checking version
-// func (c *Collection) UpsertDirty(ctx context.Context, id string, entity Entity) error {
-// 	if entity == nil {
-// 		return errors.New("entity must not be nil")
-// 	}
-// 	now := time.Now()
-//
-// 	entity.IncreaseVersion()
-// 	entity.SetUpdatedAt(now)
-//
-// 	// update with version check
-// 	opts := append([]*options.UpdateOptions{options.Update().SetUpsert(true)})
-// 	_, err := c.collection.UpdateOne(
-// 		ctx,
-// 		bson.D{{Key: "id", Value: id}},
-// 		bson.D{{Key: "$set", Value: entity}},
-// 		opts...,
-// 	)
-// 	return err
-//
-// }
-
 // Delete ...
 func (c *Collection) Delete(ctx context.Context, id string) error {
 	if id == "" {

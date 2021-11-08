@@ -115,18 +115,20 @@ func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	// create / update stream if config exists
 	if stream.config != nil {
 		stream.config.Name = stream.Name()
-		if _, err = js.StreamInfo(stream.Name()); err != nil {
+		if _, err = js.StreamInfo(stream.Name()); errors.Is(err, nats.ErrStreamNotFound) {
 			if info, err := js.AddStream(stream.config); err != nil {
 				return nil, errors.Wrap(err, "failed to add stream")
+			} else if err != nil {
+				return nil, errors.Wrap(err, "failed to retrieve stream info")
 			} else {
 				stream.info = info
 			}
+		} else if err != nil {
+			return nil, errors.Wrap(err, "failed get stream info")
+		} else if info, err := js.UpdateStream(stream.config); err != nil {
+			return nil, errors.Wrap(err, "failed to update stream")
 		} else {
-			if info, err := js.UpdateStream(stream.config); err != nil {
-				return nil, errors.Wrap(err, "failed to update stream")
-			} else {
-				stream.info = info
-			}
+			stream.info = info
 		}
 	}
 
