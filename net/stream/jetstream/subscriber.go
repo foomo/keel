@@ -2,7 +2,6 @@ package jetstream
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/nats-io/nats.go"
 
@@ -10,12 +9,16 @@ import (
 	"github.com/foomo/keel/net/stream"
 )
 
-type Subscriber struct {
-	stream    *Stream
-	subject   string
-	namespace string
-	opts      []nats.SubOpt
-}
+type (
+	Subscriber struct {
+		stream    *Stream
+		subject   string
+		namespace string
+		unmarshal UnmarshalFn
+		opts      []nats.SubOpt
+	}
+	UnmarshalFn func(data []byte, v interface{}) error
+)
 
 func (s *Subscriber) JS() nats.JetStreamContext {
 	return s.stream.js
@@ -50,8 +53,8 @@ func (s *Subscriber) QueueSubscribe(queue string, handler stream.MsgHandler, opt
 	}, s.SubOpts(opts...)...)
 }
 
-func (s *Subscriber) Unmarshall(msg *nats.Msg, v interface{}) error {
-	return json.Unmarshal(msg.Data, v)
+func (s *Subscriber) Unmarshal(msg *nats.Msg, v interface{}) error {
+	return s.unmarshal(msg.Data, v)
 }
 
 func (s *Subscriber) errorHandler(err error) {

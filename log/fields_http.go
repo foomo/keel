@@ -32,7 +32,7 @@ const (
 	HTTPRequestContentLengthKey = "http_read_bytes"
 
 	// HTTPWroteBytesKey represents the size of the response payload body in bytes.
-	HTTPWroteBytesKey = "http_wrote_bytes"
+	HTTPWroteBytesKey = "http_wrote_bytes" // #nosec
 
 	// HTTPSchemeKey represents the URI scheme identifying the used protocol.
 	HTTPSchemeKey = "http_scheme"
