@@ -77,7 +77,7 @@ func main() {
 	// subscribe to the subject
 	subscription, err := sub.Subscribe(func(ctx context.Context, l *zap.Logger, msg *nats.Msg) error {
 		var data Message
-		if err := sub.Unmarshall(msg, &data); err != nil {
+		if err := sub.Unmarshal(msg, &data); err != nil {
 			return errors.Wrap(err, "failed to unmarshall message data")
 		}
 		l.Info("received message", log.FValue(data.Name), log.FMessagingDestination(msg.Subject))
