@@ -1,18 +1,20 @@
 package jetstream
 
 import (
-	"encoding/json"
-
 	"github.com/nats-io/nats.go"
 )
 
-type Publisher struct {
-	stream    *Stream
-	subject   string
-	namespace string
-	pubOpts   []nats.PubOpt
-	header    nats.Header
-}
+type (
+	Publisher struct {
+		stream    *Stream
+		subject   string
+		namespace string
+		pubOpts   []nats.PubOpt
+		marshal   MarshalFn
+		header    nats.Header
+	}
+	MarshalFn func(v interface{}) ([]byte, error)
+)
 
 func (s *Publisher) JS() nats.JetStreamContext {
 	return s.stream.js
@@ -26,7 +28,7 @@ func (s *Publisher) Subject() string {
 }
 
 func (s *Publisher) NewMsg(v interface{}) (*nats.Msg, error) {
-	data, err := s.Marshall(v)
+	data, err := s.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +60,6 @@ func (s *Publisher) PublishMsgAsync(data interface{}, opts ...nats.PubOpt) (nats
 	}
 }
 
-func (s *Publisher) Marshall(v interface{}) ([]byte, error) {
-	return json.Marshal(v)
+func (s *Publisher) Marshal(v interface{}) ([]byte, error) {
+	return s.marshal(v)
 }
