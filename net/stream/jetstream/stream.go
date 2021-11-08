@@ -53,7 +53,7 @@ func PublisherWithPubOpts(v ...nats.PubOpt) PublisherOption {
 	}
 }
 
-func PublisherWithMarshaler(marshal marshalerFn) PublisherOption {
+func PublisherWithMarshal(marshal MarshalFn) PublisherOption {
 	return func(o *Publisher) {
 		o.marshal = marshal
 	}
@@ -77,7 +77,7 @@ func SubscriberWithSubOpts(v ...nats.SubOpt) SubscriberOption {
 	}
 }
 
-func SubscriberWithUnmarshaler(unmarshal unmarshalerFn) SubscriberOption {
+func SubscriberWithUnmarshal(unmarshal UnmarshalFn) SubscriberOption {
 	return func(o *Subscriber) {
 		o.unmarshal = unmarshal
 	}

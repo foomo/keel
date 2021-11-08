@@ -9,15 +9,16 @@ import (
 	"github.com/foomo/keel/net/stream"
 )
 
-type unmarshalerFn func(data []byte, v interface{}) error
-
-type Subscriber struct {
-	stream    *Stream
-	subject   string
-	namespace string
-	unmarshal unmarshalerFn
-	opts      []nats.SubOpt
-}
+type (
+	Subscriber struct {
+		stream    *Stream
+		subject   string
+		namespace string
+		unmarshal UnmarshalFn
+		opts      []nats.SubOpt
+	}
+	UnmarshalFn func(data []byte, v interface{}) error
+)
 
 func (s *Subscriber) JS() nats.JetStreamContext {
 	return s.stream.js

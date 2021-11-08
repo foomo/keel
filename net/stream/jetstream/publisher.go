@@ -4,16 +4,17 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type marshalerFn func(v interface{}) ([]byte, error)
-
-type Publisher struct {
-	stream    *Stream
-	subject   string
-	namespace string
-	pubOpts   []nats.PubOpt
-	marshal   marshalerFn
-	header    nats.Header
-}
+type (
+	Publisher struct {
+		stream    *Stream
+		subject   string
+		namespace string
+		pubOpts   []nats.PubOpt
+		marshal   MarshalFn
+		header    nats.Header
+	}
+	MarshalFn func(v interface{}) ([]byte, error)
+)
 
 func (s *Publisher) JS() nats.JetStreamContext {
 	return s.stream.js
