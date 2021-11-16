@@ -29,18 +29,11 @@ type Server struct {
 }
 
 func NewServer(opts ...Option) *Server {
-	var (
-		defaultShutdownTimeout = 5 * time.Second
-		defaultConfig          = config.Config()
-		defaultLogger          = log.Logger()
-		defaultCtx             = context.Background()
-	)
-
 	inst := &Server{
-		shutdownTimeout: defaultShutdownTimeout,
-		ctx:             defaultCtx,
-		c:               defaultConfig,
-		l:               defaultLogger,
+		shutdownTimeout: 5 * time.Second,
+		ctx:             context.Background(),
+		c:               config.Config(),
+		l:               log.Logger(),
 	}
 
 	for _, opt := range opts {
