@@ -15,6 +15,7 @@ import (
 // ServiceHTTP struct
 type ServiceHTTP struct {
 	server *http.Server
+	name   string
 	l      *zap.Logger
 }
 
@@ -25,18 +26,28 @@ func NewServiceHTTP(l *zap.Logger, name, addr string, handler http.Handler, midd
 	// enrich the log
 	l = log.WithHTTPServerName(l, name)
 
-	errorLog, err := zap.NewStdLogAt(l, zap.WarnLevel)
-	log.Must(l, err, "failed to create std logger")
-
 	return &ServiceHTTP{
 		server: &http.Server{
 			Addr:     addr,
-			ErrorLog: errorLog,
+			ErrorLog: zap.NewStdLog(l),
 			Handler:  middleware.Compose(l, name, handler, middlewares...),
 		},
-		l: l,
+		name: name,
+		l:    l,
 	}
 }
+
+func (s *ServiceHTTP) Name() string {
+	return s.name
+}
+//
+//func (s *ServiceHTTP) Logger() *zap.Logger {
+//	return s.l
+//}
+//
+//func (s *ServiceHTTP) Server() *http.Server {
+//	return s.server
+//}
 
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
