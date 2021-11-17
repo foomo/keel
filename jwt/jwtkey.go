@@ -12,20 +12,20 @@ import (
 )
 
 type Key struct {
-	// id (required) represents the key identifier e.g. the md5 representation of the public key
-	id string
-	// public (required) rsa key
-	public *rsa.PublicKey
-	// private (optional) rsa key
-	private *rsa.PrivateKey
+	// ID (required) represents the key identifier e.g. the md5 representation of the public key
+	ID string
+	// Public (required) rsa key
+	Public *rsa.PublicKey
+	// Private (optional) rsa key
+	Private *rsa.PrivateKey
 }
 
 // NewKey return a new Key
 func NewKey(id string, public *rsa.PublicKey, private *rsa.PrivateKey) Key {
 	return Key{
-		id:      id,
-		public:  public,
-		private: private,
+		ID:      id,
+		Public:  public,
+		Private: private,
 	}
 }
 

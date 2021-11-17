@@ -15,11 +15,11 @@ func DefaultKeyFunc(key Key, deprecatedKeys map[string]Key) jwt.Keyfunc {
 		} else if kidString, ok := kid.(string); !ok {
 			return nil, errors.New("invalid key identifier type")
 		} else if oldKey, ok := deprecatedKeys[kidString]; ok {
-			return oldKey.public, nil
-		} else if kidString == key.id {
-			return key.public, nil
+			return oldKey.Public, nil
+		} else if kidString == key.ID {
+			return key.Public, nil
 		} else {
-			return nil, errors.New("unknown key identifier: " + kidString + " (" + key.id + ")")
+			return nil, errors.New("unknown key identifier: " + kidString + " (" + key.ID + ")")
 		}
 	}
 }

@@ -28,7 +28,7 @@ func WithDeprecatedKeys(v ...Key) Option {
 	return func(o *JWT) {
 		deprecatedKeys := make(map[string]Key, len(v))
 		for _, key := range deprecatedKeys {
-			deprecatedKeys[key.id] = key
+			deprecatedKeys[key.ID] = key
 		}
 		o.DeprecatedKeys = deprecatedKeys
 	}
@@ -53,8 +53,8 @@ func New(key Key, opts ...Option) *JWT {
 func (j *JWT) GetSignedToken(claims jwt.Claims) (string, error) {
 	// create token
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = j.Key.id
-	return token.SignedString(j.Key.private)
+	token.Header["kid"] = j.Key.ID
+	return token.SignedString(j.Key.Private)
 }
 
 func (j *JWT) ParseWithClaims(token string, claims jwt.Claims) (*jwt.Token, error) {
