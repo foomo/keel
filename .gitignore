@@ -1,8 +1,6 @@
 # Created by https://www.toptal.com/developers/gitignore/api/jetbrains,go,visualstudiocode,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=jetbrains,go,visualstudiocode,macos
 
-example/jetbench/jetbench
-
 ### macOS ###
 # General
 .DS_Store
