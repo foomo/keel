@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
@@ -47,13 +48,13 @@ func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Ke
 	}
 
 	// load public key
-	if bytes, err := ioutil.ReadFile(publicKeyPemFilename); err != nil {
+	if v, err := ioutil.ReadFile(publicKeyPemFilename); err != nil {
 		return Key{}, errors.Wrap(err, "failed to read public key: "+publicKeyPemFilename)
-	} else if key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(strings.ReplaceAll(string(bytes), `\n`, "\n"))); err != nil {
+	} else if key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(strings.ReplaceAll(string(v), `\n`, "\n"))); err != nil {
 		return Key{}, errors.Wrap(err, "failed to parse public key: "+publicKeyPemFilename)
 	} else {
 		hasher := sha256.New()
-		hasher.Write(bytes)
+		hasher.Write(bytes.TrimSpace(v))
 		id = hex.EncodeToString(hasher.Sum(nil))
 		public = key
 	}
