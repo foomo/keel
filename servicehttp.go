@@ -40,14 +40,6 @@ func NewServiceHTTP(l *zap.Logger, name, addr string, handler http.Handler, midd
 func (s *ServiceHTTP) Name() string {
 	return s.name
 }
-//
-//func (s *ServiceHTTP) Logger() *zap.Logger {
-//	return s.l
-//}
-//
-//func (s *ServiceHTTP) Server() *http.Server {
-//	return s.server
-//}
 
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
