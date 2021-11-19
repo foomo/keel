@@ -49,10 +49,4 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_JSCPD: false
           VALIDATE_GO: false
-      - run: go test -v -cover -coverprofile=coverage.txt -covermode=atomic ./...
-        env:
-          CGO_ENABLED: 0
-      - uses: codecov/codecov-action@v2
-        with:
-          files: coverage.txt
-          fail_ci_if_error: true # optional (default = false)
+      - run: go test -v ./...
