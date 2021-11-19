@@ -22,7 +22,6 @@ jobs:
       - id: set-matrix
         run: |
           matrix=$(find . -type f -name "go.mod" -printf "{\"folder\":\"%h\"}," | sed -e 's/,$//')
-          echo "Matrix: $matrix"
           echo "::set-output name=matrix::{\"include\":[$matrix]}"
   go_lint:
     name: go lint
@@ -44,8 +43,9 @@ jobs:
           working-directory: ${{ matrix.folder }}
       - uses: github/super-linter@v3
         env:
-          DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: main
+          IGNORE_GITIGNORED_FILES: true
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_JSCPD: false
           VALIDATE_GO: false

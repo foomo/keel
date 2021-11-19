@@ -36,9 +36,7 @@ lint.super:
 		-e 'RUN_LOCAL=true' \
 		-e 'DEFAULT_BRANCH=main' \
 		-e 'IGNORE_GITIGNORED_FILES=true' \
-		-e 'VALIDATE_SHELL_SHFMT=false' \
 		-e 'VALIDATE_JSCPD=false' \
-		-e 'VALIDATE_BASH=false' \
 		-e 'VALIDATE_GO=false' \
 		-v $(PWD):/tmp/lint \
 		github/super-linter
