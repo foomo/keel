@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -12,8 +13,6 @@ import (
 	"github.com/foomo/keel/example/persistence/mongo/store"
 	"github.com/foomo/keel/log"
 	keelmongo "github.com/foomo/keel/persistence/mongo"
-
-	"github.com/google/uuid"
 )
 
 // docker run -it --rm -p 27017:27017 mongo

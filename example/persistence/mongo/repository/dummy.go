@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"sync"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -11,8 +10,7 @@ import (
 )
 
 type DummyRepository struct {
-	collection  *keelmongo.Collection
-	upsertMutex sync.Mutex
+	collection *keelmongo.Collection
 }
 
 // NewDummyRepository constructor

@@ -16,24 +16,30 @@ check: test lint
 test:
 	gotestsum --format short-verbose ./...
 
+lint%:files=$(shell find . -type f -name go.mod)
+lint%:dirs=$(foreach file,$(files),$(dir $(file)) )
+
 .PHONY: lint
 ## Run linter
 lint:
-	golangci-lint run
+	@for dir in $(dirs); do cd $$dir && golangci-lint run; done
 
 .PHONY: lint.fix
 ## Fix lint violations
 lint.fix:
-	golangci-lint run --fix
+	@for dir in $(dirs); do cd $$dir && golangci-lint run --fix; done
 
 .PHONY: lint.super
 ## Run super linter
 lint.super:
 	docker run --rm -it \
 		-e 'RUN_LOCAL=true' \
-		-e 'VALIDATE_ALL_CODEBASE=true' \
-		-e 'VALIDATE_GO=true' \
-		-e 'VALIDATE_GITHUB_ACTIONS=true' \
+		-e 'DEFAULT_BRANCH=main' \
+		-e 'IGNORE_GITIGNORED_FILES=true' \
+		-e 'VALIDATE_SHELL_SHFMT=false' \
+		-e 'VALIDATE_JSCPD=false' \
+		-e 'VALIDATE_BASH=false' \
+		-e 'VALIDATE_GO=false' \
 		-v $(PWD):/tmp/lint \
 		github/super-linter
 

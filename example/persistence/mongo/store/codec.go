@@ -34,8 +34,7 @@ func (d *DateTimeCodec) DecodeValue(_ bsoncodec.DecodeContext, vr bsonrw.ValueRe
 	}
 
 	var dateTimeVal DateTime
-	valueType := vr.Type()
-	switch valueType {
+	switch t := vr.Type(); t {
 	case bsontype.DateTime:
 		dt, err := vr.ReadDateTime()
 		if err != nil {
@@ -49,7 +48,7 @@ func (d *DateTimeCodec) DecodeValue(_ bsoncodec.DecodeContext, vr bsonrw.ValueRe
 		}
 		dateTimeVal = DateTime(decimalStr)
 	default:
-		return fmt.Errorf("cannot decode %v into a DateTime", valueType)
+		return fmt.Errorf("cannot decode %v into a DateTime", t)
 	}
 
 	val.Set(reflect.ValueOf(dateTimeVal))

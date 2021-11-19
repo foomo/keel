@@ -25,7 +25,7 @@ func main() {
 	// enable trace output (default: false)
 	// OTEL_EXPORTER_STDOUT_TRACE_ENABLED="true"
 	//
-	// pretty print ouput (default: true)
+	// pretty print output (default: true)
 	// OTEL_EXPORTER_STDOUT_PRETTY_PRINT="true"
 	//
 	// disable host metrics (default: true)

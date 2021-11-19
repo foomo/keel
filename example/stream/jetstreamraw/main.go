@@ -1,4 +1,4 @@
-package jetstream
+package main
 
 import (
 	"net/http"

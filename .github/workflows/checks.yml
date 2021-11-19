@@ -23,7 +23,7 @@ jobs:
         run: |
           matrix=$(find . -type f -name "go.mod" -printf "{\"folder\":\"%h\"}," | sed -e 's/,$//')
           echo "Matrix: $matrix"
-          echo ::set-output name=matrix::{\"include\":[$(echo $matrix)]}
+          echo "::set-output name=matrix::{\"include\":[$matrix]}"
   go_lint:
     name: go lint
     needs: go_matrix

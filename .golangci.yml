@@ -30,7 +30,6 @@ linters:
     - bodyclose
     - dogsled
     - dupl
-    - exhaustive
     - exportloopref
     - gci
     - goconst
