@@ -11,8 +11,8 @@ require (
 	github.com/nats-io/nats.go v1.12.0
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/mongo-driver v1.5.1
-	go.opentelemetry.io/otel v0.20.0
-	go.opentelemetry.io/otel/metric v0.20.0
+	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel/metric v0.25.0
 	go.uber.org/zap v1.17.0
 )
 
