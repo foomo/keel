@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
-	"github.com/foomo/keel/log"
 )
 
 type Server struct {
@@ -22,7 +21,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		ctx: context.Background(),
 		c:   config.Config(),
-		l:   log.Logger(),
+		l:   zap.L(),
 	}
 
 	for _, opt := range opts {
