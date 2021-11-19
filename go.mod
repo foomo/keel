@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/nats-io/nats.go v1.12.0
