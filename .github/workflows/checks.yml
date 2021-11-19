@@ -44,7 +44,7 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.folder }}
-      - uses: github/super-linter@v3
+      - uses: github/super-linter@v4.8.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
