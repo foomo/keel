@@ -2,6 +2,11 @@
 
 ## === Tasks ===
 
+.PHONY: act
+## Run github push action
+act.push:
+	@act
+
 .PHONY: check
 ## Run tests and linters
 check: test lint
@@ -20,6 +25,17 @@ lint:
 ## Fix lint violations
 lint.fix:
 	golangci-lint run --fix
+
+.PHONY: lint.super
+## Run super linter
+lint.super:
+	docker run --rm -it \
+		-e 'RUN_LOCAL=true' \
+		-e 'VALIDATE_ALL_CODEBASE=true' \
+		-e 'VALIDATE_GO=true' \
+		-e 'VALIDATE_GITHUB_ACTIONS=true' \
+		-v $(PWD):/tmp/lint \
+		github/super-linter
 
 ## === Utils ===
 

@@ -28,9 +28,9 @@ func main() {
 	l := svr.Logger()
 
 	// alternatively you can add them manually
-	//svr.AddServices(keel.NewDefaultServiceHTTPZap())
-	//svr.AddServices(keel.NewDefaultServiceHTTPViper())
-	//svr.AddServices(keel.NewDefaultServiceHTTPPrometheus())
+	// svr.AddServices(keel.NewDefaultServiceHTTPZap())
+	// svr.AddServices(keel.NewDefaultServiceHTTPViper())
+	// svr.AddServices(keel.NewDefaultServiceHTTPPrometheus())
 
 	// create demo service
 	svs := http.NewServeMux()

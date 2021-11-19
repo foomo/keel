@@ -14,7 +14,6 @@ var (
 )
 
 func main() {
-
 	err1 := ErrOne
 	err2 := keelerrors.NewWrappedError(err1, ErrTwo)
 

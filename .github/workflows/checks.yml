@@ -1,0 +1,52 @@
+name: checks
+
+on: [push, workflow_dispatch]
+
+env:
+  GO_VERSION: 1.17
+  GOLANGCI_LINT_VERSION: v1.43.0
+
+jobs:
+  go-matrix:
+    name: Resolve Modules
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: set-matrix
+        run: |
+          matrix=$(find . -type f -name "go.mod" -printf "{\"folder\":\"%h\"}," | sed -e 's/,$//')
+          echo "Matrix: $matrix"
+          echo ::set-output name=matrix::{\"include\":[$(echo $matrix)]}
+  go-lint:
+    name: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.go-matrix.outputs.matrix) }}
+    env:
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: golangci/golangci-lint-action@v2
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: ${{ matrix.folder }}
+      - uses: github/super-linter@v3
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_JSCPD: false
+          VALIDATE_GO: false
+      - run: go test -v -cover -coverprofile=coverage.txt -covermode=atomic ./...
+        env:
+          CGO_ENABLED: 0
+      - uses: codecov/codecov-action@v2
+        with:
+          files: coverage.txt
+          fail_ci_if_error: true # optional (default = false)

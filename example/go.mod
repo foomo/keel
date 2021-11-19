@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/davecgh/go-spew v1.1.1
-	github.com/foomo/keel v0.0.0-00010101000000-000000000000
+	github.com/foomo/keel v0.0.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.1.2
 	github.com/jackc/pgx/v4 v4.13.0
@@ -13,7 +13,7 @@ require (
 	go.mongodb.org/mongo-driver v1.5.1
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/metric v0.20.0
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 )
 
 replace github.com/foomo/keel => ../

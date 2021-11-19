@@ -33,6 +33,6 @@ func (e *EntityWithVersions) SetVersion(value uint32) {
 
 // IncreaseVersion api implementation
 func (e *EntityWithVersions) IncreaseVersion() uint32 {
-	e.Version = e.Version + 1
+	e.Version++
 	return e.GetVersion()
 }

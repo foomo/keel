@@ -7,7 +7,7 @@ import (
 	"github.com/foomo/keel/net/http/middleware"
 )
 
-func ExampleTokenAuthFromCookie() {
+func main() {
 	svr := keel.NewServer()
 
 	// get logger

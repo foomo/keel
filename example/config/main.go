@@ -14,9 +14,9 @@ import (
 
 type (
 	Nested struct {
-		Int    int    `yaml:"int"`
-		Bool   bool   `yaml:"bool"`
-		String string `yaml:"string"`
+		Int             int    `yaml:"int"`
+		Bool            bool   `yaml:"bool"`
+		String          string `yaml:"string"`
 		CamelCaseString string `yaml:"camelCaseString"`
 		SnakeCaseString string `yaml:"snake_case_string"`
 	}
