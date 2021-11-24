@@ -25,7 +25,8 @@ jobs:
       - id: set-matrix
         run: |
           matrix=$(find . -type file -name "go.mod" -print0 | xargs -0 -n1 dirname | sort --unique | jq -R -s -c 'split("\n")[:-1]')
-          echo "::set-output name=matrix::$matrix}"
+          echo "${matrix}"
+          echo "::set-output name=matrix::${matrix}"
   go_lint:
     name: go lint
     needs: go_matrix
