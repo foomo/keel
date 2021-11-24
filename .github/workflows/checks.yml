@@ -32,7 +32,8 @@ jobs:
     needs: go_matrix
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.go_matrix.outputs.matrix) }}
+      matrix:
+        folder: ${{ fromJson(needs.go_matrix.outputs.matrix) }}
     env:
       GOFLAGS: -mod=readonly
       GOPROXY: https://proxy.golang.org
