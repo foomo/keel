@@ -24,8 +24,8 @@ jobs:
       - uses: actions/checkout@v2
       - id: set-matrix
         run: |
-          matrix=$(find . -type f -name "go.mod" -printf "{\"folder\":\"%h\"}," | sed -e 's/,$//')
-          echo "::set-output name=matrix::{\"include\":[$matrix]}"
+          matrix=$(find . -type file -name "go.mod" -print0 | xargs -0 -n1 dirname | sort --unique | jq -R -s -c 'split("\n")[:-1]')
+          echo "::set-output name=matrix::$matrix}"
   go_lint:
     name: go lint
     needs: go_matrix
@@ -44,6 +44,11 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.folder }}
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
       - uses: github/super-linter@v4.8.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,4 +57,4 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_JSCPD: false
           VALIDATE_GO: false
-      - run: go test -v ./...
+#      - run: go test -v ./...
