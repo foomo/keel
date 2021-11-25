@@ -2,7 +2,7 @@
 
 ## === Tasks ===
 
-.PHONY: act
+.PHONY: act.push
 ## Run github push action
 act.push:
 	@act
