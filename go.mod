@@ -5,8 +5,8 @@ go 1.16
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
+	github.com/mitchellh/mapstructure v1.4.3
 	github.com/jackc/pgx/v4 v4.14.1
-	github.com/mitchellh/mapstructure v1.4.2
 	github.com/nats-io/nats.go v1.13.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
