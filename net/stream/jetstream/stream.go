@@ -97,12 +97,25 @@ func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	}
 	// default options
 	natsOpts := append([]nats.Option{
-		nats.ErrorHandler(
-			func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-				l.Error("nats error", log.FError(err))
-			}),
+		nats.ErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+			l.Error("Nats server error", log.FError(err))
+		}),
+		nats.ClosedHandler(func(conn *nats.Conn) {
+			if err := conn.LastError(); err != nil {
+				l.Error("Closed connection to nats server", log.FError(err))
+			} else {
+				l.Info("Closed connection to nats server")
+			}
+		}),
+		nats.ReconnectHandler(func(conn *nats.Conn) {
+			l.Info("Reconnected to nats server")
+		}),
 		nats.DisconnectErrHandler(func(conn *nats.Conn, err error) {
-			l.Error("nats disconnected error", log.FError(err))
+			if err != nil {
+				l.Error("Disconnected from nats server", log.FError(err))
+			} else {
+				l.Info("Disconnected from nats server")
+			}
 		}),
 		nats.Timeout(time.Millisecond * 500),
 	}, stream.natsOptions...)
