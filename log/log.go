@@ -113,6 +113,6 @@ func Must(l *zap.Logger, err error, msg string) {
 		if l == nil {
 			l = Logger()
 		}
-		l.Fatal(msg, FError(err), FStackSkip(1))
+		l.WithOptions(zap.AddCallerSkip(1)).Fatal(msg, FError(err))
 	}
 }

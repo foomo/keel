@@ -11,8 +11,11 @@ type ErrorHandler struct {
 }
 
 func (h *ErrorHandler) Handle(err error) {
-	if err != nil {
-		log.WithError(h.l, err).Error("otel error")
+	l := log.WithError(h.l, err)
+	if err != nil && err.Error() == "not implemented yet" {
+		l.Warn("otel error")
+	} else if err != nil {
+		l.Error("otel error")
 	}
 }
 
