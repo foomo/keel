@@ -16,16 +16,17 @@ check: test lint
 test:
 	gotestsum --format short-verbose ./...
 
-lint%:files=$(shell find . -type f -name go.mod)
-lint%:dirs=$(foreach file,$(files),$(dir $(file)) )
-
 .PHONY: lint
 ## Run linter
+lint: files=$(shell find . -type f -name go.mod)
+lint: dirs=$(foreach file,$(files),$(dir $(file)) )
 lint:
 	@for dir in $(dirs); do cd $$dir && golangci-lint run; done
 
 .PHONY: lint.fix
 ## Fix lint violations
+lint.fix: files=$(shell find . -type f -name go.mod)
+lint.fix: dirs=$(foreach file,$(files),$(dir $(file)) )
 lint.fix:
 	@for dir in $(dirs); do cd $$dir && golangci-lint run --fix; done
 
