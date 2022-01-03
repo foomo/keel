@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -62,7 +63,7 @@ func ResponseTime(opts ...ResponseTimeOption) Middleware {
 func ResponseTimeWithOptions(opts ResponseTimeOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
+			start := keeltime.Now()
 			rw := WrapResponseWriter(w)
 			rw.SetWriteResponseTimeHeader(opts.SetHeader)
 			next.ServeHTTP(rw, r)

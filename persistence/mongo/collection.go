@@ -15,6 +15,7 @@ import (
 
 	keelerrors "github.com/foomo/keel/errors"
 	keelpersistence "github.com/foomo/keel/persistence"
+	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -155,7 +156,7 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	}
 
 	if v, ok := entity.(EntityWithTimestamps); ok {
-		now := time.Now()
+		now := keeltime.Now()
 		if ct := v.GetCreatedAt(); ct.IsZero() {
 			v.SetCreatedAt(now)
 		}
@@ -169,9 +170,7 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 
 		if currentVersion == 0 {
 			// insert the new document
-			if _, err := c.collection.InsertOne(ctx, entity); err != nil {
-				return err
-			}
+			return c.Insert(ctx, entity)
 		} else if res := c.collection.FindOneAndUpdate(
 			ctx,
 			bson.D{{Key: "id", Value: id}, {Key: "version", Value: currentVersion}},
@@ -194,7 +193,13 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	return nil
 }
 
-// Delete ...
+func (c *Collection) Insert(ctx context.Context, entity Entity) error {
+	if _, err := c.collection.InsertOne(ctx, entity); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Collection) Delete(ctx context.Context, id string) error {
 	if id == "" {
 		return keelpersistence.ErrNotFound

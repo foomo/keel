@@ -7,6 +7,7 @@ import (
 	"time"
 
 	http2 "github.com/foomo/keel/net/http"
+	keeltime "github.com/foomo/keel/time"
 )
 
 // responseWriter is a wrapper that includes that http statusCode and size for logging
@@ -25,7 +26,7 @@ func WrapResponseWriter(w http.ResponseWriter) *responseWriter {
 	}
 	return &responseWriter{
 		ResponseWriter: w,
-		start:          time.Now(),
+		start:          keeltime.Now(),
 	}
 }
 
