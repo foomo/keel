@@ -67,7 +67,7 @@ func DefaultOptions() Options {
 		OtelOptions:     nil,
 		ClientOptions: options.Client().
 			SetReadConcern(readconcern.Majority()).
-			SetReadPreference(readpref.Nearest()).
+			SetReadPreference(readpref.SecondaryPreferred()).
 			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
 		DatabaseOptions: nil,
 	}
