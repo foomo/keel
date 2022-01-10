@@ -13,7 +13,7 @@ require (
 	go.mongodb.org/mongo-driver v1.8.1
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/metric v0.20.0
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.20.0
 )
 
 replace github.com/foomo/keel => ../
