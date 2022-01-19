@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
@@ -66,6 +67,7 @@ func DefaultOptions() Options {
 		OtelOptions:     nil,
 		ClientOptions: options.Client().
 			SetReadConcern(readconcern.Majority()).
+			SetReadPreference(readpref.SecondaryPreferred()).
 			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
 		DatabaseOptions: nil,
 	}
