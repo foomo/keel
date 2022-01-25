@@ -109,7 +109,6 @@ func SubscriberWithUnmarshal(unmarshal UnmarshalFn) SubscriberOption {
 }
 
 func (s *Stream) connect() error {
-
 	// connect nats
 	conn, err := nats.Connect(s.addr, s.natsOptions...)
 	if err != nil {
@@ -171,7 +170,6 @@ func (s *Stream) initNatsOptions() {
 			s.l.Info("nats reconnected")
 		}),
 		nats.DisconnectErrHandler(func(conn *nats.Conn, err error) {
-
 			s.l.Error("nats disconnected", log.FError(err))
 
 			var errRetry error
@@ -189,7 +187,6 @@ func (s *Stream) initNatsOptions() {
 			if errRetry != nil {
 				s.reconnectFailedHandler(errRetry)
 			}
-
 		}),
 		nats.Timeout(time.Millisecond * 500),
 	}, s.natsOptions...)
