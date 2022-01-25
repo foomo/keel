@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	// docker run -it -p 4222:4222 --rm nats:2.4-alpine --jetstream
+	// docker run -it -p 4222:4222 --rm nats:2.7-alpine --jetstream
 	svr := keel.NewServer()
 
 	l := svr.Logger()
