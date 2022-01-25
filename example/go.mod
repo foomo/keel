@@ -10,7 +10,7 @@ require (
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/nats-io/nats.go v1.13.0
 	github.com/pkg/errors v0.9.1
-	go.mongodb.org/mongo-driver v1.8.1
+	go.mongodb.org/mongo-driver v1.8.2
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/metric v0.20.0
 	go.uber.org/zap v1.20.0
