@@ -9,8 +9,6 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-
-	httputils "github.com/foomo/keel/net/http"
 )
 
 func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
@@ -50,10 +48,10 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	if r.Host != "" {
 		fields = append(fields, FHTTPHost(r.Host))
 	}
-	if id := r.Header.Get(httputils.HeaderXRequestID); id != "" {
+	if id := r.Header.Get("X-Request-ID"); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
 	}
-	if id := r.Header.Get(httputils.HeaderXSessionID); id != "" {
+	if id := r.Header.Get("X-Session-ID"); id != "" {
 		fields = append(fields, FHTTPSessionID(id))
 	}
 	if r.TLS != nil {
@@ -68,13 +66,13 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	}
 
 	var clientIP string
-	if value := r.Header.Get(httputils.HeaderXForwardedFor); value != "" {
+	if value := r.Header.Get("X-Forwarded-For"); value != "" {
 		if i := strings.IndexAny(value, ", "); i > 0 {
 			clientIP = value[:i]
 		} else {
 			clientIP = value
 		}
-	} else if value := r.Header.Get(httputils.HeaderXRealIP); value != "" {
+	} else if value := r.Header.Get("X-Real-IP"); value != "" {
 		clientIP = value
 	} else if value, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		clientIP = value
@@ -83,6 +81,40 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	}
 	if clientIP != "" {
 		fields = append(fields, FHTTPClientIP(clientIP))
+	}
+
+	if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
+		fields = append(fields, FTraceID(spanCtx.TraceID().String()))
+	}
+
+	return With(l, fields...)
+}
+
+func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
+	fields := []zap.Field{
+		FHTTPWroteBytes(r.ContentLength),
+		FHTTPMethod(r.Method),
+		FHTTPTarget(r.URL.Path),
+	}
+
+	if r.URL.Host != "" {
+		fields = append(fields, FHTTPHost(r.URL.Host))
+	}
+	if id := r.Header.Get("X-Request-ID"); id != "" {
+		fields = append(fields, FHTTPRequestID(id))
+	}
+	if id := r.Header.Get("X-Session-ID"); id != "" {
+		fields = append(fields, FHTTPSessionID(id))
+	}
+	if r.TLS != nil {
+		fields = append(fields, FHTTPScheme("https"))
+	} else {
+		fields = append(fields, FHTTPScheme("http"))
+	}
+	if r.ProtoMajor == 1 {
+		fields = append(fields, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
+	} else if r.ProtoMajor == 2 {
+		fields = append(fields, FHTTPFlavor("2"))
 	}
 
 	if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
