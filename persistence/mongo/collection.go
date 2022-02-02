@@ -216,7 +216,7 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return err
+		return keelpersistence.ErrNotFound
 	} else if err != nil {
 		return err
 	}
