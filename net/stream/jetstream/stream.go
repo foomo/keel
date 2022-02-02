@@ -170,22 +170,28 @@ func (s *Stream) initNatsOptions() {
 			s.l.Info("nats reconnected")
 		}),
 		nats.DisconnectErrHandler(func(conn *nats.Conn, err error) {
-			s.l.Error("nats disconnected", log.FError(err))
+			if err != nil {
+				s.l.Error("nats disconnected error", log.FError(err))
 
-			var errRetry error
-			for i := 0; i < s.reconnectMaxRetries; i++ {
-				errRetry = s.connect()
-				if errRetry != nil {
-					s.l.Error("nats reconnect failed", log.FError(errRetry))
-					time.Sleep(s.reconnectTimeout)
-				} else {
-					break
+				var errRetry error
+				for i := 0; i < s.reconnectMaxRetries; i++ {
+					errRetry = s.connect()
+					if errRetry != nil {
+						s.l.Error("nats reconnect failed", log.FError(errRetry))
+						time.Sleep(s.reconnectTimeout)
+					} else {
+						break
+					}
 				}
-			}
 
-			// all retries failed
-			if errRetry != nil {
-				s.reconnectFailedHandler(errRetry)
+				// all retries failed
+				if errRetry != nil {
+					s.reconnectFailedHandler(errRetry)
+				} else {
+					s.l.Info("reconnected to nats after error")
+				}
+			} else {
+				s.l.Info("nats disconnected")
 			}
 		}),
 		nats.Timeout(time.Millisecond * 500),
@@ -225,6 +231,10 @@ func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	}
 
 	return stream, nil
+}
+
+func (s *Stream) Addr() string {
+	return s.addr
 }
 
 func (s *Stream) JS() nats.JetStreamContext {
