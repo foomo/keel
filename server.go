@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,7 @@ import (
 // Server struct
 type Server struct {
 	services        []Service
+	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	closers         []interface{}
 	ctx             context.Context
@@ -31,6 +33,7 @@ type Server struct {
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 5 * time.Second,
+		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -107,7 +110,7 @@ func (s *Server) AddCloser(closer interface{}) {
 func (s *Server) Run() {
 	s.l.Info("starting server")
 
-	ctx, stop := signal.NotifyContext(s.ctx, os.Interrupt)
+	ctx, stop := signal.NotifyContext(s.ctx, s.shutdownSignals...)
 	defer stop()
 
 	g, gctx := errgroup.WithContext(ctx)

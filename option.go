@@ -2,6 +2,7 @@ package keel
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -38,6 +39,13 @@ func WithConfig(c *viper.Viper) Option {
 func WithContext(ctx context.Context) Option {
 	return func(inst *Server) {
 		inst.ctx = ctx
+	}
+}
+
+// WithShutdownSignals option
+func WithShutdownSignals(shutdownSignals ...os.Signal) Option {
+	return func(inst *Server) {
+		inst.shutdownSignals = shutdownSignals
 	}
 }
 
