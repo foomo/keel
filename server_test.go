@@ -5,17 +5,17 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/foomo/keel"
-	"github.com/foomo/keel/log"
+	keeltest "github.com/foomo/keel/test"
 )
 
 type KeelTestSuite struct {
@@ -28,7 +28,7 @@ type KeelTestSuite struct {
 
 // SetupSuite hook
 func (s *KeelTestSuite) SetupSuite() {
-	s.l = zaptest.NewLogger(s.T())
+	s.l = keeltest.NewLogger(s.T()).Zap()
 }
 
 // BeforeTest hook
@@ -45,20 +45,20 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 		panic("foobar")
 	})
 	s.mux.HandleFunc("/log/info", func(w http.ResponseWriter, r *http.Request) {
-		log.Logger().Info("logging info")
+		s.l.Info("logging info")
 	})
 	s.mux.HandleFunc("/log/debug", func(w http.ResponseWriter, r *http.Request) {
-		log.Logger().Debug("logging debug")
+		s.l.Debug("logging debug")
 	})
 	s.mux.HandleFunc("/log/warn", func(w http.ResponseWriter, r *http.Request) {
-		log.Logger().Warn("logging warn")
+		s.l.Warn("logging warn")
 	})
 	s.mux.HandleFunc("/log/error", func(w http.ResponseWriter, r *http.Request) {
-		log.Logger().Error("logging error")
+		s.l.Error("logging error")
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s.svr = keel.NewServer(keel.WithContext(ctx))
+	s.svr = keel.NewServer(keel.WithContext(ctx), keel.WithLogger(s.l))
 	s.cancel = cancel
 }
 
@@ -71,15 +71,11 @@ func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
 func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
-	if os.Getenv("CI") != "" {
-		s.T().Skip()
-	}
-
 	s.svr.AddServices(
-		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
+		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
 	)
 
-	go s.svr.Run()
+	s.runServer()
 
 	if statusCode, _, err := s.httpGet("http://localhost:55000/ok"); s.NoError(err) {
 		s.Equal(http.StatusOK, statusCode)
@@ -87,16 +83,12 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 }
 
 func (s *KeelTestSuite) TestServiceHTTPZap() {
-	if os.Getenv("CI") != "" {
-		s.T().Skip()
-	}
-
 	s.svr.AddServices(
 		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "/log"),
 		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
 	)
 
-	go s.svr.Run()
+	s.runServer()
 
 	s.Run("default", func() {
 		if statusCode, body, err := s.httpGet("http://localhost:9100/log"); s.NoError(err) {
@@ -146,40 +138,67 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 }
 
 func (s *KeelTestSuite) TestGraceful() {
-	if os.Getenv("CI") != "" {
-		s.T().Skip()
-	}
-
 	s.svr.AddServices(
-		keel.NewServiceHTTP(log.Logger(), "test", ":55000", s.mux),
+		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
 	)
 
-	go s.svr.Run()
+	s.runServer()
 
-	if statusCode, _, err := s.httpGet("http://localhost:55000/ok"); s.NoError(err) {
-		s.l.Info("receiveds from ok")
-		s.Equal(http.StatusOK, statusCode)
-	}
-
-	go func() {
-		s.l.Info("calling sleep")
-		if statusCode, _, err := s.httpGet("http://localhost:55000/sleep"); s.NoError(err) {
-			s.l.Info("received resom sleep")
+	{ // check that we're up
+		if statusCode, _, err := s.httpGet("http://localhost:55000/ok"); s.NoError(err) {
+			s.l.Info("received response from /ok")
 			s.Equal(http.StatusOK, statusCode)
 		}
-	}()
+	}
 
-	go func() {
-		time.Sleep(time.Second)
-		s.cancel()
-	}()
+	{ // start long running call in separate process
+		waitChan := make(chan string)
+		go func(waitChan chan string) {
+			waitChan <- "ok"
+			s.l.Info("rending request to /sleep")
+			if statusCode, _, err := s.httpGet("http://localhost:55000/sleep"); s.NoError(err) {
+				s.l.Info("received response from /sleep")
+				s.Equal(http.StatusOK, statusCode)
+			}
+		}(waitChan)
+		s.l.Info("waiting for ")
+		<-waitChan
+	}
+
+	{
+		waitChan := make(chan string)
+		go func(waitChan chan string) {
+			waitChan <- "ok"
+			time.Sleep(time.Second)
+			if assert.NoError(s.T(), syscall.Kill(syscall.Getpid(), syscall.SIGINT)) {
+				s.l.Info("killed myself")
+			}
+		}(waitChan)
+		<-waitChan
+	}
 
 	time.Sleep(time.Second * 3)
 
-	_, _, err := s.httpGet("http://localhost:55000/ok")
-	s.Error(err)
+	{ // check that server is down
+		_, _, err := s.httpGet("http://localhost:55000/ok")
+		s.Error(err)
+	}
 
 	s.l.Info("done")
+}
+
+// runServer helper
+func (s *KeelTestSuite) runServer() {
+	l := s.svr.Logger()
+	waitChan := make(chan string)
+	go func(waitChan chan string) {
+		waitChan <- "finished"
+		s.svr.Run()
+	}(waitChan)
+	l.Debug("waiting for server process to start")
+	<-waitChan
+	time.Sleep(time.Second)
+	l.Debug("continuing test")
 }
 
 // httpGet helper
