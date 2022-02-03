@@ -33,6 +33,7 @@ func (s *KeelTestSuite) SetupSuite() {
 
 // BeforeTest hook
 func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
+	s.l = keeltest.NewLogger(s.T()).Zap()
 	s.mux = http.NewServeMux()
 	s.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -65,6 +66,7 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 // AfterTest hook
 func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
 	s.cancel()
+	time.Sleep(time.Second * 3)
 }
 
 // TearDownSuite hook
@@ -194,7 +196,6 @@ func (s *KeelTestSuite) runServer() {
 	go func(waitChan chan string) {
 		waitChan <- "finished"
 		s.svr.Run()
-		time.Sleep(time.Second * 3)
 	}(waitChan)
 	l.Debug("waiting for server process to start")
 	<-waitChan
