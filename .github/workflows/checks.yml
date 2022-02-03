@@ -16,7 +16,7 @@ env:
 
 jobs:
   matrix:
-    name: go matrix
+    name: matrix
     runs-on: ubuntu-latest
     outputs:
       gomod: ${{ steps.gomod.outputs.matrix }}
@@ -27,8 +27,8 @@ jobs:
           matrix=$(find . -type f -name "go.mod" -print0 | xargs -0 -n1 dirname | sort --unique | jq -R -s -c 'split("\n")[:-1]')
           echo "${matrix}"
           echo "::set-output name=matrix::${matrix}"
-  go_lint:
-    name: go lint
+  lint:
+    name: lint
     needs: matrix
     runs-on: ubuntu-latest
     strategy:
@@ -46,17 +46,20 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.gomod }}
-  lint:
-    name: lint
+  test:
+    name: test
+    needs: matrix
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gomod: ${{ fromJson(needs.matrix.outputs.gomod) }}
+    env:
+      GOFLAGS: -mod=readonly
+      GOPROXY: https://proxy.golang.org
     steps:
       - uses: actions/checkout@v2
-      - uses: github/super-linter@v4.8.7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEFAULT_BRANCH: main
-          IGNORE_GITIGNORED_FILES: true
-          VALIDATE_ALL_CODEBASE: false
-          VALIDATE_JSCPD: false
-          VALIDATE_GO: false
-#      - run: go test -v ./...
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - run: go test -v ./...
+

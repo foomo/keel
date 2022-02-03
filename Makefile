@@ -14,7 +14,7 @@ check: test lint
 .PHONY: test
 ## Run tests
 test:
-	gotestsum --format short-verbose ./...
+	go test -v ./...
 
 .PHONY: lint
 ## Run linter

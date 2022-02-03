@@ -194,6 +194,7 @@ func (s *KeelTestSuite) runServer() {
 	go func(waitChan chan string) {
 		waitChan <- "finished"
 		s.svr.Run()
+		time.Sleep(time.Second * 3)
 	}(waitChan)
 	l.Debug("waiting for server process to start")
 	<-waitChan
