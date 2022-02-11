@@ -12,7 +12,7 @@ import (
 type (
 	HTTPClient struct {
 		http.Client
-		baseURL string
+		BaseURL string
 	}
 	HTTPClientOption func(c *HTTPClient)
 )
@@ -25,14 +25,14 @@ func HTTPClientWithCookieJar(v *cookiejar.Jar) HTTPClientOption {
 
 func HTTPClientWithBaseURL(v string) HTTPClientOption {
 	return func(c *HTTPClient) {
-		c.baseURL = v
+		c.BaseURL = v
 	}
 }
 
 func NewHTTPClient(opts ...HTTPClientOption) *HTTPClient {
 	inst := &HTTPClient{
 		Client:  http.Client{},
-		baseURL: "",
+		BaseURL: "",
 	}
 
 	for _, opt := range opts {
@@ -43,7 +43,7 @@ func NewHTTPClient(opts ...HTTPClientOption) *HTTPClient {
 }
 
 func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) {
-	if req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil); err != nil {
+	if req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil); err != nil {
 		return nil, 0, err
 	} else if resp, err := c.Client.Do(req); err != nil {
 		return nil, 0, err
@@ -58,7 +58,7 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 	var req *http.Request
 	if v, err := json.Marshal(data); err != nil {
 		return nil, 0, err
-	} else if r, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewBuffer(v)); err != nil {
+	} else if r, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+path, bytes.NewBuffer(v)); err != nil {
 		return nil, 0, err
 	} else {
 		req = r
