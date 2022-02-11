@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -108,11 +109,15 @@ func SetDisableStacktrace(value bool) error {
 }
 
 // Must logs a fatal error if given
-func Must(l *zap.Logger, err error, msg string) {
+func Must(l *zap.Logger, err error, msgAndArgs ...interface{}) {
 	if err != nil {
 		if l == nil {
 			l = Logger()
 		}
-		l.WithOptions(zap.AddCallerSkip(1)).Fatal(msg, FError(err))
+		var msg = "Must"
+		if len(msgAndArgs) > 0 {
+			msg, msgAndArgs = fmt.Sprintf("%v", msgAndArgs[0]), msgAndArgs[1:]
+		}
+		l.WithOptions(zap.AddCallerSkip(1)).Fatal(fmt.Sprintf(msg, msgAndArgs...), FError(err))
 	}
 }
