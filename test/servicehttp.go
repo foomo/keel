@@ -49,7 +49,7 @@ func (s *ServiceHTTP) URL() string {
 	return s.server.URL
 }
 
-func (s *ServiceHTTP) Start(ctx context.Context) {
+func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
 	if value := strings.Split(s.server.Listener.Addr().String(), ":"); len(value) == 2 {
 		ip, port := value[0], value[1]
@@ -61,9 +61,12 @@ func (s *ServiceHTTP) Start(ctx context.Context) {
 	s.l.Info("starting http service", fields...)
 	s.server.Config.BaseContext = func(_ net.Listener) context.Context { return ctx }
 	s.server.Start()
+
+	return nil
 }
 
-func (s *ServiceHTTP) Close(_ context.Context) {
+func (s *ServiceHTTP) Close(_ context.Context) error {
 	s.l.Info("shutting down http service")
 	s.server.Close()
+	return nil
 }
