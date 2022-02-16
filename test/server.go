@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/log"
 )
 
 type Server struct {
@@ -75,6 +76,8 @@ func (s *Server) Start() {
 	s.serviceMap = make(map[string]Service, len(s.services))
 	for _, service := range s.services {
 		s.serviceMap[service.Name()] = service
-		service.Start(s.Context())
+		if err := service.Start(s.Context()); err != nil {
+			s.l.Error("failed to start service", log.FError(err))
+		}
 	}
 }
