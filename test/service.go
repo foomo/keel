@@ -8,6 +8,6 @@ import (
 type Service interface {
 	URL() string
 	Name() string
-	Start(ctx context.Context)
-	Close(ctx context.Context)
+	Start(ctx context.Context) error
+	Close(ctx context.Context) error
 }
