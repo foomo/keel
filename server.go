@@ -9,12 +9,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
+	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/telemetry"
 )
@@ -22,6 +30,10 @@ import (
 // Server struct
 type Server struct {
 	services        []Service
+	meter           metric.MeterMust
+	meterProvider   metric.MeterProvider
+	tracer          trace.Tracer
+	traceProvider   trace.TracerProvider
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	closers         []interface{}
@@ -43,12 +55,48 @@ func NewServer(opts ...Option) *Server {
 		opt(inst)
 	}
 
+	var err error
+
+	// set otel error handler
+	otel.SetLogger(logr.New(telemetry.NewLogger(inst.l)))
+	otel.SetErrorHandler(telemetry.NewErrorHandler(inst.l))
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	if inst.meterProvider == nil {
+		inst.meterProvider, err = telemetry.NewNoopMeterProvider()
+		log.Must(inst.l, err, "failed to create meter provider")
+	} else if env.GetBool("OTEL_ENABLED", false) {
+		if env.GetBool("OTEL_METRICS_HOST_ENABLED", false) {
+			log.Must(inst.l, otelhost.Start(), "failed to start otel host metrics")
+		}
+		if env.GetBool("OTEL_METRICS_RUNTIME_ENABLED", false) {
+			log.Must(inst.l, otelruntime.Start(), "failed to start otel runtime metrics")
+		}
+	}
+	inst.meter = telemetry.MustMeter()
+
+	if inst.traceProvider == nil {
+		inst.traceProvider, err = telemetry.NewNoopTraceProvider()
+		log.Must(inst.l, err, "failed to create tracer provider")
+	}
+	inst.tracer = telemetry.Tracer()
+
 	return inst
 }
 
 // Logger returns server logger
 func (s *Server) Logger() *zap.Logger {
 	return s.l
+}
+
+// Meter returns the implementation meter
+func (s *Server) Meter() metric.MeterMust {
+	return s.meter
+}
+
+// Tracer returns the implementation tracer
+func (s *Server) Tracer() trace.Tracer {
+	return s.tracer
 }
 
 // Config returns server config
@@ -61,13 +109,6 @@ func (s *Server) Context() context.Context {
 	return s.ctx
 }
 
-// AddServices adds multiple service
-func (s *Server) AddServices(services ...Service) {
-	for _, service := range services {
-		s.AddService(service)
-	}
-}
-
 // AddService add a single service
 func (s *Server) AddService(service Service) {
 	for _, value := range s.services {
@@ -78,10 +119,10 @@ func (s *Server) AddService(service Service) {
 	s.services = append(s.services, service)
 }
 
-// AddClosers adds an closer to be called on shutdown
-func (s *Server) AddClosers(closers ...interface{}) {
-	for _, closer := range closers {
-		s.AddCloser(closer)
+// AddServices adds multiple service
+func (s *Server) AddServices(services ...Service) {
+	for _, service := range services {
+		s.AddService(service)
 	}
 }
 
@@ -89,9 +130,13 @@ func (s *Server) AddClosers(closers ...interface{}) {
 func (s *Server) AddCloser(closer interface{}) {
 	switch closer.(type) {
 	case Closer,
+		CloserFn,
 		ErrorCloser,
+		ErrorCloserFn,
 		CloserWithContext,
+		CloserWithContextFn,
 		ErrorCloserWithContext,
+		ErrorCloserWithContextFn,
 		Shutdowner,
 		ErrorShutdowner,
 		ShutdownerWithContext,
@@ -103,6 +148,13 @@ func (s *Server) AddCloser(closer interface{}) {
 		s.closers = append(s.closers, closer)
 	default:
 		s.l.Warn("unable to add closer")
+	}
+}
+
+// AddClosers adds a closer to be called on shutdown
+func (s *Server) AddClosers(closers ...interface{}) {
+	for _, closer := range closers {
+		s.AddCloser(closer)
 	}
 }
 
@@ -142,19 +194,33 @@ func (s *Server) Run() {
 		defer timeoutCancel()
 
 		// append internal closers
-		closers := append(s.closers, telemetry.Exporter(), telemetry.Controller()) //nolint:gocritic
+		closers := append(s.closers, s.traceProvider, s.meterProvider) //nolint:gocritic
 
 		for _, closer := range closers {
 			switch c := closer.(type) {
+			case CloserFn:
+				c()
 			case Closer:
 				c.Close()
+			case ErrorCloserFn:
+				if err := c(); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
+					continue
+				}
 			case ErrorCloser:
 				if err := c.Close(); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
 					continue
 				}
+			case CloserWithContextFn:
+				c(timeoutCtx)
 			case CloserWithContext:
 				c.Close(timeoutCtx)
+			case ErrorCloserWithContextFn:
+				if err := c(timeoutCtx); err != nil {
+					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")
+					continue
+				}
 			case ErrorCloserWithContext:
 				if err := c.Close(timeoutCtx); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")

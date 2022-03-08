@@ -7,23 +7,16 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/foomo/keel"
-	"github.com/foomo/keel/telemetry"
 )
 
 func main() {
 	// Run this example with the following env vars:
 	//
-	// name your serivce
-	// OTEL_SERVICE_NAME="your-service-name"
-	//
 	// when otel is disabled (default: false) the stdout exporter is used
 	// OTEL_ENABLED="false"
 	//
-	// enable metrics output (default: false)
-	// OTEL_EXPORTER_STDOUT_METRICS_ENABLED="true"
-	//
-	// enable trace output (default: false)
-	// OTEL_EXPORTER_STDOUT_TRACE_ENABLED="true"
+	// name your service
+	// OTEL_SERVICE_NAME="your-service-name"
 	//
 	// pretty print output (default: true)
 	// OTEL_EXPORTER_STDOUT_PRETTY_PRINT="true"
@@ -34,45 +27,46 @@ func main() {
 	// disable runtime metrics (default: true)
 	// OTEL_METRICS_RUNTIME_ENABLED="false"
 
-	svr := keel.NewServer()
+	svr := keel.NewServer(
+		keel.WithStdOutMeter(false),
+		keel.WithStdOutTracer(false),
+	)
 
 	l := svr.Logger()
 
+	meter := svr.Meter()
+
 	// create demo service
 	svs := http.NewServeMux()
-	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		meter := telemetry.Meter("demo")
 
-		counter := meter.NewInt64Counter(
-			"a.counter",
-			metric.WithDescription("Count things"),
-		)
+	counter := meter.NewInt64Counter(
+		"a.counter",
+		metric.WithDescription("Count things"),
+	)
 
-		recorder := meter.NewInt64ValueRecorder(
-			"a.valuerecorder",
-			metric.WithDescription("Records values"),
-		)
+	svs.HandleFunc("/count", func(w http.ResponseWriter, r *http.Request) {
+		counter.Add(r.Context(), 1, attribute.String("key", "value"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK!"))
+	})
 
-		updown := meter.NewInt64UpDownCounter(
-			"a.updown",
-			metric.WithDescription("Updown values"),
-		)
-
-		counter.Add(r.Context(), 100, attribute.String("key", "value"))
-		counter.Add(r.Context(), 100, attribute.String("key", "value"))
-
-		recorder.Record(r.Context(), 100, attribute.String("key", "value"))
-
-		updown.Add(r.Context(), 120, attribute.String("key", "value"))
-		updown.Add(r.Context(), 10, attribute.String("key", "value"))
-		updown.Add(r.Context(), -10, attribute.String("key", "value"))
-
+	upDown := meter.NewInt64UpDownCounter(
+		"a.updown",
+		metric.WithDescription("Updown values"),
+	)
+	svs.HandleFunc("/up", func(w http.ResponseWriter, r *http.Request) {
+		upDown.Add(r.Context(), 1, attribute.String("key", "value"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK!"))
+	})
+	svs.HandleFunc("/down", func(w http.ResponseWriter, r *http.Request) {
+		upDown.Add(r.Context(), -1, attribute.String("key", "value"))
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK!"))
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", ":8080", svs),
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
 	)
 
 	svr.Run()

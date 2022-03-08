@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+
+	"github.com/foomo/keel/env"
 )
 
 // Persistor exported to used also for embedding into other types in foreign packages.
@@ -21,7 +23,6 @@ type (
 	}
 	Options struct {
 		OtelEnabled     bool
-		OtelServiceName string
 		OtelOptions     []otelmongo.Option
 		ClientOptions   *options.ClientOptions
 		DatabaseOptions *options.DatabaseOptions
@@ -32,12 +33,6 @@ type (
 func WithOtelEnabled(v bool) Option {
 	return func(o *Options) {
 		o.OtelEnabled = v
-	}
-}
-
-func WithOtelServiceName(v string) Option {
-	return func(o *Options) {
-		o.OtelServiceName = v
 	}
 }
 
@@ -61,9 +56,8 @@ func WithDatabaseOptions(v *options.DatabaseOptions) Option {
 
 func DefaultOptions() Options {
 	return Options{
-		OtelEnabled:     true,
-		OtelServiceName: "mongo",
-		OtelOptions:     nil,
+		OtelEnabled: env.GetBool("OTEL_ENABLED", false),
+		OtelOptions: nil,
 		ClientOptions: options.Client().
 			SetReadConcern(readconcern.Majority()).
 			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
@@ -93,7 +87,9 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 
 	// setup otel
 	if o.OtelEnabled {
-		o.ClientOptions.SetMonitor(otelmongo.NewMonitor(o.OtelServiceName, o.OtelOptions...))
+		o.ClientOptions.SetMonitor(
+			otelmongo.NewMonitor(o.OtelOptions...),
+		)
 	}
 
 	// create connection

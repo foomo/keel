@@ -9,6 +9,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/log"
+	"github.com/foomo/keel/telemetry"
 )
 
 // Option func
@@ -70,6 +72,61 @@ func WithHTTPViperService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.viper.enabled", enabled)() {
 			inst.AddService(NewDefaultServiceHTTPViper())
+		}
+	}
+}
+
+// WithStdOutTracer option with default value
+func WithStdOutTracer(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create std out trace provider")
+		}
+	}
+}
+
+// WithStdOutMeter option with default value
+func WithStdOutMeter(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create std out meter provider")
+		}
+	}
+}
+
+// WithOTLPGRPCTracer option with default value
+func WithOTLPGRPCTracer(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
+		}
+	}
+}
+
+// WithOTLPHTTPTracer option with default value
+func WithOTLPHTTPTracer(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http trace provider")
+		}
+	}
+}
+
+// WithPrometheusMeter option with default value
+func WithPrometheusMeter(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider()
+			log.Must(inst.l, err, "failed to create prometheus meter provider")
 		}
 	}
 }

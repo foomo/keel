@@ -44,6 +44,11 @@ lint.super:
 
 ## === Utils ===
 
+.PHONY: outdated
+## Show outdated direct dependencies
+outdated:
+	go list -u -m -json all | go-mod-outdated -update -direct
+
 ## Show help text
 help:
 	@awk '{ \

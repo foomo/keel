@@ -10,6 +10,10 @@ type ErrorHandler struct {
 	l *zap.Logger
 }
 
+func NewErrorHandler(l *zap.Logger) *ErrorHandler {
+	return &ErrorHandler{l}
+}
+
 func (h *ErrorHandler) Handle(err error) {
 	l := log.WithError(h.l, err)
 	if err != nil && err.Error() == "not implemented yet" {

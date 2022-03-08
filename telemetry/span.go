@@ -7,8 +7,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func Start(ctx context.Context, spanName string, opts ...trace.SpanOption) (context.Context, trace.Span) {
-	return tracer.Start(ctx, spanName, opts...)
+func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+	return Tracer().Start(ctx, spanName, opts...)
 }
 
 func End(sp trace.Span, err error) {
