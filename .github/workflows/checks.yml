@@ -21,7 +21,7 @@ jobs:
     outputs:
       gomod: ${{ steps.gomod.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: gomod
         run: |
           matrix=$(find . -type f -name "go.mod" -print0 | xargs -0 -n1 dirname | sort --unique | jq -R -s -c 'split("\n")[:-1]')
@@ -38,11 +38,11 @@ jobs:
       GOFLAGS: -mod=readonly
       GOPROXY: https://proxy.golang.org
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: golangci/golangci-lint-action@v2
+      - uses: golangci/golangci-lint-action@v3.1.0
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.gomod }}
@@ -57,7 +57,7 @@ jobs:
       GOFLAGS: -mod=readonly
       GOPROXY: https://proxy.golang.org
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
