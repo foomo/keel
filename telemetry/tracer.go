@@ -47,9 +47,9 @@ func NewOTLPHTTPTraceProvider(ctx context.Context, opts ...otlptracehttp.Option)
 	if env.GetBool("OTEL_EXPORTER_OTLP_INSECURE", false) {
 		opts = append(opts, otlptracehttp.WithInsecure())
 	}
-	opts = append(opts,
-		otlptracehttp.WithEndpoint(env.MustGet("OTEL_EXPORTER_OTLP_ENDPOINT")),
-	)
+	if value := env.Get("OTEL_EXPORTER_OTLP_ENDPOINT", ""); value != "" {
+		opts = append(opts, otlptracehttp.WithEndpoint(value))
+	}
 
 	exporter, err := otlptracehttp.New(ctx, opts...)
 	if err != nil {
@@ -59,13 +59,13 @@ func NewOTLPHTTPTraceProvider(ctx context.Context, opts ...otlptracehttp.Option)
 	return newTracerProvider(exporter)
 }
 
-func NewOTLPGRPCTraceProvider(ctx context.Context, endpoint string, opts ...otlptracegrpc.Option) (trace.TracerProvider, error) {
+func NewOTLPGRPCTraceProvider(ctx context.Context, opts ...otlptracegrpc.Option) (trace.TracerProvider, error) {
 	if env.GetBool("OTEL_EXPORTER_OTLP_INSECURE", false) {
 		opts = append(opts, otlptracegrpc.WithInsecure())
 	}
-	opts = append(opts,
-		otlptracegrpc.WithEndpoint(env.MustGet("OTEL_EXPORTER_OTLP_ENDPOINT")),
-	)
+	if value := env.Get("OTEL_EXPORTER_OTLP_ENDPOINT", ""); value != "" {
+		opts = append(opts, otlptracegrpc.WithEndpoint(value))
+	}
 
 	exporter, err := otlptracegrpc.New(ctx, opts...)
 	if err != nil {

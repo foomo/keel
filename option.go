@@ -103,7 +103,7 @@ func WithOTLPGRPCTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
-			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
+			inst.traceProvider, err = telemetry.NewOTLPGRPCTraceProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
 		}
 	}
