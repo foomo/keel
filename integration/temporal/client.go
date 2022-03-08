@@ -16,8 +16,6 @@ import (
 	"github.com/foomo/keel/telemetry"
 )
 
-const defaultTracerName = "github.com/foomo/integration/temporal"
-
 type (
 	Options struct {
 		Logger      *zap.Logger
