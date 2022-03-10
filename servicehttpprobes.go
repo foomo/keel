@@ -21,8 +21,8 @@ type ProbeHandler func(w http.ResponseWriter, r *http.Request)
 func NewServiceHTTPProbes(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("ok"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
 	})
 	return NewServiceHTTP(l, name, addr, handler)
 }
@@ -45,16 +45,16 @@ func CreateProbeHandlers(s *Server) *http.ServeMux {
 			case Health:
 				success := h.Ping()
 				if success {
-					w.WriteHeader(200)
-					w.Write([]byte("ok"))
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("OK"))
 				} else {
 					http.Error(w, "Failed to run probe ping", http.StatusInternalServerError)
 				}
 			case HealthFn:
 				success := h()
 				if success {
-					w.WriteHeader(200)
-					w.Write([]byte("ok"))
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("OK"))
 				} else {
 					http.Error(w, "Failed to run probe ping", http.StatusInternalServerError)
 				}
@@ -63,8 +63,8 @@ func CreateProbeHandlers(s *Server) *http.ServeMux {
 					log.WithError(s.l, err).Error("failed to use probe ErrorHealthFn")
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				} else if success {
-					w.WriteHeader(200)
-					w.Write([]byte("ok"))
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("OK"))
 				} else {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
