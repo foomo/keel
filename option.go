@@ -143,7 +143,7 @@ func WithHTTPPrometheusService(enabled bool) Option {
 func WithHTTPProbesService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.probes.enabled", enabled)() {
-			inst.AddService(NewDefaultServiceHTTPProbes())
+			inst.AddService(NewDefaultServiceHTTPProbes(inst.probes))
 		}
 	}
 }
