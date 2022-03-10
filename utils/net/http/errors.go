@@ -13,6 +13,16 @@ func InternalServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, 
 	ServerError(l, w, r, http.StatusInternalServerError, err)
 }
 
+// InternalServiceUnavailable http response
+func InternalServiceUnavailable(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
+	ServerError(l, w, r, http.StatusServiceUnavailable, err)
+}
+
+// InternalServiceTooEarly http response
+func InternalServiceTooEarly(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
+	ServerError(l, w, r, http.StatusTooEarly, err)
+}
+
 // UnauthorizedServerError http response
 func UnauthorizedServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
 	ServerError(l, w, r, http.StatusUnauthorized, err)

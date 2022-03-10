@@ -37,6 +37,7 @@ type Server struct {
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	closers         []interface{}
+	probes          Probes
 	ctx             context.Context
 	l               *zap.Logger
 	c               *viper.Viper
@@ -46,6 +47,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 5 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
+		probes:          Probes{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -111,8 +113,11 @@ func (s *Server) Context() context.Context {
 
 // AddService add a single service
 func (s *Server) AddService(service Service) {
-	for _, value := range s.services {
+	for index, value := range s.services {
 		if value == service {
+			return
+		} else if value.Name() == service.Name() {
+			s.services[index] = service
 			return
 		}
 	}
@@ -128,7 +133,7 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	switch closer.(type) {
+	switch t := closer.(type) {
 	case Closer,
 		CloserFn,
 		ErrorCloser,
@@ -147,14 +152,57 @@ func (s *Server) AddCloser(closer interface{}) {
 		ErrorUnsubscriberWithContext:
 		s.closers = append(s.closers, closer)
 	default:
-		s.l.Warn("unable to add closer")
+		s.l.Warn("unable to add closer", log.FValue(t))
 	}
 }
 
-// AddClosers adds a closer to be called on shutdown
+// AddClosers adds the given closers to be called on shutdown
 func (s *Server) AddClosers(closers ...interface{}) {
 	for _, closer := range closers {
 		s.AddCloser(closer)
+	}
+}
+
+// AddProbe adds a probe to be called on healthz checks
+func (s *Server) AddProbe(typ ProbeType, probe interface{}) {
+	switch t := probe.(type) {
+	case BoolProbeFn,
+		ErrorProbeFn,
+		BoolProbeWithContextFn,
+		ErrorProbeWithContextFn,
+		ErrorPingProbe,
+		ErrorPingProbeWithContext:
+		s.probes[typ] = append(s.probes[typ], probe)
+	default:
+		s.l.Warn("unable to add probe", log.FValue(t))
+	}
+}
+
+// AddProbes adds the given probes to be called on healthz checks
+func (s *Server) AddProbes(probes ...interface{}) {
+	for _, probe := range probes {
+		s.AddProbe(ProbeTypeAll, probe)
+	}
+}
+
+// AddLivelinessProbes adds the liveliness probes to be called on healthz checks
+func (s *Server) AddLivelinessProbes(probes ...interface{}) {
+	for _, probe := range probes {
+		s.AddProbe(ProbeTypeLiveliness, probe)
+	}
+}
+
+// AddReadinessProbes adds the readiness probes to be called on healthz checks
+func (s *Server) AddReadinessProbes(probes ...interface{}) {
+	for _, probe := range probes {
+		s.AddProbe(ProbeTypeReadiness, probe)
+	}
+}
+
+// AddStartupProbes adds the startup probes to be called on healthz checks
+func (s *Server) AddStartupProbes(probes ...interface{}) {
+	for _, probe := range probes {
+		s.AddProbe(ProbeTypeStartup, probe)
 	}
 }
 
@@ -166,6 +214,10 @@ func (s *Server) Run() {
 	defer stop()
 
 	g, gctx := errgroup.WithContext(ctx)
+
+	if len(s.probes) > 0 {
+		s.AddService(NewDefaultServiceHTTPProbes(s.probes))
+	}
 
 	for _, service := range s.services {
 		service := service
