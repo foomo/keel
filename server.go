@@ -37,6 +37,7 @@ type Server struct {
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	closers         []interface{}
+	probeHandlers   []ProbeHandlers
 	ctx             context.Context
 	l               *zap.Logger
 	c               *viper.Viper
@@ -111,8 +112,11 @@ func (s *Server) Context() context.Context {
 
 // AddService add a single service
 func (s *Server) AddService(service Service) {
-	for _, value := range s.services {
+	for index, value := range s.services {
 		if value == service {
+			return
+		} else if value.Name() == service.Name() {
+			s.services[index] = service
 			return
 		}
 	}
@@ -158,6 +162,25 @@ func (s *Server) AddClosers(closers ...interface{}) {
 	}
 }
 
+// AddCloser adds a closer to be called on shutdown
+func (s *Server) AddProbeHandlers(health interface{}, probe ProbeType) {
+	switch health.(type) {
+	case Health,
+		HealthFn,
+		ErrorHealth,
+		ErrorHealthFn,
+		HealthWithContext,
+		HealthWithContextFn,
+		ErrorHealthWithContext:
+		s.probeHandlers = append(s.probeHandlers, ProbeHandlers{
+			probeType: string(probe),
+			handler:   health,
+		})
+	default:
+		s.l.Warn("unable to add probe handlers")
+	}
+}
+
 // Run runs the server
 func (s *Server) Run() {
 	s.l.Info("starting server")
@@ -166,6 +189,11 @@ func (s *Server) Run() {
 	defer stop()
 
 	g, gctx := errgroup.WithContext(ctx)
+
+	if len(s.probeHandlers) > 0 {
+		handler := CreateProbeHandlers(s)
+		s.AddService(NewServiceHTTP(log.Logger(), DefaultServiceHTTPProbesName, DefaultServiceHTTPProbesAddr, handler))
+	}
 
 	for _, service := range s.services {
 		service := service
