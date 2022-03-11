@@ -171,15 +171,15 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 		if currentVersion == 0 {
 			// insert the new document
 			return c.Insert(ctx, entity)
-		} else if res := c.collection.FindOneAndUpdate(
+		} else if err := c.collection.FindOneAndUpdate(
 			ctx,
 			bson.D{{Key: "id", Value: id}, {Key: "version", Value: currentVersion}},
 			bson.D{{Key: "$set", Value: entity}},
 			options.FindOneAndUpdate().SetUpsert(false),
-		); errors.Is(res.Err(), mongo.ErrNoDocuments) {
-			return keelerrors.NewWrappedError(keelpersistence.ErrDirtyWrite, res.Err())
-		} else if res.Err() != nil {
-			return res.Err()
+		).Err(); errors.Is(err, mongo.ErrNoDocuments) {
+			return keelerrors.NewWrappedError(keelpersistence.ErrDirtyWrite, err)
+		} else if err != nil {
+			return err
 		}
 	} else if _, err := c.collection.UpdateOne(
 		ctx,
@@ -204,10 +204,10 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 	if id == "" {
 		return keelpersistence.ErrNotFound
 	}
-	if res := c.collection.FindOneAndDelete(ctx, bson.M{"id": id}); errors.Is(mongo.ErrNoDocuments, res.Err()) {
-		return keelpersistence.ErrNotFound
-	} else if res.Err() != nil {
-		return res.Err()
+	if err := c.collection.FindOneAndDelete(ctx, bson.M{"id": id}).Err(); errors.Is(err, mongo.ErrNoDocuments) {
+		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
+	} else if err != nil {
+		return err
 	}
 	return nil
 }
@@ -216,7 +216,7 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return keelpersistence.ErrNotFound
+		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
 	} else if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts
 func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, opts ...*options.FindOneOptions) error {
 	res := c.collection.FindOne(ctx, filter, opts...)
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
-		return keelpersistence.ErrNotFound
+		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, res.Err())
 	} else if res.Err() != nil {
 		return res.Err()
 	}
@@ -239,7 +239,9 @@ func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, op
 // FindIterate ...
 func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handler IterateHandlerFn, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
-	if err != nil {
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
+	} else if err != nil {
 		return err
 	}
 	defer CloseCursor(ctx, cursor, &err)
