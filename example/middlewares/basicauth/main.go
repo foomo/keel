@@ -29,7 +29,7 @@ func main() {
 	log.Must(l, err, "failed to hash password")
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", ":8080", svs,
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
 			middleware.BasicAuth(
 				username,
 				passwordHash,

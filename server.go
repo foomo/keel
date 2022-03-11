@@ -37,6 +37,7 @@ type Server struct {
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	closers         []interface{}
+	probes          Probes
 	ctx             context.Context
 	l               *zap.Logger
 	c               *viper.Viper
@@ -46,6 +47,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 5 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
+		probes:          Probes{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -111,8 +113,11 @@ func (s *Server) Context() context.Context {
 
 // AddService add a single service
 func (s *Server) AddService(service Service) {
-	for _, value := range s.services {
+	for index, value := range s.services {
 		if value == service {
+			return
+		} else if value.Name() == service.Name() {
+			s.services[index] = service
 			return
 		}
 	}
@@ -130,13 +135,9 @@ func (s *Server) AddServices(services ...Service) {
 func (s *Server) AddCloser(closer interface{}) {
 	switch closer.(type) {
 	case Closer,
-		CloserFn,
 		ErrorCloser,
-		ErrorCloserFn,
 		CloserWithContext,
-		CloserWithContextFn,
 		ErrorCloserWithContext,
-		ErrorCloserWithContextFn,
 		Shutdowner,
 		ErrorShutdowner,
 		ShutdownerWithContext,
@@ -147,15 +148,57 @@ func (s *Server) AddCloser(closer interface{}) {
 		ErrorUnsubscriberWithContext:
 		s.closers = append(s.closers, closer)
 	default:
-		s.l.Warn("unable to add closer")
+		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
 }
 
-// AddClosers adds a closer to be called on shutdown
+// AddClosers adds the given closers to be called on shutdown
 func (s *Server) AddClosers(closers ...interface{}) {
 	for _, closer := range closers {
 		s.AddCloser(closer)
 	}
+}
+
+// AddProbe adds a probe to be called on healthz checks
+func (s *Server) AddProbe(typ ProbeType, probe interface{}) {
+	switch probe.(type) {
+	case BoolHealthz,
+		BoolHealthzWithContext,
+		ErrorHealthz,
+		ErrorHealthzWithContext,
+		ErrorPingProbe,
+		ErrorPingProbeWithContext:
+		s.probes[typ] = append(s.probes[typ], probe)
+	default:
+		s.l.Warn("unable to add probe", log.FValue(fmt.Sprintf("%T", probe)))
+	}
+}
+
+// AddProbes adds the given probes to be called on healthz checks
+func (s *Server) AddProbes(typ ProbeType, probes ...interface{}) {
+	for _, probe := range probes {
+		s.AddProbe(typ, probe)
+	}
+}
+
+// AddAnyProbes adds the startup probes to be called on healthz checks
+func (s *Server) AddAnyProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeAny, probes...)
+}
+
+// AddStartupProbes adds the startup probes to be called on healthz checks
+func (s *Server) AddStartupProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeStartup, probes...)
+}
+
+// AddLivenessProbes adds the liveness probes to be called on healthz checks
+func (s *Server) AddLivenessProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeLiveness, probes...)
+}
+
+// AddReadinessProbes adds the readiness probes to be called on healthz checks
+func (s *Server) AddReadinessProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeReadiness, probes...)
 }
 
 // Run runs the server
@@ -166,6 +209,10 @@ func (s *Server) Run() {
 	defer stop()
 
 	g, gctx := errgroup.WithContext(ctx)
+
+	if len(s.probes) > 0 {
+		s.AddService(NewDefaultServiceHTTPProbes(s.probes))
+	}
 
 	for _, service := range s.services {
 		service := service
@@ -198,29 +245,15 @@ func (s *Server) Run() {
 
 		for _, closer := range closers {
 			switch c := closer.(type) {
-			case CloserFn:
-				c()
 			case Closer:
 				c.Close()
-			case ErrorCloserFn:
-				if err := c(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
-					continue
-				}
 			case ErrorCloser:
 				if err := c.Close(); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
 					continue
 				}
-			case CloserWithContextFn:
-				c(timeoutCtx)
 			case CloserWithContext:
 				c.Close(timeoutCtx)
-			case ErrorCloserWithContextFn:
-				if err := c(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")
-					continue
-				}
 			case ErrorCloserWithContext:
 				if err := c.Close(timeoutCtx); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")

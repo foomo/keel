@@ -28,7 +28,7 @@ func main() {
 
 	svr.AddServices(
 		// with URI blacklist
-		keel.NewServiceHTTP(l, "demo", ":8080", svs,
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
 			middleware.Skip(
 				func(l *zap.Logger, name string, next http.Handler) http.Handler {
 					return http.NotFoundHandler()
