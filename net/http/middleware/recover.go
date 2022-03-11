@@ -53,11 +53,11 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 					if !ok {
 						err = fmt.Errorf("%v", e)
 					}
-					l = log.WithError(l, err)
+					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
-						l = l.With(log.FStackSkip(3))
+						ll = ll.With(log.FStackSkip(3))
 					}
-					httputils.InternalServerError(l, w, r, errors.Wrap(err, "recovering from panic"))
+					httputils.InternalServerError(ll, w, r, errors.Wrap(err, "recovering from panic"))
 				}
 			}()
 			next.ServeHTTP(w, r)
