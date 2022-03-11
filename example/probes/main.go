@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/example/probes/handler"
@@ -33,6 +34,11 @@ func main() {
 		_, _ = w.Write([]byte("OK"))
 	})
 
+	l.Info("doing some initialization")
+	time.Sleep(10 * time.Second)
+	l.Info("initialization done")
+
+	// TODO wait for services to be started
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
 	)

@@ -14,9 +14,10 @@ import (
 
 // ServiceHTTP struct
 type ServiceHTTP struct {
-	server *http.Server
-	name   string
-	l      *zap.Logger
+	running bool
+	server  *http.Server
+	name    string
+	l       *zap.Logger
 }
 
 func NewServiceHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...middleware.Middleware) *ServiceHTTP {
@@ -41,6 +42,13 @@ func (s *ServiceHTTP) Name() string {
 	return s.name
 }
 
+func (s *ServiceHTTP) Healthz() error {
+	if !s.running {
+		return ErrServiceNotRunning
+	}
+	return nil
+}
+
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
 	if value := strings.Split(s.server.Addr, ":"); len(value) == 2 {
@@ -52,6 +60,10 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 	}
 	s.l.Info("starting http service", fields...)
 	s.server.BaseContext = func(_ net.Listener) context.Context { return ctx }
+	s.server.RegisterOnShutdown(func() {
+		s.running = false
+	})
+	s.running = true
 	if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
 		log.WithError(s.l, err).Error("service error")
 		return err
@@ -60,6 +72,6 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 }
 
 func (s *ServiceHTTP) Close(ctx context.Context) error {
-	s.l.Info("shutting down http service")
+	s.l.Info("stopping http service")
 	return s.server.Shutdown(ctx)
 }

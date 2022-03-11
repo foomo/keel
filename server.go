@@ -30,22 +30,27 @@ import (
 // Server struct
 type Server struct {
 	services        []Service
+	initServices    []Service
 	meter           metric.MeterMust
 	meterProvider   metric.MeterProvider
 	tracer          trace.Tracer
 	traceProvider   trace.TracerProvider
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
+	running         bool
 	closers         []interface{}
 	probes          Probes
 	ctx             context.Context
+	ctxCancel       context.CancelFunc
+	g               *errgroup.Group
+	gCtx            context.Context
 	l               *zap.Logger
 	c               *viper.Viper
 }
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
-		shutdownTimeout: 5 * time.Second,
+		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
 		probes:          Probes{},
 		ctx:             context.Background(),
@@ -57,31 +62,99 @@ func NewServer(opts ...Option) *Server {
 		opt(inst)
 	}
 
-	var err error
+	{ // setup error group
+		var ctx context.Context
+		ctx, inst.ctxCancel = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
+		inst.g, inst.gCtx = errgroup.WithContext(ctx)
 
-	// set otel error handler
-	otel.SetLogger(logr.New(telemetry.NewLogger(inst.l)))
-	otel.SetErrorHandler(telemetry.NewErrorHandler(inst.l))
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+		// gracefully shutdown
+		inst.g.Go(func() error {
+			<-inst.gCtx.Done()
+			inst.l.Debug("keel graceful shutdown")
+			defer inst.ctxCancel()
 
-	if inst.meterProvider == nil {
-		inst.meterProvider, err = telemetry.NewNoopMeterProvider()
-		log.Must(inst.l, err, "failed to create meter provider")
-	} else if env.GetBool("OTEL_ENABLED", false) {
-		if env.GetBool("OTEL_METRICS_HOST_ENABLED", false) {
-			log.Must(inst.l, otelhost.Start(), "failed to start otel host metrics")
-		}
-		if env.GetBool("OTEL_METRICS_RUNTIME_ENABLED", false) {
-			log.Must(inst.l, otelruntime.Start(), "failed to start otel runtime metrics")
-		}
+			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.shutdownTimeout)
+			defer timeoutCancel()
+
+			// append internal closers
+			closers := append(inst.closers, inst.traceProvider, inst.meterProvider) //nolint:gocritic
+
+			for _, closer := range closers {
+				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
+				switch c := closer.(type) {
+				case Closer:
+					c.Close()
+				case ErrorCloser:
+					if err := c.Close(); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorCloser")
+					}
+				case CloserWithContext:
+					c.Close(timeoutCtx)
+				case ErrorCloserWithContext:
+					if err := c.Close(timeoutCtx); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorCloserWithContext")
+					}
+				case Shutdowner:
+					c.Shutdown()
+				case ErrorShutdowner:
+					if err := c.Shutdown(); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdowner")
+					}
+				case ShutdownerWithContext:
+					c.Shutdown(timeoutCtx)
+				case ErrorShutdownerWithContext:
+					if err := c.Shutdown(timeoutCtx); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
+					}
+				case Unsubscriber:
+					c.Unsubscribe()
+				case ErrorUnsubscriber:
+					if err := c.Unsubscribe(); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriber")
+					}
+				case UnsubscriberWithContext:
+					c.Unsubscribe(timeoutCtx)
+				case ErrorUnsubscriberWithContext:
+					if err := c.Unsubscribe(timeoutCtx); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
+					}
+				}
+			}
+			return inst.gCtx.Err()
+		})
 	}
-	inst.meter = telemetry.MustMeter()
 
-	if inst.traceProvider == nil {
-		inst.traceProvider, err = telemetry.NewNoopTraceProvider()
-		log.Must(inst.l, err, "failed to create tracer provider")
+	{ // setup telemetry
+		var err error
+		otel.SetLogger(logr.New(telemetry.NewLogger(inst.l)))
+		otel.SetErrorHandler(telemetry.NewErrorHandler(inst.l))
+		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+		if inst.meterProvider == nil {
+			inst.meterProvider, err = telemetry.NewNoopMeterProvider()
+			log.Must(inst.l, err, "failed to create meter provider")
+		} else if env.GetBool("OTEL_ENABLED", false) {
+			if env.GetBool("OTEL_METRICS_HOST_ENABLED", false) {
+				log.Must(inst.l, otelhost.Start(), "failed to start otel host metrics")
+			}
+			if env.GetBool("OTEL_METRICS_RUNTIME_ENABLED", false) {
+				log.Must(inst.l, otelruntime.Start(), "failed to start otel runtime metrics")
+			}
+		}
+		inst.meter = telemetry.MustMeter()
+
+		if inst.traceProvider == nil {
+			inst.traceProvider, err = telemetry.NewNoopTraceProvider()
+			log.Must(inst.l, err, "failed to create tracer provider")
+		}
+		inst.tracer = telemetry.Tracer()
 	}
-	inst.tracer = telemetry.Tracer()
+
+	// add probe
+	inst.AddAnyProbes(inst)
+
+	// start init services
+	inst.startService(inst.initServices...)
 
 	return inst
 }
@@ -113,15 +186,14 @@ func (s *Server) Context() context.Context {
 
 // AddService add a single service
 func (s *Server) AddService(service Service) {
-	for index, value := range s.services {
+	for _, value := range s.services {
 		if value == service {
-			return
-		} else if value.Name() == service.Name() {
-			s.services[index] = service
 			return
 		}
 	}
 	s.services = append(s.services, service)
+	s.AddAnyProbes(service)
+	s.AddCloser(service)
 }
 
 // AddServices adds multiple service
@@ -133,6 +205,11 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
+	for _, value := range s.closers {
+		if value == closer {
+			return
+		}
+	}
 	switch closer.(type) {
 	case Closer,
 		ErrorCloser,
@@ -170,7 +247,7 @@ func (s *Server) AddProbe(typ ProbeType, probe interface{}) {
 		ErrorPingProbeWithContext:
 		s.probes[typ] = append(s.probes[typ], probe)
 	default:
-		s.l.Warn("unable to add probe", log.FValue(fmt.Sprintf("%T", probe)))
+		s.l.Debug("not a probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
 }
 
@@ -201,22 +278,51 @@ func (s *Server) AddReadinessProbes(probes ...interface{}) {
 	s.AddProbes(ProbeTypeReadiness, probes...)
 }
 
+// IsCanceled returns true if the internal errgroup has been canceled
+func (s *Server) IsCanceled() bool {
+	return errors.Is(s.gCtx.Err(), context.Canceled)
+}
+
+// Healthz returns true if the server is running
+func (s *Server) Healthz() error {
+	if !s.running {
+		return ErrServerNotRunning
+	}
+	return nil
+}
+
 // Run runs the server
 func (s *Server) Run() {
-	s.l.Info("starting server")
-
-	ctx, stop := signal.NotifyContext(s.ctx, s.shutdownSignals...)
-	defer stop()
-
-	g, gctx := errgroup.WithContext(ctx)
-
-	if len(s.probes) > 0 {
-		s.AddService(NewDefaultServiceHTTPProbes(s.probes))
+	if s.IsCanceled() {
+		s.l.Info("keel server canceled")
+		return
 	}
 
-	for _, service := range s.services {
+	defer s.ctxCancel()
+	s.l.Info("starting keel server")
+
+	// start services
+	s.startService(s.services...)
+
+	// set running
+	defer func() {
+		s.running = false
+	}()
+	s.running = true
+
+	// wait for shutdown
+	if err := s.g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
+		log.WithError(s.l, err).Error("service error")
+	}
+
+	s.l.Info("keel server stopped")
+}
+
+// startService starts the given services
+func (s *Server) startService(services ...Service) {
+	for _, service := range services {
 		service := service
-		g.Go(func() error {
+		s.g.Go(func() error {
 			if err := service.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Debug("server has closed")
 			} else if err != nil {
@@ -225,78 +331,5 @@ func (s *Server) Run() {
 			}
 			return nil
 		})
-		// register started service
-		s.AddCloser(service)
 	}
-
-	// gracefully shutdown servers
-	g.Go(func() error {
-		<-gctx.Done()
-		s.l.Debug("gracefully stopping closers...")
-
-		timeoutCtx, timeoutCancel := context.WithTimeout(
-			context.Background(),
-			s.shutdownTimeout,
-		)
-		defer timeoutCancel()
-
-		// append internal closers
-		closers := append(s.closers, s.traceProvider, s.meterProvider) //nolint:gocritic
-
-		for _, closer := range closers {
-			switch c := closer.(type) {
-			case Closer:
-				c.Close()
-			case ErrorCloser:
-				if err := c.Close(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
-					continue
-				}
-			case CloserWithContext:
-				c.Close(timeoutCtx)
-			case ErrorCloserWithContext:
-				if err := c.Close(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")
-					continue
-				}
-			case Shutdowner:
-				c.Shutdown()
-			case ErrorShutdowner:
-				if err := c.Shutdown(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorShutdowner")
-					continue
-				}
-			case ShutdownerWithContext:
-				c.Shutdown(timeoutCtx)
-			case ErrorShutdownerWithContext:
-				if err := c.Shutdown(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
-					continue
-				}
-			case Unsubscriber:
-				c.Unsubscribe()
-			case ErrorUnsubscriber:
-				if err := c.Unsubscribe(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorUnsubscriber")
-					continue
-				}
-			case UnsubscriberWithContext:
-				c.Unsubscribe(timeoutCtx)
-			case ErrorUnsubscriberWithContext:
-				if err := c.Unsubscribe(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
-					continue
-				}
-			}
-			s.l.Info("stopped registered closer", log.FName(fmt.Sprintf("%T", closer)))
-		}
-		return gctx.Err()
-	})
-
-	// wait for shutdown
-	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		log.WithError(s.l, err).Error("service error")
-	}
-
-	s.l.Info("graceful shutdown complete")
 }

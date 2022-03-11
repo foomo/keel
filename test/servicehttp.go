@@ -58,7 +58,7 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 		}
 		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
 	}
-	s.l.Info("starting http service", fields...)
+	s.l.Info("starting http test service", fields...)
 	s.server.Config.BaseContext = func(_ net.Listener) context.Context { return ctx }
 	s.server.Start()
 
@@ -66,7 +66,7 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 }
 
 func (s *ServiceHTTP) Close(_ context.Context) error {
-	s.l.Info("shutting down http service")
+	s.l.Info("stopping http test service")
 	s.server.Close()
 	return nil
 }

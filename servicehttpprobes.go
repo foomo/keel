@@ -17,9 +17,6 @@ const (
 	DefaultServiceHTTPProbesPath = "/healthz"
 )
 
-// ProbeHandler type
-type ProbeHandler func(w http.ResponseWriter, r *http.Request)
-
 func NewServiceHTTPProbes(l *zap.Logger, name, addr, path string, probes Probes) *ServiceHTTP {
 	handler := http.NewServeMux()
 
