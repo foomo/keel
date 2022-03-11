@@ -7,12 +7,6 @@ type Closer interface {
 	Close()
 }
 
-// CloserFn interface
-type CloserFn func()
-
-// ErrorCloserFn interface
-type ErrorCloserFn func() error
-
 // ErrorCloser interface
 type ErrorCloser interface {
 	Close() error
@@ -23,16 +17,10 @@ type CloserWithContext interface {
 	Close(ctx context.Context)
 }
 
-// CloserWithContextFn interface
-type CloserWithContextFn func(ctx context.Context)
-
 // ErrorCloserWithContext interface
 type ErrorCloserWithContext interface {
 	Close(ctx context.Context) error
 }
-
-// ErrorCloserWithContextFn interface
-type ErrorCloserWithContextFn func(ctx context.Context) error
 
 // Shutdowner interface
 type Shutdowner interface {

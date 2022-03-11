@@ -135,13 +135,9 @@ func (s *Server) AddServices(services ...Service) {
 func (s *Server) AddCloser(closer interface{}) {
 	switch closer.(type) {
 	case Closer,
-		CloserFn,
 		ErrorCloser,
-		ErrorCloserFn,
 		CloserWithContext,
-		CloserWithContextFn,
 		ErrorCloserWithContext,
-		ErrorCloserWithContextFn,
 		Shutdowner,
 		ErrorShutdowner,
 		ShutdownerWithContext,
@@ -249,29 +245,15 @@ func (s *Server) Run() {
 
 		for _, closer := range closers {
 			switch c := closer.(type) {
-			case CloserFn:
-				c()
 			case Closer:
 				c.Close()
-			case ErrorCloserFn:
-				if err := c(); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
-					continue
-				}
 			case ErrorCloser:
 				if err := c.Close(); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloser")
 					continue
 				}
-			case CloserWithContextFn:
-				c(timeoutCtx)
 			case CloserWithContext:
 				c.Close(timeoutCtx)
-			case ErrorCloserWithContextFn:
-				if err := c(timeoutCtx); err != nil {
-					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")
-					continue
-				}
 			case ErrorCloserWithContext:
 				if err := c.Close(timeoutCtx); err != nil {
 					log.WithError(s.l, err).Error("failed to gracefully stop ErrorCloserWithContext")
