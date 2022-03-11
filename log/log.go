@@ -21,9 +21,10 @@ var (
 )
 
 func init() {
+	var level string
 	switch env.Get("LOG", ModeProd) {
 	case ModeDev:
-		atomicLevel.SetLevel(zap.DebugLevel)
+		level = "debug"
 		config = zap.Config{
 			Level:            atomicLevel,
 			Development:      true,
@@ -35,7 +36,7 @@ func init() {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
 	default:
-		atomicLevel.SetLevel(zap.InfoLevel)
+		level = "info"
 		config = zap.Config{
 			Level:       atomicLevel,
 			Development: false,
@@ -53,11 +54,18 @@ func init() {
 	config.EncoderConfig.TimeKey = "time"
 	config.DisableCaller = env.GetBool("LOG_DISABLE_STACKTRACE", true)
 	config.DisableStacktrace = env.GetBool("LOG_DISABLE_CALLER", true)
-	l, err := config.Build()
-	if err != nil {
+
+	if value, err := config.Build(); err != nil {
 		panic(err)
+	} else {
+		zap.ReplaceGlobals(value)
 	}
-	zap.ReplaceGlobals(l)
+
+	if value, err := zapcore.ParseLevel(env.Get("LOG_LEVEL", level)); err != nil {
+		panic(err)
+	} else {
+		atomicLevel.SetLevel(value)
+	}
 }
 
 // Logger return the logger instance
