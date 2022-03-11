@@ -51,10 +51,11 @@ func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 					if !ok {
 						err = fmt.Errorf("%v", e)
 					}
+					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
-						l = l.With(log.FStackSkip(3))
+						ll = ll.With(log.FStackSkip(3))
 					}
-					log.WithError(l, err).Error("recovering from panic")
+					ll.Error("recovering from panic")
 				}
 			}()
 			return next(req)
