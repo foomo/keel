@@ -4,17 +4,29 @@ import "context"
 
 type Probes map[ProbeType][]interface{}
 
-// BoolProbeFn interface
-type BoolProbeFn func() bool
+// Healthz
 
-// ErrorProbeFn interface
-type ErrorProbeFn func() error
+// BoolHealthz interface
+type BoolHealthz interface {
+	Healthz() bool
+}
 
-// BoolProbeWithContextFn interface
-type BoolProbeWithContextFn func(context.Context) bool
+// BoolHealthzWithContext interface
+type BoolHealthzWithContext interface {
+	Healthz(ctx context.Context) bool
+}
 
-// ErrorProbeWithContextFn interface
-type ErrorProbeWithContextFn func(context.Context) error
+// ErrorHealthz interface
+type ErrorHealthz interface {
+	Healthz() error
+}
+
+// ErrorHealthzWithContext interface
+type ErrorHealthzWithContext interface {
+	Healthz(ctx context.Context) error
+}
+
+// Ping
 
 // ErrorPingProbe interface
 type ErrorPingProbe interface {

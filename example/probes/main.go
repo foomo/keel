@@ -13,21 +13,18 @@ func main() {
 	_ = os.Setenv("SERVICE_HEALTHZ_ENABLED", "true")
 
 	svr := keel.NewServer(
-		// add probes service listening on 0.0.0.0:9400
-		// allows you to use probes for health checks in cluster: GET 0.0.0.0:9400/healthz
-		keel.WithHTTPProbesService(false),
+		// add probes service listening on :9400
+		// allows you to use probes for health checks in cluster: GET :9400/healthz
+		keel.WithHTTPProbesService(true),
 	)
 
 	l := svr.Logger()
 
-	// alternatively you can add them manually
-	svr.AddServices(keel.NewDefaultServiceHTTPZap())
-
-	h := handler.New(l)
 	// Add probe handlers
-	svr.AddLivelinessProbes(h)
-	// svr.AddReadinessProbes(h)
-	// svr.AddStartupProbes(h)
+	svr.AddAnyProbes(handler.New(l, "any"))
+	svr.AddStartupProbes(handler.New(l, "startup"))
+	svr.AddLivenessProbes(handler.New(l, "liveness"))
+	svr.AddReadinessProbes(handler.New(l, "readiness"))
 
 	// create demo service
 	svs := http.NewServeMux()
@@ -37,7 +34,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", ":8080", svs),
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
 	)
 
 	svr.Run()

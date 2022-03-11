@@ -133,7 +133,7 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	switch t := closer.(type) {
+	switch closer.(type) {
 	case Closer,
 		CloserFn,
 		ErrorCloser,
@@ -152,7 +152,7 @@ func (s *Server) AddCloser(closer interface{}) {
 		ErrorUnsubscriberWithContext:
 		s.closers = append(s.closers, closer)
 	default:
-		s.l.Warn("unable to add closer", log.FValue(t))
+		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
 }
 
@@ -165,45 +165,44 @@ func (s *Server) AddClosers(closers ...interface{}) {
 
 // AddProbe adds a probe to be called on healthz checks
 func (s *Server) AddProbe(typ ProbeType, probe interface{}) {
-	switch t := probe.(type) {
-	case BoolProbeFn,
-		ErrorProbeFn,
-		BoolProbeWithContextFn,
-		ErrorProbeWithContextFn,
+	switch probe.(type) {
+	case BoolHealthz,
+		BoolHealthzWithContext,
+		ErrorHealthz,
+		ErrorHealthzWithContext,
 		ErrorPingProbe,
 		ErrorPingProbeWithContext:
 		s.probes[typ] = append(s.probes[typ], probe)
 	default:
-		s.l.Warn("unable to add probe", log.FValue(t))
+		s.l.Warn("unable to add probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
 }
 
 // AddProbes adds the given probes to be called on healthz checks
-func (s *Server) AddProbes(probes ...interface{}) {
+func (s *Server) AddProbes(typ ProbeType, probes ...interface{}) {
 	for _, probe := range probes {
-		s.AddProbe(ProbeTypeAll, probe)
+		s.AddProbe(typ, probe)
 	}
 }
 
-// AddLivelinessProbes adds the liveliness probes to be called on healthz checks
-func (s *Server) AddLivelinessProbes(probes ...interface{}) {
-	for _, probe := range probes {
-		s.AddProbe(ProbeTypeLiveliness, probe)
-	}
-}
-
-// AddReadinessProbes adds the readiness probes to be called on healthz checks
-func (s *Server) AddReadinessProbes(probes ...interface{}) {
-	for _, probe := range probes {
-		s.AddProbe(ProbeTypeReadiness, probe)
-	}
+// AddAnyProbes adds the startup probes to be called on healthz checks
+func (s *Server) AddAnyProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeAny, probes...)
 }
 
 // AddStartupProbes adds the startup probes to be called on healthz checks
 func (s *Server) AddStartupProbes(probes ...interface{}) {
-	for _, probe := range probes {
-		s.AddProbe(ProbeTypeStartup, probe)
-	}
+	s.AddProbes(ProbeTypeStartup, probes...)
+}
+
+// AddLivenessProbes adds the liveness probes to be called on healthz checks
+func (s *Server) AddLivenessProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeLiveness, probes...)
+}
+
+// AddReadinessProbes adds the readiness probes to be called on healthz checks
+func (s *Server) AddReadinessProbes(probes ...interface{}) {
+	s.AddProbes(ProbeTypeReadiness, probes...)
 }
 
 // Run runs the server

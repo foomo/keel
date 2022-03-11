@@ -17,47 +17,42 @@ const (
 	DefaultServiceHTTPProbesPath = "/healthz"
 )
 
-// Probe's handler function
+// ProbeHandler type
 type ProbeHandler func(w http.ResponseWriter, r *http.Request)
 
 func NewServiceHTTPProbes(l *zap.Logger, name, addr, path string, probes Probes) *ServiceHTTP {
 	handler := http.NewServeMux()
 
-	call := func(probe interface{}) bool {
+	call := func(ctx context.Context, probe interface{}) (bool, error) {
 		switch h := probe.(type) {
-		case BoolProbeFn:
-			return h()
-		case ErrorProbeFn:
-			if err := h(); err != nil {
-				log.WithError(l, err).Error("failed to use probe ErrorHealthFn")
-				return false
-			}
+		case BoolHealthz:
+			return h.Healthz(), nil
+		case BoolHealthzWithContext:
+			return h.Healthz(ctx), nil
+		case ErrorHealthz:
+			return true, h.Healthz()
+		case ErrorHealthzWithContext:
+			return true, h.Healthz(ctx)
 		case ErrorPingProbe:
-			if err := h.Ping(); err != nil {
-				log.WithError(l, err).Error("failed to use probe ErrorPingProbe")
-				return false
-			}
+			return true, h.Ping()
 		case ErrorPingProbeWithContext:
-			if err := h.Ping(context.Background()); err != nil {
-				log.WithError(l, err).Error("failed to use probe ErrorHealth")
-				return false
-			}
-		case BoolProbeWithContextFn:
-			return h(context.Background())
-		case ErrorProbeWithContextFn:
-			if err := h(context.Background()); err != nil {
-				log.WithError(l, err).Error("failed to use probe ErrorHealthWithContext")
-				return false
-			}
+			return true, h.Ping(ctx)
+		default:
+			return false, errors.New("unhandled probe")
 		}
-		return true
 	}
 
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		for _, values := range probes {
+		for typ, values := range probes {
+			if typ == ProbeTypeStartup {
+				continue
+			}
 			for _, p := range values {
-				if !call(p) {
-					httputils.InternalServiceUnavailable(l, w, r, errors.New("not ready yet"))
+				if ok, err := call(r.Context(), p); err != nil {
+					httputils.InternalServiceUnavailable(l, w, r, err)
+					return
+				} else if !ok {
+					httputils.InternalServiceUnavailable(l, w, r, errors.New("probe failed"))
 					return
 				}
 			}
@@ -66,17 +61,20 @@ func NewServiceHTTPProbes(l *zap.Logger, name, addr, path string, probes Probes)
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	handler.HandleFunc(path+"/"+ProbeTypeLiveliness.String(), func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc(path+"/"+ProbeTypeLiveness.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[ProbeTypeAll]; ok {
+		if p, ok := probes[ProbeTypeAny]; ok {
 			ps = append(ps, p...)
 		}
-		if p, ok := probes[ProbeTypeLiveliness]; ok {
+		if p, ok := probes[ProbeTypeLiveness]; ok {
 			ps = append(ps, p...)
 		}
 		for _, p := range ps {
-			if !call(p) {
-				httputils.InternalServiceUnavailable(l, w, r, errors.New("not ready yet"))
+			if ok, err := call(r.Context(), p); err != nil {
+				httputils.InternalServiceUnavailable(l, w, r, err)
+				return
+			} else if !ok {
+				httputils.InternalServiceUnavailable(l, w, r, errors.New("liveness probe failed"))
 				return
 			}
 		}
@@ -86,15 +84,18 @@ func NewServiceHTTPProbes(l *zap.Logger, name, addr, path string, probes Probes)
 
 	handler.HandleFunc(path+"/"+ProbeTypeReadiness.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[ProbeTypeAll]; ok {
+		if p, ok := probes[ProbeTypeAny]; ok {
 			ps = append(ps, p...)
 		}
 		if p, ok := probes[ProbeTypeReadiness]; ok {
 			ps = append(ps, p...)
 		}
 		for _, p := range ps {
-			if !call(p) {
-				httputils.InternalServiceUnavailable(l, w, r, errors.New("not ready yet"))
+			if ok, err := call(r.Context(), p); err != nil {
+				httputils.InternalServiceUnavailable(l, w, r, err)
+				return
+			} else if !ok {
+				httputils.InternalServiceUnavailable(l, w, r, errors.New("readiness probe failed"))
 				return
 			}
 		}
@@ -104,15 +105,18 @@ func NewServiceHTTPProbes(l *zap.Logger, name, addr, path string, probes Probes)
 
 	handler.HandleFunc(path+"/"+ProbeTypeStartup.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[ProbeTypeAll]; ok {
+		if p, ok := probes[ProbeTypeAny]; ok {
 			ps = append(ps, p...)
 		}
 		if p, ok := probes[ProbeTypeStartup]; ok {
 			ps = append(ps, p...)
 		}
 		for _, p := range ps {
-			if !call(p) {
-				httputils.InternalServiceUnavailable(l, w, r, errors.New("not ready yet"))
+			if ok, err := call(r.Context(), p); err != nil {
+				httputils.InternalServiceUnavailable(l, w, r, err)
+				return
+			} else if !ok {
+				httputils.InternalServiceUnavailable(l, w, r, errors.New("startup probe failed"))
 				return
 			}
 		}

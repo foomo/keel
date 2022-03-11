@@ -44,7 +44,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", ":8080", svs,
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
 			middleware.SessionID(
 				// automatically set cookie if not exists
 				middleware.SessionIDWithSetCookie(true),

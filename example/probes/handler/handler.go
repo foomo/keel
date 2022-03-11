@@ -1,20 +1,19 @@
 package handler
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 )
 
 type Handler struct {
-	l *zap.Logger
+	l    *zap.Logger
+	name string
 }
 
-func New(l *zap.Logger) *Handler {
-	return &Handler{l: l}
+func New(l *zap.Logger, name string) *Handler {
+	return &Handler{l: l, name: name}
 }
 
-func (h *Handler) Ping(ctx context.Context) error {
-	h.l.Info("ping")
-	return nil
+func (h *Handler) Healthz() bool {
+	h.l.Info(h.name)
+	return true
 }
