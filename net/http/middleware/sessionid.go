@@ -14,7 +14,6 @@ import (
 )
 
 type (
-	contextKey       string
 	SessionIDOptions struct {
 		// Header to look up the session id
 		Header string
@@ -115,7 +114,7 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 			var sessionID string
 			if value := r.Header.Get(opts.Header); value != "" {
 				sessionID = value
-			} else if cookie, err := opts.Cookie.Get(r); errors.Is(err, http.ErrNoCookie) && !opts.SetCookie {
+			} else if c, err := opts.Cookie.Get(r); errors.Is(err, http.ErrNoCookie) && !opts.SetCookie {
 				// do nothing
 			} else if errors.Is(err, http.ErrNoCookie) && opts.SetCookie {
 				sessionID = opts.Generator()
@@ -129,7 +128,7 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 				httputils.InternalServerError(l, w, r, errors.Wrap(err, "failed to read session id cookie"))
 				return
 			} else {
-				sessionID = cookie.Value
+				sessionID = c.Value
 			}
 			if sessionID != "" && opts.SetHeader {
 				r.Header.Set(opts.Header, sessionID)
