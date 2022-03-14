@@ -29,6 +29,7 @@ const (
 	HeaderXRequestID          = "X-Request-ID"
 	HeaderXRequestedWith      = "X-Requested-With"
 	HeaderXSessionID          = "X-Session-ID"
+	HeaderXTrackingID         = "X-Tracking-ID"
 	HeaderXError              = "X-Error"
 	HeaderXRuntime            = "X-Runtime"
 	HeaderServer              = "Server"
