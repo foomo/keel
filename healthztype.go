@@ -4,11 +4,9 @@ package keel
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 type HealthzType string
 
-const healthzServiceName = "healthz"
-
 const (
-	// HealthzTypeAny will run on any checks
-	HealthzTypeAny HealthzType = "any"
+	// HealthzTypeAlways will run on any checks
+	HealthzTypeAlways HealthzType = "always"
 	// HealthzTypeStartup will run on /healthz/startup checks
 	// > The kubelet uses startup probes to know when a container application has started. If such a probe is configured,
 	// > it disables liveness and readiness checks until it succeeds, making sure those probes don't interfere with the

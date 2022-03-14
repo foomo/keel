@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"time"
@@ -22,10 +23,15 @@ func main() {
 	l := svr.Logger()
 
 	// Add probe handlers
-	svr.AddHealthzProbes(handler.New(l, "any"))
-	svr.AddStartupProbes(handler.New(l, "startup"))
-	svr.AddLivenessProbes(handler.New(l, "liveness"))
-	svr.AddReadinessProbes(handler.New(l, "readiness"))
+	svr.AddAlwaysHealthzers(handler.New(l, "always"))
+	svr.AddStartupHealthzers(handler.New(l, "startup"))
+	svr.AddLivenessHealthzers(handler.New(l, "liveness"))
+	svr.AddReadinessHealthzers(handler.New(l, "readiness"))
+
+	svr.AddAlwaysHealthzers(keel.NewHealthzerFn(func(ctx context.Context) error {
+		l.Info("healther fn")
+		return nil
+	}))
 
 	// create demo service
 	svs := http.NewServeMux()

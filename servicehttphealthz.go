@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	DefaultServiceHTTPProbesName = healthzServiceName
-	DefaultServiceHTTPProbesAddr = ":9400"
-	DefaultServiceHTTPProbesPath = "/healthz"
+	DefaultServiceHTTPHealthzName = "healthz"
+	DefaultServiceHTTPHealthzAddr = ":9400"
+	DefaultServiceHTTPHealthzPath = "/healthz"
 )
 
 func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[HealthzType][]interface{}) *ServiceHTTP {
@@ -66,7 +66,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 
 	handler.HandleFunc(path+"/"+HealthzTypeLiveness.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[HealthzTypeAny]; ok {
+		if p, ok := probes[HealthzTypeAlways]; ok {
 			ps = append(ps, p...)
 		}
 		if p, ok := probes[HealthzTypeLiveness]; ok {
@@ -87,7 +87,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 
 	handler.HandleFunc(path+"/"+HealthzTypeReadiness.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[HealthzTypeAny]; ok {
+		if p, ok := probes[HealthzTypeAlways]; ok {
 			ps = append(ps, p...)
 		}
 		if p, ok := probes[HealthzTypeReadiness]; ok {
@@ -108,7 +108,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 
 	handler.HandleFunc(path+"/"+HealthzTypeStartup.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[HealthzTypeAny]; ok {
+		if p, ok := probes[HealthzTypeAlways]; ok {
 			ps = append(ps, p...)
 		}
 		if p, ok := probes[HealthzTypeStartup]; ok {
@@ -132,9 +132,9 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 func NewDefaultServiceHTTPProbes(probes map[HealthzType][]interface{}) *ServiceHTTP {
 	return NewServiceHTTPHealthz(
 		log.Logger(),
-		DefaultServiceHTTPProbesName,
-		DefaultServiceHTTPProbesAddr,
-		DefaultServiceHTTPProbesPath,
+		DefaultServiceHTTPHealthzName,
+		DefaultServiceHTTPHealthzAddr,
+		DefaultServiceHTTPHealthzPath,
 		probes,
 	)
 }

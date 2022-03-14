@@ -2,6 +2,20 @@ package keel
 
 import "context"
 
+type healther struct {
+	handle func(context.Context) error
+}
+
+func NewHealthzerFn(handle func(context.Context) error) healther {
+	return healther{
+		handle: handle,
+	}
+}
+
+func (h healther) Healthz(ctx context.Context) error {
+	return h.handle(ctx)
+}
+
 // BoolHealthzer interface
 type BoolHealthzer interface {
 	Healthz() bool

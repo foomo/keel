@@ -151,7 +151,7 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	// add probe
-	inst.AddHealthzProbes(inst)
+	inst.AddAlwaysHealthzers(inst)
 
 	// start init services
 	inst.startService(inst.initServices...)
@@ -192,7 +192,7 @@ func (s *Server) AddService(service Service) {
 		}
 	}
 	s.services = append(s.services, service)
-	s.AddHealthzProbes(service)
+	s.AddAlwaysHealthzers(service)
 	s.AddCloser(service)
 }
 
@@ -236,8 +236,8 @@ func (s *Server) AddClosers(closers ...interface{}) {
 	}
 }
 
-// AddProbe adds a probe to be called on healthz checks
-func (s *Server) AddProbe(typ HealthzType, probe interface{}) {
+// AddHealthzer adds a probe to be called on healthz checks
+func (s *Server) AddHealthzer(typ HealthzType, probe interface{}) {
 	switch probe.(type) {
 	case BoolHealthzer,
 		BoolHealthzerWithContext,
@@ -251,31 +251,31 @@ func (s *Server) AddProbe(typ HealthzType, probe interface{}) {
 	}
 }
 
-// AddProbes adds the given probes to be called on healthz checks
-func (s *Server) AddProbes(typ HealthzType, probes ...interface{}) {
+// AddHealthzers adds the given probes to be called on healthz checks
+func (s *Server) AddHealthzers(typ HealthzType, probes ...interface{}) {
 	for _, probe := range probes {
-		s.AddProbe(typ, probe)
+		s.AddHealthzer(typ, probe)
 	}
 }
 
-// AddHealthzProbes adds the startup probes to be called on healthz checks
-func (s *Server) AddHealthzProbes(probes ...interface{}) {
-	s.AddProbes(HealthzTypeAny, probes...)
+// AddAlwaysHealthzers adds the probes to be called on any healthz checks
+func (s *Server) AddAlwaysHealthzers(probes ...interface{}) {
+	s.AddHealthzers(HealthzTypeAlways, probes...)
 }
 
-// AddStartupProbes adds the startup probes to be called on healthz checks
-func (s *Server) AddStartupProbes(probes ...interface{}) {
-	s.AddProbes(HealthzTypeStartup, probes...)
+// AddStartupHealthzers adds the startup probes to be called on healthz checks
+func (s *Server) AddStartupHealthzers(probes ...interface{}) {
+	s.AddHealthzers(HealthzTypeStartup, probes...)
 }
 
-// AddLivenessProbes adds the liveness probes to be called on healthz checks
-func (s *Server) AddLivenessProbes(probes ...interface{}) {
-	s.AddProbes(HealthzTypeLiveness, probes...)
+// AddLivenessHealthzers adds the liveness probes to be called on healthz checks
+func (s *Server) AddLivenessHealthzers(probes ...interface{}) {
+	s.AddHealthzers(HealthzTypeLiveness, probes...)
 }
 
-// AddReadinessProbes adds the readiness probes to be called on healthz checks
-func (s *Server) AddReadinessProbes(probes ...interface{}) {
-	s.AddProbes(HealthzTypeReadiness, probes...)
+// AddReadinessHealthzers adds the readiness probes to be called on healthz checks
+func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
+	s.AddHealthzers(HealthzTypeReadiness, probes...)
 }
 
 // IsCanceled returns true if the internal errgroup has been canceled
