@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/foomo/keel"
-	"github.com/foomo/keel/example/probes/handler"
+	"github.com/foomo/keel/example/healthz/handler"
 )
 
 func main() {
@@ -16,13 +16,13 @@ func main() {
 	svr := keel.NewServer(
 		// add probes service listening on :9400
 		// allows you to use probes for health checks in cluster: GET :9400/healthz
-		keel.WithHTTPProbesService(true),
+		keel.WithHTTPHealthzService(true),
 	)
 
 	l := svr.Logger()
 
 	// Add probe handlers
-	svr.AddAnyProbes(handler.New(l, "any"))
+	svr.AddHealthzProbes(handler.New(l, "any"))
 	svr.AddStartupProbes(handler.New(l, "startup"))
 	svr.AddLivenessProbes(handler.New(l, "liveness"))
 	svr.AddReadinessProbes(handler.New(l, "readiness"))

@@ -39,7 +39,7 @@ type Server struct {
 	shutdownTimeout time.Duration
 	running         bool
 	closers         []interface{}
-	probes          Probes
+	probes          map[HealthzType][]interface{}
 	ctx             context.Context
 	ctxCancel       context.CancelFunc
 	g               *errgroup.Group
@@ -52,7 +52,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
-		probes:          Probes{},
+		probes:          map[HealthzType][]interface{}{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -151,7 +151,7 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	// add probe
-	inst.AddAnyProbes(inst)
+	inst.AddHealthzProbes(inst)
 
 	// start init services
 	inst.startService(inst.initServices...)
@@ -192,7 +192,7 @@ func (s *Server) AddService(service Service) {
 		}
 	}
 	s.services = append(s.services, service)
-	s.AddAnyProbes(service)
+	s.AddHealthzProbes(service)
 	s.AddCloser(service)
 }
 
@@ -237,45 +237,45 @@ func (s *Server) AddClosers(closers ...interface{}) {
 }
 
 // AddProbe adds a probe to be called on healthz checks
-func (s *Server) AddProbe(typ ProbeType, probe interface{}) {
+func (s *Server) AddProbe(typ HealthzType, probe interface{}) {
 	switch probe.(type) {
-	case BoolHealthz,
-		BoolHealthzWithContext,
-		ErrorHealthz,
+	case BoolHealthzer,
+		BoolHealthzerWithContext,
+		ErrorHealthzer,
 		ErrorHealthzWithContext,
-		ErrorPingProbe,
-		ErrorPingProbeWithContext:
+		ErrorPinger,
+		ErrorPingerWithContext:
 		s.probes[typ] = append(s.probes[typ], probe)
 	default:
-		s.l.Debug("not a probe", log.FValue(fmt.Sprintf("%T", probe)))
+		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
 }
 
 // AddProbes adds the given probes to be called on healthz checks
-func (s *Server) AddProbes(typ ProbeType, probes ...interface{}) {
+func (s *Server) AddProbes(typ HealthzType, probes ...interface{}) {
 	for _, probe := range probes {
 		s.AddProbe(typ, probe)
 	}
 }
 
-// AddAnyProbes adds the startup probes to be called on healthz checks
-func (s *Server) AddAnyProbes(probes ...interface{}) {
-	s.AddProbes(ProbeTypeAny, probes...)
+// AddHealthzProbes adds the startup probes to be called on healthz checks
+func (s *Server) AddHealthzProbes(probes ...interface{}) {
+	s.AddProbes(HealthzTypeAny, probes...)
 }
 
 // AddStartupProbes adds the startup probes to be called on healthz checks
 func (s *Server) AddStartupProbes(probes ...interface{}) {
-	s.AddProbes(ProbeTypeStartup, probes...)
+	s.AddProbes(HealthzTypeStartup, probes...)
 }
 
 // AddLivenessProbes adds the liveness probes to be called on healthz checks
 func (s *Server) AddLivenessProbes(probes ...interface{}) {
-	s.AddProbes(ProbeTypeLiveness, probes...)
+	s.AddProbes(HealthzTypeLiveness, probes...)
 }
 
 // AddReadinessProbes adds the readiness probes to be called on healthz checks
 func (s *Server) AddReadinessProbes(probes ...interface{}) {
-	s.AddProbes(ProbeTypeReadiness, probes...)
+	s.AddProbes(HealthzTypeReadiness, probes...)
 }
 
 // IsCanceled returns true if the internal errgroup has been canceled

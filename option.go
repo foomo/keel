@@ -140,12 +140,12 @@ func WithHTTPPrometheusService(enabled bool) Option {
 	}
 }
 
-func WithHTTPProbesService(enabled bool) Option {
+func WithHTTPHealthzService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.probes.enabled", enabled)() {
 			service := NewDefaultServiceHTTPProbes(inst.probes)
 			inst.initServices = append(inst.initServices, service)
-			inst.AddAnyProbes(service)
+			inst.AddHealthzProbes(service)
 			inst.AddCloser(service)
 		}
 	}
