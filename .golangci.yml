@@ -29,7 +29,6 @@ linters:
   enable:
     - bodyclose
     - dogsled
-    - dupl
     - exportloopref
     - gci
     - goconst
