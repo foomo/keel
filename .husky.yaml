@@ -3,7 +3,8 @@ hooks:
     - golangci-lint run --fast
     - husky lint-staged
   commit-msg:
-    - husky lint-commit
+    # only execute if not in a merge
+    - if [[ -z $(git rev-parse -q --verify MERGE_HEAD) ]]; then bin/husky lint-commit; fi
 
 lint-staged:
   '*.go':
