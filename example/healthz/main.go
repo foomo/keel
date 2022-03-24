@@ -17,7 +17,8 @@ func main() {
 	_ = os.Setenv("SERVICE_HEALTHZ_ENABLED", "true")
 
 	svr := keel.NewServer(
-		// add probes service listening on :9400
+		keel.WithHTTPZapService(true),
+		keel.WithHTTPViperService(true),
 		// allows you to use probes for health checks in cluster:
 		//	GET :9400/healthz
 		//  GET :9400/healthz/readiness
@@ -59,8 +60,12 @@ func main() {
 
 	// long taking initialization
 	l.Info("doing some initialization")
-	time.Sleep(30 * time.Second)
-	l.Info("initialization done")
+	select {
+	case <-time.After(10 * time.Second):
+		l.Info("initialization done")
+	case <-svr.CancelContext().Done():
+		l.Info("initialization canceled")
+	}
 
 	// add services
 	svr.AddService(
