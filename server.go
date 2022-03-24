@@ -41,7 +41,8 @@ type Server struct {
 	closers         []interface{}
 	probes          map[HealthzType][]interface{}
 	ctx             context.Context
-	ctxCancel       context.CancelFunc
+	ctxCancel       context.Context
+	ctxCancelFn     context.CancelFunc
 	g               *errgroup.Group
 	gCtx            context.Context
 	l               *zap.Logger
@@ -63,15 +64,14 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	{ // setup error group
-		var ctx context.Context
-		ctx, inst.ctxCancel = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
-		inst.g, inst.gCtx = errgroup.WithContext(ctx)
+		inst.ctxCancel, inst.ctxCancelFn = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
+		inst.g, inst.gCtx = errgroup.WithContext(inst.ctxCancel)
 
 		// gracefully shutdown
 		inst.g.Go(func() error {
 			<-inst.gCtx.Done()
 			inst.l.Debug("keel graceful shutdown")
-			defer inst.ctxCancel()
+			defer inst.ctxCancelFn()
 
 			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.shutdownTimeout)
 			defer timeoutCancel()
@@ -182,6 +182,11 @@ func (s *Server) Config() *viper.Viper {
 // Context returns server context
 func (s *Server) Context() context.Context {
 	return s.ctx
+}
+
+// CancelContext returns server's cancel context
+func (s *Server) CancelContext() context.Context {
+	return s.ctxCancel
 }
 
 // AddService add a single service
@@ -298,11 +303,16 @@ func (s *Server) Run() {
 		return
 	}
 
-	defer s.ctxCancel()
+	defer s.ctxCancelFn()
 	s.l.Info("starting keel server")
 
 	// start services
 	s.startService(s.services...)
+
+	// add init services to closers
+	for _, initService := range s.initServices {
+		s.AddClosers(initService)
+	}
 
 	// set running
 	defer func() {

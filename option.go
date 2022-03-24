@@ -62,7 +62,9 @@ func WithShutdownTimeout(shutdownTimeout time.Duration) Option {
 func WithHTTPZapService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.zap.enabled", enabled)() {
-			inst.AddService(NewDefaultServiceHTTPZap())
+			service := NewDefaultServiceHTTPZap()
+			inst.initServices = append(inst.initServices, service)
+			inst.AddAlwaysHealthzers(service)
 		}
 	}
 }
@@ -71,7 +73,9 @@ func WithHTTPZapService(enabled bool) Option {
 func WithHTTPViperService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.viper.enabled", enabled)() {
-			inst.AddService(NewDefaultServiceHTTPViper())
+			service := NewDefaultServiceHTTPViper()
+			inst.initServices = append(inst.initServices, service)
+			inst.AddAlwaysHealthzers(service)
 		}
 	}
 }
@@ -135,7 +139,9 @@ func WithPrometheusMeter(enabled bool) Option {
 func WithHTTPPrometheusService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.prometheus.enabled", enabled)() {
-			inst.AddService(NewDefaultServiceHTTPPrometheus())
+			service := NewDefaultServiceHTTPPrometheus()
+			inst.initServices = append(inst.initServices, service)
+			inst.AddAlwaysHealthzers(service)
 		}
 	}
 }
@@ -146,7 +152,6 @@ func WithHTTPHealthzService(enabled bool) Option {
 			service := NewDefaultServiceHTTPProbes(inst.probes)
 			inst.initServices = append(inst.initServices, service)
 			inst.AddAlwaysHealthzers(service)
-			inst.AddCloser(service)
 		}
 	}
 }
