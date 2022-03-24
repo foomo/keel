@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/foomo/keel"
+	"github.com/foomo/keel/net/http/middleware"
 )
 
 func main() {
@@ -28,8 +29,8 @@ func main() {
 	// OTEL_METRICS_RUNTIME_ENABLED="false"
 
 	svr := keel.NewServer(
-		keel.WithStdOutMeter(false),
-		keel.WithStdOutTracer(false),
+		keel.WithStdOutMeter(true),
+		keel.WithStdOutTracer(true),
 	)
 
 	l := svr.Logger()
@@ -66,7 +67,10 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+			middleware.Telemetry(),
+			middleware.Recover(),
+		),
 	)
 
 	svr.Run()

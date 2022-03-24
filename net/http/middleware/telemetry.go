@@ -4,6 +4,10 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.uber.org/zap"
 )
 
@@ -52,6 +56,20 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		if opts.Name != "" {
 			name = opts.Name
 		}
-		return otelhttp.NewHandler(next, name, opts.OtelOpts...)
+		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
+		m := global.GetMeterProvider().Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp", metric.WithInstrumentationVersion(otelhttp.SemVersion()))
+		c, err := m.NewInt64Counter(otelhttp.RequestCount)
+		if err != nil {
+			otel.Handle(err)
+		}
+		h := otelhttp.NewHandler(next, name, opts.OtelOpts...)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// wrap response write to get access to status & size
+			wr := WrapResponseWriter(w)
+
+			h.ServeHTTP(wr, r)
+
+			c.Add(r.Context(), 1, semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))
+		})
 	}
 }
