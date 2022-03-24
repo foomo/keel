@@ -4,7 +4,7 @@ hooks:
     - husky lint-staged
   commit-msg:
     # only execute if not in a merge
-    - if [[ -z $(git rev-parse -q --verify MERGE_HEAD) ]]; then bin/husky lint-commit; fi
+    - if [[ -z $(git rev-parse -q --verify MERGE_HEAD) ]]; then husky lint-commit; fi
 
 lint-staged:
   '*.go':
