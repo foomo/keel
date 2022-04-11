@@ -39,7 +39,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - uses: golangci/golangci-lint-action@v3.1.0
@@ -58,7 +58,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
       - run: go test -v ./...
