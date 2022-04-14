@@ -1,12 +1,14 @@
 # Minimum golangci-lint version required: v1.42.0
 run:
+  go: "1.17"
   timeout: 3m
   skip-dirs:
     - tmp
 
 linters-settings:
   gci:
-    local-prefixes: github.com/foomo/keel
+    sections:
+      - prefix(github.com/foomo/keel)
   revive:
     rules:
       - name: indent-error-flow
@@ -30,7 +32,7 @@ linters:
     - bodyclose
     - dogsled
     - exportloopref
-    - gci
+    # - gci TODO re-enable
     - goconst
     - gocritic
     # - gocyclo
