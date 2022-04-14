@@ -62,8 +62,8 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		if err != nil {
 			otel.Handle(err)
 		}
-		h := otelhttp.NewHandler(next, name, opts.OtelOpts...)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h := otelhttp.NewHandler(next, name, opts.OtelOpts...)
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
 
