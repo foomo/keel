@@ -17,9 +17,9 @@ func client() {
 
 	var err error
 
-	_, err = client.Get("http://localhost:8080") // nolint:noctx
+	_, err = client.Get("http://localhost:8080") // nolint
 	log.Must(l, err, "failed to retrieve response")
 
-	_, err = client.Get("http://localhost:8080/404") // nolint:noctx
+	_, err = client.Get("http://localhost:8080/404") // nolint
 	log.Must(l, err, "failed to retrieve response")
 }
