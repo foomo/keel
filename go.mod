@@ -9,13 +9,13 @@ require (
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/nats-io/nats-server/v2 v2.7.3 // indirect
-	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
+	github.com/nats-io/nats.go v1.14.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/spf13/viper v1.10.1
+	github.com/spf13/viper v1.11.0
 	github.com/stretchr/testify v1.7.1
 	github.com/tinylib/msgp v1.1.6
-	go.mongodb.org/mongo-driver v1.8.4
+	go.mongodb.org/mongo-driver v1.9.0
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.30.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.29.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.30.0
@@ -34,6 +34,6 @@ require (
 	go.temporal.io/sdk v1.13.1
 	go.temporal.io/sdk/contrib/opentelemetry v0.1.0
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
