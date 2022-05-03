@@ -1,22 +1,40 @@
 package httputils
 
 import (
+	"net"
 	"net/http"
 	"strings"
+
+	keelhttp "github.com/foomo/keel/net/http"
 )
 
 // GetRequestHost returns the request's host
 func GetRequestHost(r *http.Request) string {
-	var host string
-	switch {
-	case r.Header.Get("X-Forwarded-Host") != "":
-		host = r.Header.Get("X-Forwarded-Host")
-	case !r.URL.IsAbs():
-		host = r.Host
-	default:
-		host = r.URL.Host
+	if value := r.Header.Get(keelhttp.HeaderXForwardedHost); value != "" {
+		return value
+	} else if !r.URL.IsAbs() {
+		return r.Host
+	} else {
+		return r.URL.Host
 	}
-	return host
+}
+
+func GetRemoteAddr(r *http.Request) string {
+	if value := r.Header.Get(keelhttp.HeaderXRealIP); value != "" {
+		return value
+	} else if value := r.Header.Get(keelhttp.HeaderTrueClientIP); value != "" {
+		return value
+	} else if value := r.Header.Get(keelhttp.HeaderXForwardedFor); value != "" {
+		if i := strings.IndexAny(value, ", "); i > 0 {
+			return value[:i]
+		} else {
+			return value
+		}
+	} else if value, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return value
+	} else {
+		return r.RemoteAddr
+	}
 }
 
 // GetRequestDomain returns the request's domain

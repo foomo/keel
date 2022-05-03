@@ -17,6 +17,7 @@ const (
 	HeaderUpgrade             = "Upgrade"
 	HeaderVary                = "Vary"
 	HeaderWWWAuthenticate     = "WWW-Authenticate"
+	HeaderXForwardedHost      = "X-Forwarded-Host"
 	HeaderXForwardedFor       = "X-Forwarded-For"
 	HeaderXForwardedProto     = "X-Forwarded-Proto"
 	HeaderXForwardedProtocol  = "X-Forwarded-Protocol"
@@ -33,8 +34,15 @@ const (
 	HeaderXError              = "X-Error"
 	HeaderXRuntime            = "X-Runtime"
 	HeaderServer              = "Server"
+	HeaderTrueClientIP        = "True-Client-Ip"
 	HeaderOrigin              = "Origin"
 	HeaderUserAgent           = "User-Agent"
+
+	// Cloudflare
+	HeaderCloudflareIPCountry    = "Cf-Ipcountry"
+	HeaderCloudflareRay          = "Cf-Ray"
+	HeaderCloudflareConnectingIP = "Cf-Connecting-Ip"
+	HeaderCloudflareVisitor      = "Cf-Visitor"
 
 	// Access control
 	HeaderAccessControlRequestMethod    = "Access-Control-Request-Method"
