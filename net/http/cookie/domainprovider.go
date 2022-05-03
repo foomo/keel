@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	httputils "github.com/foomo/keel/utils/net/http"
+	keelhttp "github.com/foomo/keel/utils/net/http"
 )
 
 type DomainProvider func(r *http.Request) (string, error)
@@ -46,7 +46,7 @@ func NewDomainProvider(opts ...DomainProviderOption) DomainProvider {
 	}
 
 	return func(r *http.Request) (string, error) {
-		domain := httputils.GetRequestDomain(r)
+		domain := keelhttp.GetRequestDomain(r)
 
 		if options.Domains == nil || len(options.Domains) == 0 {
 			return domain, nil

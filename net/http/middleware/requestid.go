@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	httputils "github.com/foomo/keel/net/http"
+	keelhttp "github.com/foomo/keel/net/http"
 )
 
 type (
@@ -28,7 +28,7 @@ func DefaultRequestIDGenerator() string {
 func GetDefaultRequestIDOptions() RequestIDOptions {
 	return RequestIDOptions{
 		Generator:         DefaultRequestIDGenerator,
-		ResponseHeader:    httputils.HeaderXRequestID,
+		ResponseHeader:    keelhttp.HeaderXRequestID,
 		SetResponseHeader: false,
 	}
 }

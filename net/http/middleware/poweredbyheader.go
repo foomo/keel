@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
-	httputils "github.com/foomo/keel/net/http"
+	keelhttp "github.com/foomo/keel/net/http"
 )
 
 type (
@@ -19,7 +19,7 @@ type (
 // GetDefaultPoweredByHeaderOptions returns the default options
 func GetDefaultPoweredByHeaderOptions() PoweredByHeaderOptions {
 	return PoweredByHeaderOptions{
-		Header:  httputils.HeaderXPoweredBy,
+		Header:  keelhttp.HeaderXPoweredBy,
 		Message: "a lot of LOVE",
 	}
 }

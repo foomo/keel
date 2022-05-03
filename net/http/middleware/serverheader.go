@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
-	httputils "github.com/foomo/keel/net/http"
+	keelhttp "github.com/foomo/keel/net/http"
 )
 
 type (
@@ -19,7 +19,7 @@ type (
 // GetDefaultServerHeaderOptions returns the default options
 func GetDefaultServerHeaderOptions() ServerHeaderOptions {
 	return ServerHeaderOptions{
-		Header: httputils.HeaderServer,
+		Header: keelhttp.HeaderServer,
 	}
 }
 
