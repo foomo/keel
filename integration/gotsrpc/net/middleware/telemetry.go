@@ -2,7 +2,6 @@ package keelgotsrpcmiddleware
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/foomo/gotsrpc/v2"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -20,13 +19,9 @@ func Telemetry() middleware.Middleware {
 			next.ServeHTTP(w, r)
 			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
 				if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-					// Use floating point division here for higher precision (instead of Millisecond method).
 					labeler.Add(attribute.String("gotsrpc_func", stats.Func))
 					labeler.Add(attribute.String("gotsrpc_service", stats.Service))
 					labeler.Add(attribute.String("gotsrpc_package", stats.Package))
-					labeler.Add(attribute.Float64("gotsrpc_execution", float64(stats.Execution)/float64(time.Millisecond)))
-					labeler.Add(attribute.Float64("gotsrpc_marshalling", float64(stats.Marshalling)/float64(time.Millisecond)))
-					labeler.Add(attribute.Float64("gotsrpc_unmarshalling", float64(stats.Unmarshalling)/float64(time.Millisecond)))
 				}
 			}
 		})
