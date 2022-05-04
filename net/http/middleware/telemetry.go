@@ -62,15 +62,14 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		if err != nil {
 			otel.Handle(err)
 		}
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			h := otelhttp.NewHandler(next, name, opts.OtelOpts...)
+		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
 
-			h.ServeHTTP(wr, r)
+			next.ServeHTTP(wr, r)
 
 			labeler, _ := otelhttp.LabelerFromContext(r.Context())
 			c.Add(r.Context(), 1, append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
-		})
+		}), name, opts.OtelOpts...)
 	}
 }
