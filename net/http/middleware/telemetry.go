@@ -69,7 +69,10 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 
 			h.ServeHTTP(wr, r)
 
-			c.Add(r.Context(), 1, semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))
+			labeler, _ := otelhttp.LabelerFromContext(r.Context())
+			labeler.Add(semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))
+
+			c.Add(r.Context(), 1, labeler.Get()...)
 		})
 	}
 }
