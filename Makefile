@@ -44,6 +44,12 @@ lint.super:
 
 ## === Utils ===
 
+.PHONY: gomod
+## Run go mod tidy
+gomod:
+	go mod tidy
+	cd example && go mod tidy
+
 .PHONY: outdated
 ## Show outdated direct dependencies
 outdated:
