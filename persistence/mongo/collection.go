@@ -26,6 +26,7 @@ type (
 // Collection can only be used in the Persistor.WithCollection call.ss
 type (
 	Collection struct {
+		db         *mongo.Database
 		collection *mongo.Collection
 	}
 	CollectionOptions struct {
@@ -120,11 +121,15 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 	}
 
 	return &Collection{
+		db:         db,
 		collection: col,
 	}, nil
 }
 
-// Col ...
+func (c *Collection) DB() *mongo.Database {
+	return c.db
+}
+
 func (c *Collection) Col() *mongo.Collection {
 	return c.collection
 }

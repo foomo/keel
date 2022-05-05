@@ -109,6 +109,14 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	}, nil
 }
 
+func (p Persistor) DB() *mongo.Database {
+	return p.db
+}
+
+func (p Persistor) Client() *mongo.Client {
+	return p.client
+}
+
 func (p Persistor) Ping(ctx context.Context) error {
 	return p.client.Ping(ctx, nil)
 }
