@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
@@ -74,7 +75,12 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 
 	// setup namespace
 	if o.RegisterNamespace != nil {
-		if ns, err := nsc.Describe(ctx, o.RegisterNamespace.Namespace); err != nil {
+		var notFoundErr *serviceerror.NotFound
+		if ns, err := nsc.Describe(ctx, o.RegisterNamespace.Namespace); errors.As(err, &notFoundErr) {
+			if err := nsc.Register(ctx, o.RegisterNamespace); err != nil {
+				return nil, errors.Wrap(err, "failed to register temporal namespace")
+			}
+		} else if err != nil {
 			return nil, errors.Wrap(err, "failed to retrieve temporal namespace info")
 		} else if ns.GetNamespaceInfo().State == enums.NAMESPACE_STATE_REGISTERED {
 			o.Logger.Debug("temporal namespace already registered", log.FValue(o.RegisterNamespace.Namespace))
