@@ -44,6 +44,10 @@ func (s *Subscriber) Subscribe(handler stream.MsgHandler, opts ...nats.SubOpt) (
 	}, s.SubOpts(opts...)...)
 }
 
+func (s *Subscriber) ChanSubscribe(ch chan *nats.Msg, opts ...nats.SubOpt) (*nats.Subscription, error) {
+	return s.JS().ChanSubscribe(s.Subject(), ch, opts...)
+}
+
 func (s *Subscriber) QueueSubscribe(queue string, handler stream.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, error) {
 	return s.JS().QueueSubscribe(s.Subject(), queue, func(msg *nats.Msg) {
 		ctx := context.Background()
