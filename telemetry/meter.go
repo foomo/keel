@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric"
 	otelglobal "go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/nonrecording"
 	otelcontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelaggregation "go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -23,12 +24,8 @@ func Meter() metric.Meter {
 	return otelglobal.Meter("")
 }
 
-func MustMeter() metric.MeterMust {
-	return metric.Must(Meter())
-}
-
 func NewNoopMeterProvider() (metric.MeterProvider, error) {
-	controller := metric.NewNoopMeterProvider()
+	controller := nonrecording.NewNoopMeterProvider()
 	otelglobal.SetMeterProvider(controller)
 	return controller, nil
 }

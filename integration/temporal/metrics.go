@@ -2,21 +2,23 @@ package keeltemporal
 
 import (
 	"context"
-	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.temporal.io/sdk/client"
 )
 
 type metricsHandler struct {
-	meter metric.MeterMust
+	meter metric.Meter
 	attr  []attribute.KeyValue
 }
 
 // 	scope, _ := tally.NewRootScope(opts, time.Second)
-func NewMetricsHandler(meter metric.MeterMust) client.MetricsHandler {
+func NewMetricsHandler(meter metric.Meter) client.MetricsHandler {
 	return metricsHandler{meter: meter}
 }
 
@@ -29,7 +31,7 @@ func (m metricsHandler) WithTags(tags map[string]string) client.MetricsHandler {
 }
 
 type counter struct {
-	inst metric.Int64Counter
+	inst syncint64.Counter
 	attr []attribute.KeyValue
 }
 
@@ -38,67 +40,52 @@ func (c *counter) Inc(v int64) {
 }
 
 func (m metricsHandler) Counter(name string) client.MetricsCounter {
+	c, err := m.meter.SyncInt64().Counter(name)
+	if err != nil {
+		otel.Handle(err)
+	}
 	return &counter{
 		attr: m.attr,
-		inst: m.meter.NewInt64Counter(name),
-	}
-}
-
-type gaugeFloat struct {
-	mu sync.RWMutex
-	f  float64
-}
-
-func (of *gaugeFloat) set(v float64) {
-	of.mu.Lock()
-	defer of.mu.Unlock()
-	of.f = v
-}
-
-func (of *gaugeFloat) get() float64 {
-	of.mu.RLock()
-	defer of.mu.RUnlock()
-	return of.f
-}
-
-func newObservedFloat(v float64) *gaugeFloat {
-	return &gaugeFloat{
-		f: v,
+		inst: c,
 	}
 }
 
 type gauge struct {
-	inst  metric.Float64GaugeObserver
-	value *gaugeFloat
+	inst asyncfloat64.Gauge
+	attr []attribute.KeyValue
 }
 
 func (c *gauge) Update(v float64) {
-	c.value.set(v)
+	c.inst.Observe(context.TODO(), v, c.attr...)
 }
 
 func (m metricsHandler) Gauge(name string) client.MetricsGauge {
-	value := newObservedFloat(0)
+	c, err := m.meter.AsyncFloat64().Gauge(name)
+	if err != nil {
+		otel.Handle(err)
+	}
 	return &gauge{
-		value: value,
-		inst: m.meter.NewFloat64GaugeObserver(name, func(ctx context.Context, result metric.Float64ObserverResult) {
-			v := value.get()
-			result.Observe(v, m.attr...)
-		}),
+		inst: c,
+		attr: m.attr,
 	}
 }
 
 type timer struct {
-	inst metric.Int64Histogram
+	inst syncint64.Histogram
 	attr []attribute.KeyValue
 }
 
-func (c *timer) Record(time.Duration) {
-	c.inst.Record(context.TODO(), int64(time.Millisecond), c.attr...)
+func (c *timer) Record(v time.Duration) {
+	c.inst.Record(context.TODO(), v.Milliseconds(), c.attr...)
 }
 
 func (m metricsHandler) Timer(name string) client.MetricsTimer {
+	c, err := m.meter.SyncInt64().Histogram(name)
+	if err != nil {
+		otel.Handle(err)
+	}
 	return &timer{
-		inst: m.meter.NewInt64Histogram(name),
+		inst: c,
 		attr: m.attr,
 	}
 }

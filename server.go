@@ -31,7 +31,7 @@ import (
 type Server struct {
 	services        []Service
 	initServices    []Service
-	meter           metric.MeterMust
+	meter           metric.Meter
 	meterProvider   metric.MeterProvider
 	tracer          trace.Tracer
 	traceProvider   trace.TracerProvider
@@ -141,7 +141,7 @@ func NewServer(opts ...Option) *Server {
 				log.Must(inst.l, otelruntime.Start(), "failed to start otel runtime metrics")
 			}
 		}
-		inst.meter = telemetry.MustMeter()
+		inst.meter = telemetry.Meter()
 
 		if inst.traceProvider == nil {
 			inst.traceProvider, err = telemetry.NewNoopTraceProvider()
@@ -165,7 +165,7 @@ func (s *Server) Logger() *zap.Logger {
 }
 
 // Meter returns the implementation meter
-func (s *Server) Meter() metric.MeterMust {
+func (s *Server) Meter() metric.Meter {
 	return s.meter
 }
 

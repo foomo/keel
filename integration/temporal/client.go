@@ -110,7 +110,7 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 			return nil, errors.Wrap(err, "failed to create new opentracing interceptor")
 		}
 		clientOpts.Interceptors = append(clientOpts.Interceptors, tracingInterceptor)
-		clientOpts.MetricsHandler = NewMetricsHandler(telemetry.MustMeter())
+		clientOpts.MetricsHandler = NewMetricsHandler(telemetry.Meter())
 	}
 
 	return client.NewClient(clientOpts)

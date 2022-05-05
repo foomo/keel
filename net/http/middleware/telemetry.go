@@ -57,8 +57,8 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			name = opts.Name
 		}
 		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
-		m := global.GetMeterProvider().Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp", metric.WithInstrumentationVersion(otelhttp.SemVersion()))
-		c, err := m.NewInt64Counter(otelhttp.RequestCount)
+		m := global.MeterProvider().Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp", metric.WithInstrumentationVersion(otelhttp.SemVersion()))
+		c, err := m.SyncInt64().Counter(otelhttp.RequestCount)
 		if err != nil {
 			otel.Handle(err)
 		}
