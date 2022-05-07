@@ -282,3 +282,7 @@ func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscribe
 	}
 	return sub
 }
+
+func (s *Stream) Close() {
+	s.conn.Close()
+}
