@@ -114,13 +114,6 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 			return nil, errors.Wrap(err, "failed to register temporal namespace")
 		}
 		clientOpts.Namespace = o.RegisterNamespace.Namespace
-	} else {
-		if ns, err := nsc.Describe(ctx, o.Namespace); err != nil {
-			return nil, errors.Wrap(err, "failed to retrieve temporal namespace info")
-		} else if ns.GetNamespaceInfo().State != enums.NAMESPACE_STATE_REGISTERED {
-			o.Logger.Debug("temporal namespace not registered", log.FValue(o.Namespace))
-			return nil, errors.New("namespace " + o.Namespace + " not registered")
-		}
 	}
 
 	// setup otel
