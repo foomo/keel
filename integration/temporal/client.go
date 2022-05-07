@@ -6,6 +6,8 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/api/namespace/v1"
+	"go.temporal.io/api/replication/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
@@ -82,9 +84,33 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 			}
 		} else if err != nil {
 			return nil, errors.Wrap(err, "failed to retrieve temporal namespace info")
-		} else if ns.GetNamespaceInfo().State == enums.NAMESPACE_STATE_REGISTERED {
-			o.Logger.Debug("temporal namespace already registered", log.FValue(o.RegisterNamespace.Namespace))
-		} else if err := nsc.Register(ctx, o.RegisterNamespace); err != nil {
+		} else if nsInfo := ns.GetNamespaceInfo(); nsInfo.State != enums.NAMESPACE_STATE_REGISTERED {
+			return nil, errors.New("Could not register namespace due to existing state: " + nsInfo.State.String())
+		} else if err := nsc.Update(ctx, &workflowservice.UpdateNamespaceRequest{
+			Namespace: o.RegisterNamespace.Namespace,
+			UpdateInfo: &namespace.UpdateNamespaceInfo{
+				Description: o.RegisterNamespace.Description,
+				OwnerEmail:  o.RegisterNamespace.OwnerEmail,
+				Data:        o.RegisterNamespace.Data,
+				State:       nsInfo.State,
+			},
+			Config: &namespace.NamespaceConfig{
+				WorkflowExecutionRetentionTtl: o.RegisterNamespace.WorkflowExecutionRetentionPeriod,
+				BadBinaries:                   ns.Config.BadBinaries,
+				HistoryArchivalState:          o.RegisterNamespace.HistoryArchivalState,
+				HistoryArchivalUri:            o.RegisterNamespace.HistoryArchivalUri,
+				VisibilityArchivalState:       o.RegisterNamespace.VisibilityArchivalState,
+				VisibilityArchivalUri:         o.RegisterNamespace.VisibilityArchivalUri,
+			},
+			ReplicationConfig: &replication.NamespaceReplicationConfig{
+				ActiveClusterName: o.RegisterNamespace.ActiveClusterName,
+				Clusters:          o.RegisterNamespace.Clusters,
+				State:             ns.ReplicationConfig.State,
+			},
+			SecurityToken:    o.RegisterNamespace.SecurityToken,
+			DeleteBadBinary:  "",
+			PromoteNamespace: false,
+		}); err != nil {
 			return nil, errors.Wrap(err, "failed to register temporal namespace")
 		}
 		clientOpts.Namespace = o.RegisterNamespace.Namespace
