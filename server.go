@@ -112,6 +112,12 @@ func NewServer(opts ...Option) *Server {
 					if err := c.Stop(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorStopper")
 					}
+				case StopperWithContext:
+					c.Stop(timeoutCtx)
+				case ErrorStopperWithContext:
+					if err := c.Stop(timeoutCtx); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorStopperWithContext")
+					}
 				case Unsubscriber:
 					c.Unsubscribe()
 				case ErrorUnsubscriber:
