@@ -86,7 +86,7 @@ func main() {
 	log.Must(l, err, "failed to subscribe to subject")
 
 	// add closes (NOTE: order matters)
-	svr.AddClosers(subscription, stream.Conn())
+	svr.AddClosers(subscription, stream)
 
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
