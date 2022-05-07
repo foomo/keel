@@ -106,6 +106,12 @@ func NewServer(opts ...Option) *Server {
 					if err := c.Shutdown(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
 					}
+				case Stopper:
+					c.Stop()
+				case ErrorStopper:
+					if err := c.Stop(); err != nil {
+						log.WithError(l, err).Error("failed to gracefully stop ErrorStopper")
+					}
 				case Unsubscriber:
 					c.Unsubscribe()
 				case ErrorUnsubscriber:
