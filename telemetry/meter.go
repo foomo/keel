@@ -15,7 +15,7 @@ import (
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	otelselector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	otelresource "go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
 	"github.com/foomo/keel/env"
 )
