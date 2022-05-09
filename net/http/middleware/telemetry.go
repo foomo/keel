@@ -24,7 +24,8 @@ type (
 // GetDefaultTelemetryOptions returns the default options
 func GetDefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
-		OtelOpts: []otelhttp.Option{},
+		OtelOpts:                []otelhttp.Option{},
+		InjectPropagationHeader: true,
 	}
 }
 
