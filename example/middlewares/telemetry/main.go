@@ -8,7 +8,9 @@ import (
 )
 
 func main() {
-	svr := keel.NewServer()
+	svr := keel.NewServer(
+		keel.WithStdOutTracer(true),
+	)
 
 	// get logger
 	l := svr.Logger()
@@ -20,11 +22,11 @@ func main() {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	svr.AddServices(keel.NewDefaultServiceHTTPPrometheus())
-
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
-			middleware.Telemetry(),
+			middleware.Telemetry(
+				middleware.TelemetryWithInjectPropagationHeader(true),
+			),
 		),
 	)
 

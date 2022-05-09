@@ -7,14 +7,16 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
 )
 
 type (
 	TelemetryOptions struct {
-		Name     string
-		OtelOpts []otelhttp.Option
+		Name                    string
+		OtelOpts                []otelhttp.Option
+		InjectPropagationHeader bool
 	}
 	TelemetryOption func(*TelemetryOptions)
 )
@@ -43,6 +45,12 @@ func TelemetryWithName(v string) TelemetryOption {
 	}
 }
 
+func TelemetryWithInjectPropagationHeader(v bool) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.InjectPropagationHeader = v
+	}
+}
+
 // TelemetryWithOtelOpts middleware options
 func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
 	return func(o *TelemetryOptions) {
@@ -63,6 +71,10 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			otel.Handle(err)
 		}
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if opts.InjectPropagationHeader {
+				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
+			}
+
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
 
