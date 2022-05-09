@@ -1,7 +1,6 @@
 package roundtripware
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -25,44 +24,24 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
 
-			name, hasName := GetRequestName(req)
-			if !hasName {
-				name = "http.Do"
-			}
+			ctx, labeler := LabelerFromContext(req.Context())
 
 			start := time.Now()
-			resp, err := next(req)
+			resp, err := next(req.WithContext(ctx))
 			duration := time.Since(start)
-
-			status := "unknown response"
-			if resp != nil {
-				status = resp.Status
+			if err != nil {
+				return resp, err
 			}
 
-			histogram.Record(req.Context(), duration.Seconds(),
-				// semconv.HTTPClientAttributesFromHTTPRequest(req)[],
-				attribute.String("name", name),
-				attribute.String("method", req.Method),
-				attribute.String("status", status),
-			)
+			attributes := append(labeler.Get(), attribute.String("method", req.Method))
+
+			if resp != nil {
+				attributes = append(labeler.Get(), attribute.String("status", resp.Status))
+			}
+
+			histogram.Record(ctx, duration.Seconds(), attributes...)
 
 			return resp, err
 		}
 	}
-}
-
-func WithNamedRequestContext(r *http.Request, name string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), contextKeyHttpClientRequestName, name))
-}
-
-func GetRequestName(r *http.Request) (string, bool) {
-	if value := r.Context().Value(contextKeyHttpClientRequestName); value != nil {
-		return value.(string), true
-	} else {
-		return "", false
-	}
-}
-
-func ClearRequestName(r *http.Request) {
-	*r = *r.WithContext(context.WithValue(r.Context(), contextKeyHttpClientRequestName, nil))
 }
