@@ -27,7 +27,7 @@ func FName(name string) zap.Field {
 }
 
 func FDuration(duration time.Duration) zap.Field {
-	return zap.Int64(DurationKey, duration.Milliseconds())
+	return zap.Float64(DurationKey, float64(duration)/float64(time.Millisecond))
 }
 
 func FValue(value interface{}) zap.Field {
