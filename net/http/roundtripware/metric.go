@@ -12,7 +12,6 @@ import (
 
 // Metric returns a RoundTripper which prints out the request & response object
 func Metric(meter metric.Meter, name, description string) RoundTripware {
-
 	histogram, err := meter.SyncFloat64().Histogram(
 		name,
 		instrument.WithDescription(description),
@@ -23,7 +22,6 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
-
 			ctx, labeler := LabelerFromContext(req.Context())
 
 			start := time.Now()
