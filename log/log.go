@@ -22,35 +22,21 @@ var (
 
 func init() {
 	var level string
-	switch env.Get("LOG", ModeProd) {
+	switch env.Get("LOG_MODE", ModeProd) {
 	case ModeDev:
-		level = "debug"
-		config = zap.Config{
-			Level:            atomicLevel,
-			Development:      true,
-			Encoding:         "console",
-			EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
-			OutputPaths:      []string{"stderr"},
-			ErrorOutputPaths: []string{"stderr"},
-		}
+		config = zap.NewDevelopmentConfig()
+		config.Encoding = env.Get("LOG_ENCODING", "console")
+		config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		level = env.Get("LOG_LEVEL", "debug")
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
 	default:
-		level = "info"
-		config = zap.Config{
-			Level:       atomicLevel,
-			Development: false,
-			Sampling: &zap.SamplingConfig{
-				Initial:    100,
-				Thereafter: 100,
-			},
-			Encoding:         "json",
-			EncoderConfig:    zap.NewProductionEncoderConfig(),
-			OutputPaths:      []string{"stderr"},
-			ErrorOutputPaths: []string{"stderr"},
-		}
+		config = zap.NewProductionConfig()
+		config.Encoding = env.Get("LOG_ENCODING", "json")
 		config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		level = env.Get("LOG_LEVEL", "info")
 	}
+	config.Level = atomicLevel
 	config.EncoderConfig.TimeKey = "time"
 	config.DisableCaller = env.GetBool("LOG_DISABLE_STACKTRACE", true)
 	config.DisableStacktrace = env.GetBool("LOG_DISABLE_CALLER", true)
