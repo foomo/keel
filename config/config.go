@@ -18,6 +18,7 @@ var (
 func init() {
 	config = viper.New()
 	config.AutomaticEnv()
+	config.SetConfigType("yaml")
 	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 }
 
