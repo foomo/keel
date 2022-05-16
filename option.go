@@ -37,6 +37,16 @@ func WithConfig(c *viper.Viper) Option {
 	}
 }
 
+// WithRemoteConfig option
+func WithRemoteConfig(provider, endpoint, path string) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "config.remote.enabled", true)() {
+			err := config.WithRemoteConfig(inst.c, provider, endpoint, path)
+			log.Must(inst.l, err, "failed to add remote config")
+		}
+	}
+}
+
 // WithContext option
 func WithContext(ctx context.Context) Option {
 	return func(inst *Server) {
