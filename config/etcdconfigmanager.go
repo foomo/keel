@@ -85,7 +85,7 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 			Endpoints:   m.endpoints,
 			DialTimeout: time.Second * 5,
 			LogConfig: &zap.Config{
-				Level:            zap.NewAtomicLevelAt(zap.WarnLevel),
+				Level:            zap.NewAtomicLevelAt(zap.ErrorLevel),
 				Development:      false,
 				Encoding:         "json",
 				EncoderConfig:    zap.NewProductionEncoderConfig(),
