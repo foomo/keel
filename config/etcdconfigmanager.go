@@ -2,13 +2,12 @@ package config
 
 import (
 	"context"
+	"crypto/tls"
 	"time"
 
 	"github.com/spf13/viper"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type etcdConfigManager struct {
@@ -92,7 +91,10 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 	return clientv3.New(
 		clientv3.Config{
 			Endpoints:   m.endpoints,
-			DialTimeout: 5 * time.Second,
+			DialTimeout: 10 * time.Second,
+			TLS: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 			LogConfig: &zap.Config{
 				Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
 				Development:      false,
@@ -100,13 +102,6 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 				EncoderConfig:    zap.NewProductionEncoderConfig(),
 				OutputPaths:      []string{"stderr"},
 				ErrorOutputPaths: []string{"stderr"},
-			},
-			DialOptions: []grpc.DialOption{
-				grpc.WithBlock(),
-				grpc.WithDefaultCallOptions(
-					grpc.WaitForReady(true),
-				),
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			},
 		},
 	)
