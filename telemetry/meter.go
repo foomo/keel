@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	otelglobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/nonrecording"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	otelcontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	otelaggregation "go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 	otelprocessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
@@ -18,6 +19,11 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 
 	"github.com/foomo/keel/env"
+)
+
+var (
+	// DefaultHistogramBuckets units are selected for metrics in "seconds" unit
+	DefaultHistogramBuckets = []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10, 25, 60}
 )
 
 func Meter() metric.Meter {
@@ -73,7 +79,8 @@ func NewPrometheusMeterProvider() (metric.MeterProvider, error) {
 
 	controller := otelcontroller.New(
 		otelprocessor.NewFactory(
-			otelselector.NewWithHistogramDistribution(),
+			otelselector.NewWithHistogramDistribution(
+				histogram.WithExplicitBoundaries(DefaultHistogramBuckets)),
 			otelaggregation.CumulativeTemporalitySelector(),
 			otelprocessor.WithMemory(true),
 		),

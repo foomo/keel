@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
@@ -66,11 +67,18 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			name = opts.Name
 		}
 		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
-		m := global.MeterProvider().Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp", metric.WithInstrumentationVersion(otelhttp.SemVersion()))
-		c, err := m.SyncInt64().Counter(otelhttp.RequestCount)
+		m := global.MeterProvider().Meter(
+			"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+			metric.WithInstrumentationVersion(otelhttp.SemVersion()),
+		)
+		c, err := m.SyncInt64().Counter(
+			otelhttp.RequestCount,
+			instrument.WithDescription("counts number of requests withs specific status code"),
+		)
 		if err != nil {
 			otel.Handle(err)
 		}
+
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if opts.InjectPropagationHeader {
 				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
