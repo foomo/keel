@@ -39,3 +39,5 @@ require (
 	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
+
+replace go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 => github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac

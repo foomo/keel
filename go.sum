@@ -138,6 +138,8 @@ github.com/felixge/httpsnoop v1.0.2 h1:+nS9g82KMXccJ/wp0zyRW9ZBHFETmMGtkk+2CTTrW
 github.com/felixge/httpsnoop v1.0.2/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/foomo/gotsrpc/v2 v2.5.2 h1:Svf5rtQyrLCEYEer0mhRutwp5wVqfPN1spAH7wB+dPU=
 github.com/foomo/gotsrpc/v2 v2.5.2/go.mod h1:PMYx9AnJiEPIOfuTV5WJsfIGfmV0Jz5B4f95+feGr6k=
+github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac h1:z8UXpHe2Hb9IzRawoeT49eUcxgGUY6g8Emj8TpUWl+4=
+github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac/go.mod h1:5eCOqeGphOyz6TsY3ZDNjE33SM/TFAK3RGuCL2naTgY=
 github.com/fsnotify/fsnotify v1.5.1 h1:mZcQUHVQUQWoPXXtuf9yuEXKudkV2sx1E06UadKWpgI=
 github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5Ai1i3InKU=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -610,8 +612,6 @@ go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/ot
 go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.32.0/go.mod h1:9WqBmOJ4AOChNHtnRBSCGlKN4PQf1coLTCK57fyXE/s=
 go.opentelemetry.io/contrib/instrumentation/host v0.32.0 h1:rgDeaor0XDeUaUCGj0VJIRdQYwsYANlnIh4yMgnaZvo=
 go.opentelemetry.io/contrib/instrumentation/host v0.32.0/go.mod h1:GavGOmrtAjm+/J0WkNWzDC9rCAKQaD2d9JUzG225sgc=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 h1:mac9BKRqwaX6zxHPDe3pvmWpwuuIM0vuXv2juCnQevE=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0/go.mod h1:5eCOqeGphOyz6TsY3ZDNjE33SM/TFAK3RGuCL2naTgY=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.32.0 h1:eMQf85EgNd2YWEikRJwEy4ADOiwlIum4rcHcssB4Qzk=
 go.opentelemetry.io/contrib/instrumentation/runtime v0.32.0/go.mod h1:qtaLlIO4HC4DfedkYTOrvS2u7nA3N/v8w9mehrBD4O8=
 go.opentelemetry.io/otel v1.2.0/go.mod h1:aT17Fk0Z1Nor9e0uisf98LrntPGMnk4frBO9+dkf69I=
