@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/viper"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type etcdConfigManager struct {
@@ -93,10 +95,12 @@ func (m *etcdConfigManager) Watch(key string, stop chan bool) <-chan *viper.Remo
 func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 	return clientv3.New(
 		clientv3.Config{
-			Endpoints: m.endpoints,
-			//DialTimeout:          5 * time.Second,
-			//DialKeepAliveTime:    2 * time.Second,
-			//DialKeepAliveTimeout: 5 * time.Second,
+			Endpoints:   m.endpoints,
+			DialTimeout: time.Second,
+			DialOptions: []grpc.DialOption{
+				grpc.WithBlock(),
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			},
 			Logger: m.l,
 		},
 	)
