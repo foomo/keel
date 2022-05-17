@@ -99,6 +99,9 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 			DialTimeout: time.Second,
 			DialOptions: []grpc.DialOption{
 				grpc.WithBlock(),
+				grpc.WithDefaultCallOptions(
+					grpc.WaitForReady(true),
+				),
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			},
 			Logger: m.l,
