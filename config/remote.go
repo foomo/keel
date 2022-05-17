@@ -10,11 +10,9 @@ func WithRemoteConfig(c *viper.Viper, provider, endpoint, path string) error {
 		return errors.Wrap(err, "failed to add remote provider")
 	}
 
-	_ = c.ReadRemoteConfig()
-	// FIXME
-	//if err := c.ReadRemoteConfig(); err != nil {
-	//	return errors.Wrap(err, "failed to read remote config")
-	//}
+	if err := c.ReadRemoteConfig(); err != nil {
+		return errors.Wrap(err, "failed to read remote config")
+	}
 
 	if err := c.WatchRemoteConfigOnChannel(); err != nil {
 		return errors.Wrap(err, "failed to watch remote config")

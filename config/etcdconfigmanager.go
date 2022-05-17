@@ -82,8 +82,9 @@ func (m *etcdConfigManager) Watch(key string, stop chan bool) <-chan *viper.Remo
 func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 	return clientv3.New(
 		clientv3.Config{
-			Endpoints:   m.endpoints,
-			DialTimeout: time.Second * 5,
+			Endpoints:            m.endpoints,
+			DialTimeout:          time.Second * 60,
+			DialKeepAliveTimeout: time.Second * 60,
 			LogConfig: &zap.Config{
 				Level:            zap.NewAtomicLevelAt(zap.ErrorLevel),
 				Development:      false,
