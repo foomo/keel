@@ -14,11 +14,13 @@ func WithRemoteConfig(c *viper.Viper, provider, endpoint, path string) error {
 
 	var i int
 	for {
+		time.Sleep(time.Second)
 		if err := c.ReadRemoteConfig(); err != nil && i < 5 {
-			time.Sleep(time.Second)
 			i++
 		} else if err != nil {
 			return errors.Wrap(err, "failed to read remote config")
+		} else {
+			break
 		}
 	}
 
