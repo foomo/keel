@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
@@ -62,22 +63,31 @@ func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
 
 // TelemetryWithOptions middleware
 func TelemetryWithOptions(opts TelemetryOptions) Middleware {
+
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		if opts.Name != "" {
 			name = opts.Name
 		}
 		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
-		m := global.MeterProvider().Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp", metric.WithInstrumentationVersion(otelhttp.SemVersion()))
-		c, err := m.SyncInt64().Counter(otelhttp.RequestCount)
+		m := global.MeterProvider().Meter(
+			"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+			metric.WithInstrumentationVersion(otelhttp.SemVersion()),
+		)
+		c, err := m.SyncInt64().Counter(
+			otelhttp.RequestCount,
+			instrument.WithDescription("counts number of requests withs specific status code"),
+		)
 		if err != nil {
 			otel.Handle(err)
 		}
 
-		serverLatency, err := m.SyncFloat64().Histogram(otelhttp.ServerLatency)
+		serverLatency, err := m.SyncFloat64().Histogram(
+			otelhttp.ServerLatency,
+			instrument.WithDescription("histogram for request duration in seconds"),
+		)
 		if err != nil {
 			otel.Handle(err)
 		}
-
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
