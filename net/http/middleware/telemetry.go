@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -71,18 +72,31 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		if err != nil {
 			otel.Handle(err)
 		}
-		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		serverLatency, err := m.SyncFloat64().Histogram(otelhttp.ServerLatency)
+		if err != nil {
+			otel.Handle(err)
+		}
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+
+			ctx := r.Context()
 			if opts.InjectPropagationHeader {
-				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
+				otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(w.Header()))
 			}
 
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
 
-			next.ServeHTTP(wr, r)
+			labeler, _ := otelhttp.LabelerFromContext(ctx)
+			attributes := append(labeler.Get(), semconv.HTTPServerMetricAttributesFromHTTPRequest(name, r)...)
 
-			labeler, _ := otelhttp.LabelerFromContext(r.Context())
-			c.Add(r.Context(), 1, append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
-		}), name, opts.OtelOpts...)
+			next.ServeHTTP(wr, r)
+			elapsedTime := time.Since(start).Seconds()
+
+			serverLatency.Record(ctx, elapsedTime, attributes...)
+			c.Add(ctx, 1, append(attributes, semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
+		})
 	}
 }
