@@ -7,8 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
-
-	"github.com/foomo/keel/log"
 )
 
 func init() {
@@ -61,7 +59,7 @@ func getConfigManager(rp viper.RemoteProvider) (remoteConfigManager, error) {
 	} else {
 		switch rp.Provider() {
 		case "etcd":
-			cm = NewEtcdConfigManager(log.Logger(), []string{rp.Endpoint()})
+			cm = NewEtcdConfigManager([]string{rp.Endpoint()})
 		default:
 			return nil, errors.New("implement me")
 		}

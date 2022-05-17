@@ -13,13 +13,11 @@ import (
 
 type etcdConfigManager struct {
 	endpoints []string
-	l         *zap.Logger
 }
 
-func NewEtcdConfigManager(l *zap.Logger, endpoints []string) remoteConfigManager {
+func NewEtcdConfigManager(endpoints []string) remoteConfigManager {
 	return &etcdConfigManager{
 		endpoints: endpoints,
-		l:         l,
 	}
 }
 
@@ -28,12 +26,10 @@ func (m *etcdConfigManager) Get(key string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func(client *clientv3.Client) {
-		_ = client.Close()
-	}(client)
+	defer client.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	resp, err := client.Get(ctx, key)
-	cancel()
+	defer cancel()
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +92,15 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 	return clientv3.New(
 		clientv3.Config{
 			Endpoints:   m.endpoints,
-			DialTimeout: time.Second,
+			DialTimeout: 5 * time.Second,
+			LogConfig: &zap.Config{
+				Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
+				Development:      false,
+				Encoding:         "json",
+				EncoderConfig:    zap.NewProductionEncoderConfig(),
+				OutputPaths:      []string{"stderr"},
+				ErrorOutputPaths: []string{"stderr"},
+			},
 			DialOptions: []grpc.DialOption{
 				grpc.WithBlock(),
 				grpc.WithDefaultCallOptions(
@@ -104,7 +108,6 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 				),
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			},
-			Logger: m.l,
 		},
 	)
 }
