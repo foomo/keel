@@ -2,12 +2,15 @@ package config
 
 import (
 	"context"
-	"crypto/tls"
 	"time"
 
 	"github.com/spf13/viper"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/foomo/keel/log"
 )
 
 type etcdConfigManager struct {
@@ -21,22 +24,28 @@ func NewEtcdConfigManager(endpoints []string) remoteConfigManager {
 }
 
 func (m *etcdConfigManager) Get(key string) ([]byte, error) {
+	log.Logger().Info("----> client")
 	client, err := m.client()
 	if err != nil {
 		return nil, err
 	}
+	log.Logger().Info("----> ok")
 	defer client.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	log.Logger().Info("----> get")
 	resp, err := client.Get(ctx, key)
+	log.Logger().Info("----> done")
 	defer cancel()
 	if err != nil {
 		return nil, err
 	}
 
 	if len(resp.Kvs) == 0 {
+		log.Logger().Info("----> zero")
 		return nil, nil
 	}
 
+	log.Logger().Info("----> fine")
 	return resp.Kvs[0].Value, nil
 }
 
@@ -92,9 +101,6 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 		clientv3.Config{
 			Endpoints:   m.endpoints,
 			DialTimeout: 10 * time.Second,
-			TLS: &tls.Config{
-				InsecureSkipVerify: true,
-			},
 			LogConfig: &zap.Config{
 				Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
 				Development:      false,
@@ -102,6 +108,10 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 				EncoderConfig:    zap.NewProductionEncoderConfig(),
 				OutputPaths:      []string{"stderr"},
 				ErrorOutputPaths: []string{"stderr"},
+			},
+			DialOptions: []grpc.DialOption{
+				grpc.WithBlock(),
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			},
 		},
 	)
