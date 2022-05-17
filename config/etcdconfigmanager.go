@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/foomo/keel/log"
 )
@@ -83,8 +84,11 @@ func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 	return clientv3.New(
 		clientv3.Config{
 			Endpoints:            m.endpoints,
-			DialTimeout:          time.Second * 60,
-			DialKeepAliveTimeout: time.Second * 60,
+			DialTimeout:          0,
+			DialKeepAliveTimeout: 0,
+			DialOptions: []grpc.DialOption{
+				grpc.WithTimeout(0),
+			},
 			LogConfig: &zap.Config{
 				Level:            zap.NewAtomicLevelAt(zap.ErrorLevel),
 				Development:      false,
