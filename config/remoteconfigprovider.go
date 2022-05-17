@@ -7,8 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	_ "github.com/spf13/viper/remote"
-
-	"github.com/foomo/keel/log"
 )
 
 func init() {
@@ -19,12 +17,10 @@ type remoteConfigProvider struct{}
 
 // Get interface method
 func (c *remoteConfigProvider) Get(rp viper.RemoteProvider) (io.Reader, error) {
-	log.Logger().Info("--> get")
 	cm, err := getConfigManager(rp)
 	if err != nil {
 		return nil, err
 	}
-	log.Logger().Info("--> " + rp.Path())
 	b, err := cm.Get(rp.Path())
 	if err != nil {
 		return nil, err
