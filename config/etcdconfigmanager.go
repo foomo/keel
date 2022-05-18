@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 
 	"github.com/foomo/keel/log"
 )
@@ -29,9 +28,7 @@ func (m *etcdConfigManager) Get(key string) ([]byte, error) {
 	}
 	defer client.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	resp, err := client.Get(ctx, key)
-	defer cancel()
+	resp, err := client.Get(context.Background(), key)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +80,8 @@ func (m *etcdConfigManager) Watch(key string, stop chan bool) <-chan *viper.Remo
 func (m *etcdConfigManager) client() (*clientv3.Client, error) {
 	return clientv3.New(
 		clientv3.Config{
-			Endpoints:            m.endpoints,
-			DialTimeout:          0,
-			DialKeepAliveTimeout: 0,
-			DialOptions: []grpc.DialOption{
-				grpc.WithTimeout(0),
-			},
+			Endpoints:   m.endpoints,
+			DialTimeout: 2 * time.Second,
 			LogConfig: &zap.Config{
 				Level:            zap.NewAtomicLevelAt(zap.ErrorLevel),
 				Development:      false,
