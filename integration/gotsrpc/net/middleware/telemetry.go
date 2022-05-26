@@ -24,8 +24,9 @@ const (
 
 var (
 	gotsrpcRequestDurationSummary = promauto.NewSummaryVec(prometheus.SummaryOpts{
-		Name: "gotsrpc_request_duration_seconds",
-		Help: "Specifies the duration of gotsrpc request in seconds",
+		Name:       "gotsrpc_request_duration_seconds",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+		Help:       "Specifies the duration of gotsrpc request in seconds",
 	}, []string{defaultGOTSRPCFunctionLabel, defaultGOTSRPCServiceLabel, defaultGOTSRPCPackageLabel, defaultGOTSRPCPackageOperation})
 )
 
