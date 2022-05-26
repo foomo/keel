@@ -14,7 +14,7 @@ import (
 	"github.com/foomo/keel/net/http/middleware"
 )
 
-//Prometheus Metrics
+// Prometheus Metrics
 const (
 	defaultGOTSRPCFunctionLabel    = "gotsrpc_func"
 	defaultGOTSRPCServiceLabel     = "gotsrpc_service"
