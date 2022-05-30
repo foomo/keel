@@ -13,7 +13,7 @@ require (
 	github.com/nats-io/nats.go v1.15.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
-	github.com/spf13/viper v1.11.0
+	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
 	github.com/tinylib/msgp v1.1.6
 	go.etcd.io/etcd/client/v3 v3.5.4
@@ -37,7 +37,7 @@ require (
 	go.temporal.io/sdk/contrib/opentelemetry v0.1.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 )
 
 replace go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 => github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac
