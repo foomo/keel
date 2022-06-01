@@ -29,7 +29,7 @@ func FDurationHour(duration time.Duration) zap.Field {
 	return zap.Float64(DurationHourKey, float64(duration)/float64(time.Hour))
 }
 
-func FDurationFn(l *zap.Logger) func() zap.Field {
+func FDurationFn() func() zap.Field {
 	start := time.Now()
 	return func() zap.Field {
 		return FDuration(time.Since(start))
