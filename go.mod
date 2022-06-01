@@ -16,7 +16,6 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
 	github.com/tinylib/msgp v1.1.6
-	go.etcd.io/etcd/client/v3 v3.5.4
 	go.mongodb.org/mongo-driver v1.9.1
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.32.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.32.0
@@ -40,4 +39,7 @@ require (
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 )
 
-replace go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 => github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac
+replace (
+	github.com/spf13/viper v1.12.0 => github.com/franklinkim/viper v1.12.1-0.20220601073657-b47725e72d4c
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 => github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac
+)
