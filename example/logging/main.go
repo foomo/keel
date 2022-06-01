@@ -20,7 +20,7 @@ func main() {
 	// l := log.Logger()
 
 	// measure tome time
-	fDurationFn := log.FDurationFn(l)
+	fDurationFn := log.FDurationFn()
 	time.Sleep(200 * time.Millisecond)
 	l.Info("measured some time", fDurationFn())
 
