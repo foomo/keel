@@ -1,6 +1,10 @@
 package keeltemporal
 
 import (
+	"context"
+
+	"go.temporal.io/sdk/activity"
+	tlog "go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
@@ -30,4 +34,20 @@ func Debug(ctx workflow.Context, msg string, fields ...zap.Field) {
 		keyvals = append(keyvals, field)
 	}
 	workflow.GetLogger(ctx).Debug(msg, keyvals...)
+}
+
+func GetWorkflowLogger(ctx workflow.Context) tlog.Logger {
+	return workflow.GetLogger(ctx)
+}
+
+func GetActivityLogger(ctx context.Context) tlog.Logger {
+	return activity.GetLogger(ctx)
+}
+
+func LoggerWith(logger tlog.Logger, fields ...zap.Field) tlog.Logger {
+	v := make([]interface{}, len(fields))
+	for i, field := range fields {
+		v[i] = field
+	}
+	return tlog.With(logger, v...)
 }
