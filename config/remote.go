@@ -3,13 +3,13 @@ package config
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	_ "github.com/spf13/viper/remote"
 )
 
-func WithRemoteConfig(c *viper.Viper, provider, endpoint string, path string) error {
+func WithRemoteConfig(c *viper.Viper, provider, endpoint, path string) error {
 	if err := c.AddRemoteProvider(provider, endpoint, path); err != nil {
-		return err
+		return errors.Wrap(err, "failed to add remote provider")
 	}
+
 	if err := c.ReadRemoteConfig(); err != nil {
 		return errors.Wrap(err, "failed to read remote config")
 	}
