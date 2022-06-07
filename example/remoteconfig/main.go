@@ -6,6 +6,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/foomo/keel"
+	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/log"
 )
 
 func main() {
@@ -19,6 +21,12 @@ func main() {
 	c := svr.Config()
 
 	spew.Dump(c.AllSettings())
+
+	remoteValue := config.GetString(c, "foo", "default")
+
+	config.WatchString(svr.CancelContext(), remoteValue, func(s string) {
+		l.Info("CHANGE", log.FValue(remoteValue()))
+	})
 
 	// create demo service
 	svs := http.NewServeMux()

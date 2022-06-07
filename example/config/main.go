@@ -49,6 +49,10 @@ func main() {
 	boolFn := config.GetBool(c, "env.bool", true)
 	stringFn := config.GetString(c, "env.string", "foo")
 
+	config.WatchString(svr.CancelContext(), stringFn, func(s string) {
+		l.Info("CHANGE", log.FValue(stringFn()))
+	})
+
 	structFn, err := config.GetStruct(c, "struct", Config{
 		Int:    66,
 		Bool:   true,
