@@ -1,35 +1,52 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/foomo/keel"
+	"github.com/foomo/keel/config"
 )
 
 func main() {
 	svr := keel.NewServer(
-		keel.WithHTTPZapService(true),
-		keel.WithRemoteConfig("etcd", "http://localhost:2379", "example.yaml"),
+		// configure remote endpoint
+		keel.WithRemoteConfig("etcd3", "http://localhost:2379", "cluster.yaml"),
 	)
 
 	// obtain the logger
 	l := svr.Logger()
 	c := svr.Config()
 
-	spew.Dump(c.AllSettings())
+	// dump all settings
+	// spew.Dump(c.AllSettings())
 
-	// create demo service
-	svs := http.NewServeMux()
-	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		spew.Dump(c.AllSettings())
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
+	// create config reader
+	fooFn := config.GetString(c, "foo", "default_foo")
+	fmt.Println("initial foo:", fooFn())
+
+	// watch changes
+	config.WatchString(svr.CancelContext(), fooFn, func(s string) {
+		fmt.Println("change foo:", fooFn())
 	})
 
+	ch := make(chan string)
+	// watch changes
+	config.WatchStringChan(svr.CancelContext(), fooFn, ch)
+	go func(ch chan string) {
+		for {
+			value := <-ch
+			fmt.Println("channel foo:", value)
+		}
+	}(ch)
+
+	// curl localhost:8080
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		keel.NewServiceHTTP(l, "demo", "localhost:8080", http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Println("current foo:", fooFn())
+			}),
+		),
 	)
 
 	svr.Run()

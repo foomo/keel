@@ -40,6 +40,7 @@ require (
 )
 
 replace (
-	github.com/spf13/viper v1.12.0 => github.com/franklinkim/viper v1.12.1-0.20220611111410-2d69ce7c2fe8
+	// TODO remove once https://github.com/spf13/viper/pull/1371 is merged
+    github.com/spf13/viper v1.12.0 => github.com/franklinkim/viper v1.12.1-0.20220611111410-2d69ce7c2fe8
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 => github.com/foomo/opentelemetry-go-contrib/instrumentation/net/http/otelhttp v0.32.1-0.20220517120905-10e2553b9bac
 )
