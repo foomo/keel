@@ -26,11 +26,14 @@ func WithKeyFun(v jwt.Keyfunc) Option {
 // WithDeprecatedKeys middleware option
 func WithDeprecatedKeys(v ...Key) Option {
 	return func(o *JWT) {
-		deprecatedKeys := make(map[string]Key, len(v))
-		for _, key := range deprecatedKeys {
-			deprecatedKeys[key.ID] = key
+		if len(v) > 0 {
+			if o.DeprecatedKeys == nil {
+				o.DeprecatedKeys = map[string]Key{}
+			}
+			for _, key := range v {
+				o.DeprecatedKeys[key.ID] = key
+			}
 		}
-		o.DeprecatedKeys = deprecatedKeys
 	}
 }
 
