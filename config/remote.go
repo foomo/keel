@@ -10,6 +10,7 @@ func WithRemoteConfig(c *viper.Viper, provider, endpoint string, path string) er
 	if err := c.AddRemoteProvider(provider, endpoint, path); err != nil {
 		return err
 	}
+
 	if err := c.ReadRemoteConfig(); err != nil {
 		return errors.Wrap(err, "failed to read remote config")
 	}

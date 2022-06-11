@@ -16,4 +16,8 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-replace github.com/foomo/keel => ../
+replace (
+	github.com/foomo/keel => ../
+	// TODO remove once https://github.com/spf13/viper/pull/1371 is merged
+	github.com/spf13/viper v1.12.0 => github.com/franklinkim/viper v1.12.1-0.20220611111410-2d69ce7c2fe8
+)
