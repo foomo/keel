@@ -45,8 +45,12 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 		FHTTPTarget(r.RequestURI),
 	}
 
-	if r.Host != "" {
+	if value := r.Header.Get("X-Forwarded-Host"); value != "" {
+		fields = append(fields, FHTTPHost(value))
+	} else if !r.URL.IsAbs() {
 		fields = append(fields, FHTTPHost(r.Host))
+	} else {
+		fields = append(fields, FHTTPHost(r.URL.Host))
 	}
 	if id := r.Header.Get("X-Request-ID"); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
