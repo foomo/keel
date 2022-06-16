@@ -105,8 +105,9 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 			origin := r.Header.Get(keelhttp.HeaderOrigin)
 			allowOrigin := ""
 
-			preflight := r.Method == http.MethodOptions
 			w.Header().Add(keelhttp.HeaderVary, keelhttp.HeaderOrigin)
+
+			preflight := r.Method == http.MethodOptions
 
 			// No Origin provided
 			if origin == "" {
@@ -164,32 +165,32 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 
 			// Simple request
 			if !preflight {
-				r.Header.Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
+				w.Header().Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
 				if opts.AllowCredentials {
-					r.Header.Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
+					w.Header().Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
 				}
 				if exposeHeaders != "" {
-					r.Header.Set(keelhttp.HeaderAccessControlExposeHeaders, exposeHeaders)
+					w.Header().Set(keelhttp.HeaderAccessControlExposeHeaders, exposeHeaders)
 				}
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			// Preflight request
-			r.Header.Add(keelhttp.HeaderVary, keelhttp.HeaderAccessControlRequestMethod)
-			r.Header.Add(keelhttp.HeaderVary, keelhttp.HeaderAccessControlRequestHeaders)
-			r.Header.Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
-			r.Header.Set(keelhttp.HeaderAccessControlAllowMethods, allowMethods)
+			w.Header().Add(keelhttp.HeaderVary, keelhttp.HeaderAccessControlRequestMethod)
+			w.Header().Add(keelhttp.HeaderVary, keelhttp.HeaderAccessControlRequestHeaders)
+			w.Header().Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
+			w.Header().Set(keelhttp.HeaderAccessControlAllowMethods, allowMethods)
 			if opts.AllowCredentials {
-				r.Header.Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
+				w.Header().Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
 			}
 			if allowHeaders != "" {
-				r.Header.Set(keelhttp.HeaderAccessControlAllowHeaders, allowHeaders)
+				w.Header().Set(keelhttp.HeaderAccessControlAllowHeaders, allowHeaders)
 			} else if h := r.Header.Get(keelhttp.HeaderAccessControlRequestHeaders); h != "" {
-				r.Header.Set(keelhttp.HeaderAccessControlAllowHeaders, h)
+				w.Header().Set(keelhttp.HeaderAccessControlAllowHeaders, h)
 			}
 			if opts.MaxAge > 0 {
-				r.Header.Set(keelhttp.HeaderAccessControlMaxAge, maxAge)
+				w.Header().Set(keelhttp.HeaderAccessControlMaxAge, maxAge)
 			}
 			w.WriteHeader(http.StatusNoContent)
 		})
