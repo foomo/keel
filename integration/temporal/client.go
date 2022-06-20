@@ -132,5 +132,5 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 		clientOpts.MetricsHandler = NewMetricsHandler(telemetry.Meter())
 	}
 
-	return client.NewClient(clientOpts)
+	return client.Dial(clientOpts)
 }
