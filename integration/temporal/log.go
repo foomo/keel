@@ -7,47 +7,38 @@ import (
 	tlog "go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
-
-	"github.com/foomo/keel/log"
 )
 
-func Error(ctx workflow.Context, err error, msg string, fields ...zap.Field) {
-	keyvals := make([]interface{}, 0, len(fields)+1)
-	keyvals = append(keyvals, log.FError(err))
-	for _, field := range fields {
-		keyvals = append(keyvals, field)
-	}
-	workflow.GetLogger(ctx).Error(msg, keyvals...)
+func Error(l tlog.Logger, err error, msg string, fields ...zap.Field) {
+	LoggerWith(l, fields...).Error(msg)
 }
 
-func Info(ctx workflow.Context, msg string, fields ...zap.Field) {
-	keyvals := make([]interface{}, 0, len(fields))
-	for _, field := range fields {
-		keyvals = append(keyvals, field)
-	}
-	workflow.GetLogger(ctx).Info(msg, keyvals...)
+func Info(l tlog.Logger, msg string, fields ...zap.Field) {
+	LoggerWith(l, fields...).Info(msg)
 }
 
-func Debug(ctx workflow.Context, msg string, fields ...zap.Field) {
-	keyvals := make([]interface{}, 0, len(fields))
-	for _, field := range fields {
-		keyvals = append(keyvals, field)
-	}
-	workflow.GetLogger(ctx).Debug(msg, keyvals...)
+func Warn(l tlog.Logger, msg string, fields ...zap.Field) {
+	LoggerWith(l, fields...).Warn(msg)
 }
 
-func GetWorkflowLogger(ctx workflow.Context) tlog.Logger {
-	return workflow.GetLogger(ctx)
+func Debug(l tlog.Logger, msg string, fields ...zap.Field) {
+	LoggerWith(l, fields...).Debug(msg)
 }
 
-func GetActivityLogger(ctx context.Context) tlog.Logger {
-	return activity.GetLogger(ctx)
+func GetWorkflowLogger(ctx workflow.Context, fields ...zap.Field) tlog.Logger {
+	l := workflow.GetLogger(ctx)
+	return LoggerWith(l, fields...)
 }
 
-func LoggerWith(logger tlog.Logger, fields ...zap.Field) tlog.Logger {
+func GetActivityLogger(ctx context.Context, fields ...zap.Field) tlog.Logger {
+	l := activity.GetLogger(ctx)
+	return LoggerWith(l, fields...)
+}
+
+func LoggerWith(l tlog.Logger, fields ...zap.Field) tlog.Logger {
 	v := make([]interface{}, len(fields))
 	for i, field := range fields {
 		v[i] = field
 	}
-	return tlog.With(logger, v...)
+	return tlog.With(l, v...)
 }
