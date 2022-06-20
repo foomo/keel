@@ -36,12 +36,14 @@ func Debug(ctx workflow.Context, msg string, fields ...zap.Field) {
 	workflow.GetLogger(ctx).Debug(msg, keyvals...)
 }
 
-func GetWorkflowLogger(ctx workflow.Context) tlog.Logger {
-	return workflow.GetLogger(ctx)
+func GetWorkflowLogger(ctx workflow.Context, fields ...zap.Field) tlog.Logger {
+	l := workflow.GetLogger(ctx)
+	return LoggerWith(l, fields...)
 }
 
-func GetActivityLogger(ctx context.Context) tlog.Logger {
-	return activity.GetLogger(ctx)
+func GetActivityLogger(ctx context.Context, fields ...zap.Field) tlog.Logger {
+	l := activity.GetLogger(ctx)
+	return LoggerWith(l, fields...)
 }
 
 func LoggerWith(logger tlog.Logger, fields ...zap.Field) tlog.Logger {
