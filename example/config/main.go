@@ -32,6 +32,7 @@ type (
 func main() {
 	// set env vars to override e.g. example.string
 	_ = os.Setenv("ENV_STRING", "bar")
+	_ = os.Setenv("ENV_STRINGS", "bar baz")
 	_ = os.Setenv("ENV_DURATION", "240h")
 	_ = os.Setenv("STRUCT_STRING", "bar")
 	_ = os.Setenv("STRUCT_NESTED_STRING", "bar")
@@ -50,6 +51,7 @@ func main() {
 	intFn := config.GetInt(c, "env.int", 1)
 	boolFn := config.GetBool(c, "env.bool", true)
 	stringFn := config.GetString(c, "env.string", "foo")
+	stringsFn := config.GetStringSlice(c, "env.strings", []string{"foo"})
 	durationFn := config.GetDuration(c, "env.duration", time.Minute)
 
 	structFn, err := config.GetStruct(c, "struct", Config{
@@ -77,12 +79,13 @@ func main() {
 		_, _ = w.Write([]byte(fmt.Sprintf("intCfg: %d\n", intFn())))
 		_, _ = w.Write([]byte(fmt.Sprintf("boolCfg: %v\n", boolFn())))
 		_, _ = w.Write([]byte(fmt.Sprintf("stringCfg: %s\n", stringFn())))
+		_, _ = w.Write([]byte(fmt.Sprintf("stringsCfg: %v\n", stringsFn())))
 		_, _ = w.Write([]byte(fmt.Sprintf("durationCfg: %.2f\n", durationFn().Hours())))
 		_, _ = w.Write([]byte(fmt.Sprintf("stuctCfg: %s\n", spew.Sdump(structCfg))))
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		keel.NewServiceHTTP(l, "demo", "localhost:8081", svs),
 	)
 
 	svr.Run()
