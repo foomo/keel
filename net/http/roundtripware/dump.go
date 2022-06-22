@@ -50,6 +50,10 @@ func dumpRequest(req *http.Request) {
 }
 
 func dumpResponse(req *http.Request, resp *http.Response) {
+	if resp == nil {
+		fmt.Println("Response is nil")
+		return
+	}
 	if resp.Header != nil && resp.Header.Get("Content-Type") != "" {
 		var body string
 		if resp.Body, body = readBodyPretty(resp.Header.Get("Content-Type"), resp.Body); body != "" {
