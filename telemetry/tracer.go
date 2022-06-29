@@ -83,7 +83,7 @@ func newTracerProvider(e sdktrace.SpanExporter) (trace.TracerProvider, error) {
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(e),
 		sdktrace.WithResource(resource),
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(env.GetFloat64("OTEL_TRACE_RATIO", 1))),
 	)
 
 	otel.SetTracerProvider(tracerProvider)

@@ -31,7 +31,7 @@ type (
 
 func ClientWithOtelEnabled(v bool) ClientOption {
 	return func(o *ClientOptions) {
-		o.OtelEnabled = env.GetBool("OTEL_ENABLED", v)
+		o.OtelEnabled = v
 	}
 }
 
@@ -52,7 +52,7 @@ func DefaultClientOptions() ClientOptions {
 		Logger:            log.Logger(),
 		Namespace:         "default",
 		RegisterNamespace: nil,
-		OtelEnabled:       env.GetBool("OTEL_ENABLED", false),
+		OtelEnabled:       env.GetBool("TEMPORAL_OTEL_ENABLED", env.GetBool("OTEL_ENABLED", false)),
 	}
 }
 
