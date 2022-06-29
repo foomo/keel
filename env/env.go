@@ -48,6 +48,34 @@ func MustGetInt(key string) int {
 	return GetInt(key, 0)
 }
 
+// GetInt64 env var or fallback as int64
+func GetInt64(key string, fallback int64) int64 {
+	if value, err := strconv.ParseInt(Get(key, ""), 10, 64); err == nil {
+		return value
+	}
+	return fallback
+}
+
+// MustGetInt64 env var as int64 or panic
+func MustGetInt64(key string) int64 {
+	MustExists(key)
+	return GetInt64(key, 0)
+}
+
+// GetFloat64 env var or fallback as float64
+func GetFloat64(key string, fallback float64) float64 {
+	if value, err := strconv.ParseFloat(Get(key, ""), 64); err == nil {
+		return value
+	}
+	return fallback
+}
+
+// MustGetFloat64 env var as float64 or panic
+func MustGetFloat64(key string) float64 {
+	MustExists(key)
+	return GetFloat64(key, 0)
+}
+
 // GetBool env var or fallback as bool
 func GetBool(key string, fallback bool) bool {
 	if val, err := strconv.ParseBool(Get(key, "")); err == nil {
