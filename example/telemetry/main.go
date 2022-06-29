@@ -29,6 +29,8 @@ func main() {
 	//
 	// disable runtime metrics (default: true)
 	// OTEL_METRICS_RUNTIME_ENABLED="false"
+	//
+	// OTEL_TRACE_RATIO="0.5"
 
 	svr := keel.NewServer(
 		keel.WithStdOutMeter(true),

@@ -2,9 +2,9 @@ package keelpostgres
 
 import (
 	"context"
+	"database/sql"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/log/zapadapter"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -14,7 +14,7 @@ import (
 // Persistor exported to used also for embedding into other types in foreign packages.
 type (
 	Persistor struct {
-		db *pgx.Conn
+		db *sql.DB
 		l  *zap.Logger
 	}
 	Options struct {
@@ -42,7 +42,7 @@ func DefaultOptions() Options {
 	}
 }
 
-func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
+func New(ctx context.Context, dns string, opts ...Option) (*Persistor, error) {
 	// urlExample := "postgres://username:password@localhost:5432/database_name"
 
 	o := DefaultOptions()
@@ -50,22 +50,16 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 		opt(&o)
 	}
 
-	config, err := pgx.ParseConfig(uri)
+	connector, err := pq.NewConnector(dns)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse uri")
+		return nil, err
 	}
 
-	config.Logger = zapadapter.NewLogger(o.Logger)
-	// TODO @franklin performance config
-
-	db, err := pgx.ConnectConfig(ctx, config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect")
-	}
+	db := sql.OpenDB(connector)
 
 	// TODO @franklin add telemetry
 
-	if err := db.Ping(ctx); err != nil {
+	if err := db.PingContext(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to ping database")
 	}
 
@@ -76,7 +70,7 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 
 	// initialize
 	if o.Init != "" {
-		if _, err := p.db.Exec(ctx, o.Init); err != nil {
+		if _, err := p.db.ExecContext(ctx, o.Init); err != nil {
 			return nil, err
 		}
 	}
@@ -86,7 +80,7 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 
 func (p *Persistor) TableExists(ctx context.Context, name string) (bool, error) {
 	var n int64
-	if err := p.db.QueryRow(ctx, `select 1 from information_schema.tables where table_name=$1`, name).Scan(&n); errors.Is(err, pgx.ErrNoRows) {
+	if err := p.db.QueryRowContext(ctx, `select 1 from information_schema.tables where table_name=$1`, name).Scan(&n); errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	} else if err != nil {
 		return false, err
@@ -95,13 +89,13 @@ func (p *Persistor) TableExists(ctx context.Context, name string) (bool, error) 
 }
 
 func (p *Persistor) Ping(ctx context.Context) error {
-	return p.db.Ping(ctx)
+	return p.db.PingContext(ctx)
 }
 
-func (p *Persistor) Conn() *pgx.Conn {
-	return p.db
+func (p *Persistor) Conn(ctx context.Context) (*sql.Conn, error) {
+	return p.db.Conn(ctx)
 }
 
-func (p *Persistor) Close(ctx context.Context) error {
-	return p.db.Close(ctx)
+func (p *Persistor) Close() error {
+	return p.db.Close()
 }
