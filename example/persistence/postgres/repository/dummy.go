@@ -28,6 +28,7 @@ func (r *TaskRepository) List(ctx context.Context) (map[int32]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	ret := map[int32]string{}
 	for rows.Next() {
