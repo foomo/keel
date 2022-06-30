@@ -3,25 +3,32 @@ package repository
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
+	keelpostgres "github.com/foomo/keel/persistence/postgres"
 )
 
 type TaskRepository struct {
-	conn *pgx.Conn
+	persistor *keelpostgres.Persistor
 }
 
 // NewTaskRepository constructor
-func NewTaskRepository(conn *pgx.Conn) *TaskRepository {
+func NewTaskRepository(persistor *keelpostgres.Persistor) *TaskRepository {
 	return &TaskRepository{
-		conn: conn,
+		persistor: persistor,
 	}
 }
 
 func (r *TaskRepository) List(ctx context.Context) (map[int32]string, error) {
-	rows, err := r.conn.Query(ctx, "select * from tasks")
+	conn, err := r.persistor.Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
+
+	rows, err := conn.QueryContext(ctx, "select * from tasks")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
 	ret := map[int32]string{}
 	for rows.Next() {
@@ -38,12 +45,23 @@ func (r *TaskRepository) List(ctx context.Context) (map[int32]string, error) {
 }
 
 func (r *TaskRepository) Insert(ctx context.Context, description string) error {
-	_, err := r.conn.Exec(context.Background(), "insert into tasks(description) values($1)", description)
+	conn, err := r.persistor.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = conn.ExecContext(ctx, "insert into tasks(description) values($1)", description)
 	return err
 }
 
 func (r *TaskRepository) Drop(ctx context.Context) error {
-	if _, err := r.conn.Exec(ctx, `DROP TABLE IF EXISTS order_numbers;`); err != nil {
+	conn, err := r.persistor.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if _, err := conn.ExecContext(ctx, `DROP TABLE IF EXISTS order_numbers;`); err != nil {
 		return err
 	}
 	return nil

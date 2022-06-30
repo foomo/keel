@@ -19,7 +19,7 @@ func main() {
 	// create persistor
 	persistor, err := keelpostgres.New(
 		svr.Context(),
-		"postgres://postgres:postgres@localhost:5432/postgres",
+		"postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable",
 		keelpostgres.WithInit(`
 			create table if not exists tasks (
 				id serial primary key,
@@ -33,7 +33,7 @@ func main() {
 	// ensure to add the persistor to the closers
 	svr.AddClosers(persistor)
 
-	repo := repository.NewTaskRepository(persistor.Conn())
+	repo := repository.NewTaskRepository(persistor)
 
 	if value, err := repo.List(svr.Context()); err != nil {
 		l.Error(err.Error())

@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
-	github.com/jackc/pgx/v4 v4.16.1
+	github.com/lib/pq v1.10.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats-server/v2 v2.7.3 // indirect
 	github.com/nats-io/nats.go v1.16.0
