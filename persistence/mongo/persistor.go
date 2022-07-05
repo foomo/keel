@@ -56,7 +56,7 @@ func WithDatabaseOptions(v *options.DatabaseOptions) Option {
 
 func DefaultOptions() Options {
 	return Options{
-		OtelEnabled: env.GetBool("MONGO_OTEL_ENABLED", env.GetBool("OTEL_ENABLED", false)),
+		OtelEnabled: env.GetBool("OTEL_MONGO_ENABLED", env.GetBool("OTEL_ENABLED", false)),
 		OtelOptions: []otelmongo.Option{
 			otelmongo.WithCommandAttributeDisabled(env.GetBool("OTEL_MONGO_COMMAND_ATTRIBUTE_DISABLED", false)),
 		},
