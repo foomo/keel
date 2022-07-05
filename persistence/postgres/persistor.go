@@ -92,6 +92,10 @@ func (p *Persistor) Ping(ctx context.Context) error {
 	return p.db.PingContext(ctx)
 }
 
+func (p *Persistor) DB() *sql.DB {
+	return p.db
+}
+
 func (p *Persistor) Conn(ctx context.Context) (*sql.Conn, error) {
 	return p.db.Conn(ctx)
 }
