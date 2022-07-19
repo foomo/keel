@@ -3,7 +3,7 @@ module github.com/foomo/keel
 go 1.16
 
 require (
-	github.com/foomo/gotsrpc/v2 v2.5.3
+	github.com/foomo/gotsrpc/v2 v2.5.4
 	github.com/go-logr/logr v1.2.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
