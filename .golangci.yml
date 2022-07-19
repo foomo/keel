@@ -38,7 +38,7 @@ linters:
     # - gocyclo
     - gofmt
     - goprintffuncname
-    - gosec
+    #- gosec
     - ifshort
     - misspell
     - nakedret
