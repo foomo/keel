@@ -49,14 +49,20 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if e := recover(); e != nil {
+					if e == http.ErrAbortHandler {
+						panic(e)
+					}
+
 					err, ok := e.(error)
 					if !ok {
 						err = fmt.Errorf("%v", e)
 					}
+
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
 						ll = ll.With(log.FStackSkip(3))
 					}
+
 					httputils.InternalServerError(ll, w, r, errors.Wrap(err, "recovering from panic"))
 				}
 			}()
