@@ -18,6 +18,9 @@ func main() {
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		panic("handled")
 	})
+	svs.HandleFunc("/abort", func(w http.ResponseWriter, r *http.Request) {
+		panic(http.ErrAbortHandler)
+	})
 
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
