@@ -9,6 +9,8 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	keelhttpcontext "github.com/foomo/keel/net/http/context"
 )
 
 func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
@@ -54,8 +56,12 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	}
 	if id := r.Header.Get("X-Request-ID"); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
+	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPRequestID(id))
 	}
 	if id := r.Header.Get("X-Session-ID"); id != "" {
+		fields = append(fields, FHTTPSessionID(id))
+	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
 		fields = append(fields, FHTTPSessionID(id))
 	}
 	if r.TLS != nil {
@@ -106,8 +112,12 @@ func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
 	}
 	if id := r.Header.Get("X-Request-ID"); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
+	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPRequestID(id))
 	}
 	if id := r.Header.Get("X-Session-ID"); id != "" {
+		fields = append(fields, FHTTPSessionID(id))
+	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
 		fields = append(fields, FHTTPSessionID(id))
 	}
 	if r.TLS != nil {
