@@ -35,6 +35,7 @@ func main() {
 			httputils.InternalServerError(l, w, r, err)
 			return
 		} else {
+			defer resp.Body.Close()
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(r.Header.Get(keelhttp.HeaderXRequestID) + " - " + resp.Header.Get(keelhttp.HeaderXRequestID)))
 			log.WithHTTPRequestOut(l, req).Info("sent internal request")
