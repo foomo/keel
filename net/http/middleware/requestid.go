@@ -6,14 +6,17 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	keelhttp "github.com/foomo/keel/net/http"
+	keelhttpcontext "github.com/foomo/keel/net/http/context"
 )
 
 type (
 	RequestIDOptions struct {
 		Generator         RequestIDGenerator
+		RequestHeader     []string
 		ResponseHeader    string
+		SetRequestHeader  bool
 		SetResponseHeader bool
+		SetContext        bool
 	}
 	RequestIDOption    func(*RequestIDOptions)
 	RequestIDGenerator func() string
@@ -28,8 +31,18 @@ func DefaultRequestIDGenerator() string {
 func GetDefaultRequestIDOptions() RequestIDOptions {
 	return RequestIDOptions{
 		Generator:         DefaultRequestIDGenerator,
-		ResponseHeader:    keelhttp.HeaderXRequestID,
-		SetResponseHeader: false,
+		RequestHeader:     []string{"X-Request-ID", "Cf-Ray"},
+		ResponseHeader:    "X-Request-ID",
+		SetRequestHeader:  true,
+		SetResponseHeader: true,
+		SetContext:        true,
+	}
+}
+
+// RequestIDWithRequestHeader middleware option
+func RequestIDWithRequestHeader(v ...string) RequestIDOption {
+	return func(o *RequestIDOptions) {
+		o.RequestHeader = append(o.RequestHeader, v...)
 	}
 }
 
@@ -37,6 +50,13 @@ func GetDefaultRequestIDOptions() RequestIDOptions {
 func RequestIDWithResponseHeader(v string) RequestIDOption {
 	return func(o *RequestIDOptions) {
 		o.ResponseHeader = v
+	}
+}
+
+// RequestIDWithSetRequestHeader middleware option
+func RequestIDWithSetRequestHeader(v bool) RequestIDOption {
+	return func(o *RequestIDOptions) {
+		o.SetRequestHeader = v
 	}
 }
 
@@ -51,6 +71,13 @@ func RequestIDWithSetResponseHeader(v bool) RequestIDOption {
 func RequestIDWithGenerator(v RequestIDGenerator) RequestIDOption {
 	return func(o *RequestIDOptions) {
 		o.Generator = v
+	}
+}
+
+// RequestIDWithSetContext middleware option
+func RequestIDWithSetContext(v bool) RequestIDOption {
+	return func(o *RequestIDOptions) {
+		o.SetContext = v
 	}
 }
 
@@ -69,12 +96,22 @@ func RequestID(opts ...RequestIDOption) Middleware {
 func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			requestID := r.Header.Get(opts.ResponseHeader)
+			var requestID string
+			for _, value := range opts.RequestHeader {
+				if requestID = r.Header.Get(value); requestID != "" {
+					break
+				}
+			}
 			if requestID == "" {
 				requestID = opts.Generator()
+			}
+			if requestID != "" && opts.SetContext {
+				r = r.WithContext(keelhttpcontext.SetRequestID(r.Context(), requestID))
+			}
+			if requestID != "" && opts.SetRequestHeader {
 				r.Header.Set(opts.ResponseHeader, requestID)
 			}
-			if opts.SetResponseHeader {
+			if requestID != "" && opts.SetResponseHeader {
 				if value := w.Header().Get(opts.ResponseHeader); value == "" {
 					w.Header().Add(opts.ResponseHeader, requestID)
 				}
