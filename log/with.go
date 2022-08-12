@@ -9,6 +9,8 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	keelhttpcontext "github.com/foomo/keel/net/http/context"
 )
 
 func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
@@ -44,7 +46,7 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 		FHTTPUserAgent(r.UserAgent()),
 		FHTTPTarget(r.RequestURI),
 	}
-
+	// host
 	if value := r.Header.Get("X-Forwarded-Host"); value != "" {
 		fields = append(fields, FHTTPHost(value))
 	} else if !r.URL.IsAbs() {
@@ -52,17 +54,31 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	} else {
 		fields = append(fields, FHTTPHost(r.URL.Host))
 	}
+	// request id
 	if id := r.Header.Get("X-Request-ID"); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
+	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPRequestID(id))
 	}
+	// session id
 	if id := r.Header.Get("X-Session-ID"); id != "" {
 		fields = append(fields, FHTTPSessionID(id))
+	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPSessionID(id))
 	}
+	// tracking id
+	if id := r.Header.Get("X-Tracking-ID"); id != "" {
+		fields = append(fields, FHTTPTrackingID(id))
+	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPTrackingID(id))
+	}
+	// schema
 	if r.TLS != nil {
 		fields = append(fields, FHTTPScheme("https"))
 	} else {
 		fields = append(fields, FHTTPScheme("http"))
 	}
+	// flavor
 	if r.ProtoMajor == 1 {
 		fields = append(fields, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
 	} else if r.ProtoMajor == 2 {
@@ -100,21 +116,35 @@ func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
 		FHTTPMethod(r.Method),
 		FHTTPTarget(r.URL.Path),
 	}
-
+	// host
 	if r.URL.Host != "" {
 		fields = append(fields, FHTTPHost(r.URL.Host))
 	}
+	// request id
 	if id := r.Header.Get("X-Request-ID"); id != "" {
 		fields = append(fields, FHTTPRequestID(id))
+	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPRequestID(id))
 	}
+	// session id
 	if id := r.Header.Get("X-Session-ID"); id != "" {
 		fields = append(fields, FHTTPSessionID(id))
+	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPSessionID(id))
 	}
+	// tracking id
+	if id := r.Header.Get("X-Tracking-ID"); id != "" {
+		fields = append(fields, FHTTPTrackingID(id))
+	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
+		fields = append(fields, FHTTPTrackingID(id))
+	}
+	// schema
 	if r.TLS != nil {
 		fields = append(fields, FHTTPScheme("https"))
 	} else {
 		fields = append(fields, FHTTPScheme("http"))
 	}
+	// flavor
 	if r.ProtoMajor == 1 {
 		fields = append(fields, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
 	} else if r.ProtoMajor == 2 {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -64,7 +65,7 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 		s.running = false
 	})
 	s.running = true
-	if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
+	if err := s.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		log.WithError(s.l, err).Error("service error")
 		return err
 	}

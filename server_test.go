@@ -3,7 +3,7 @@ package keel_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"syscall"
@@ -209,7 +209,7 @@ func (s *KeelTestSuite) httpGet(url string) (int, string, error) {
 		return 0, "", err
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
 		return 0, "", err
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
+	} else if body, err := io.ReadAll(resp.Body); err != nil {
 		return 0, "", err
 	} else if err := resp.Body.Close(); err != nil {
 		return 0, "", err
@@ -224,7 +224,7 @@ func (s *KeelTestSuite) httpPut(url, data string) (int, string, error) {
 		return 0, "", err
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
 		return 0, "", err
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
+	} else if body, err := io.ReadAll(resp.Body); err != nil {
 		return 0, "", err
 	} else if err := resp.Body.Close(); err != nil {
 		return 0, "", err

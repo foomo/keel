@@ -85,7 +85,7 @@ func main() {
 		log.Must(l, err, "failed to create up down meter")
 
 		svs.HandleFunc("/histogram", func(w http.ResponseWriter, r *http.Request) {
-			histogram.Record(r.Context(), int64(rand.Int()), attribute.String("key", "value")) // nolint:gosec
+			histogram.Record(r.Context(), int64(rand.Int()), attribute.String("key", "value"))
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("OK!"))
 		})

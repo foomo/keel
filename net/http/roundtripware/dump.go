@@ -44,20 +44,20 @@ func dumpRequest(req *http.Request) {
 	if req.Header != nil && req.Header.Get("Content-Type") != "" {
 		var body string
 		if req.Body, body = readBodyPretty(req.Header.Get("Content-Type"), req.Body); body != "" {
-			fmt.Printf("Request %s:\n%s\n", req.URL, body)
+			fmt.Printf("Request %s:\n%s\n", req.URL, body) //nolint:forbidigo
 		}
 	}
 }
 
 func dumpResponse(req *http.Request, resp *http.Response) {
 	if resp == nil {
-		fmt.Println("Response is nil")
+		fmt.Println("Response is nil") //nolint:forbidigo
 		return
 	}
 	if resp.Header != nil && resp.Header.Get("Content-Type") != "" {
 		var body string
 		if resp.Body, body = readBodyPretty(resp.Header.Get("Content-Type"), resp.Body); body != "" {
-			fmt.Printf("Response %s:\n%s\n", req.URL, body)
+			fmt.Printf("Response %s:\n%s\n", req.URL, body) //nolint:forbidigo
 		}
 	}
 }

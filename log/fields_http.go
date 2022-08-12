@@ -40,11 +40,14 @@ const (
 	// HTTPFlavorKey represents the Kind of HTTP protocol used.
 	HTTPFlavorKey = "http_flavor"
 
-	// HTTPRequestIDKey represents the HTTP request id if known (e.g from X-Request-ID).
+	// HTTPRequestIDKey represents the HTTP request id if known (e.g. from X-Request-ID).
 	HTTPRequestIDKey = "http_request_id"
 
-	// HTTPSessionIDKey represents the HTTP session id if known (e.g from X-Session-ID).
+	// HTTPSessionIDKey represents the HTTP session id if known (e.g. from X-Session-ID).
 	HTTPSessionIDKey = "http_session_id"
+
+	// HTTPTrackingIDKey represents the HTTP tracking id if known (e.g. from X-Tracking-ID).
+	HTTPTrackingIDKey = "http_tracking_id"
 )
 
 func FHTTPServerName(id string) zap.Field {
@@ -57,6 +60,10 @@ func FHTTPRequestID(id string) zap.Field {
 
 func FHTTPSessionID(id string) zap.Field {
 	return zap.String(HTTPSessionIDKey, id)
+}
+
+func FHTTPTrackingID(id string) zap.Field {
+	return zap.String(HTTPTrackingIDKey, id)
 }
 
 func FHTTPRequestContentLength(bytes int64) zap.Field {
