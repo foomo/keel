@@ -89,9 +89,9 @@ func newTestingWriter(t zaptest.TestingT) *testingWriter {
 	return &testingWriter{t: t}
 }
 
-func (w *testingWriter) Write(p []byte) (n int, err error) {
+func (w *testingWriter) Write(p []byte) (int, error) {
 	if w.t == nil {
-		return fmt.Printf("%s", p)
+		return fmt.Printf("%s", p) //nolint:forbidigo
 	} else {
 		// Note: t.Log is safe for concurrent use.
 		// Strip trailing newline because t.Log always adds one.

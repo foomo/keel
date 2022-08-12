@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/cookiejar"
 )
@@ -75,7 +75,7 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 
 func (c *HTTPClient) readBody(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
-	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+	if body, err := io.ReadAll(resp.Body); err != nil {
 		return nil, err
 	} else {
 		return body, nil

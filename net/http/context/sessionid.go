@@ -14,6 +14,6 @@ func GetSessionID(ctx context.Context) (string, bool) {
 	}
 }
 
-func SetSessionID(ctx context.Context, requestID string) context.Context {
-	return context.WithValue(ctx, ContextKeySessionID, requestID)
+func SetSessionID(ctx context.Context, sessionID string) context.Context {
+	return context.WithValue(ctx, ContextKeySessionID, sessionID)
 }

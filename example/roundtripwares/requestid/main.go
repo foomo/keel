@@ -20,14 +20,17 @@ func main() {
 	httpClient := keelhttp.NewHTTPClient(
 		keelhttp.HTTPClientWithRoundTripware(l,
 			roundtripware.RequestID(),
+			roundtripware.SessionID(),
+			roundtripware.TrackingID(),
 		),
 	)
 
 	// create demo service
 	svs := http.NewServeMux()
+
+	// send internal http request
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		l := log.WithHTTPRequest(l, r)
-		// send internal http request
+		// send request
 		if req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "http://localhost:8080/internal", nil); err != nil {
 			httputils.InternalServerError(l, w, r, err)
 			return
@@ -37,19 +40,22 @@ func main() {
 		} else {
 			defer resp.Body.Close()
 			w.WriteHeader(http.StatusOK)
+			log.WithHTTPRequest(l, r).Info("handled request")
 			_, _ = w.Write([]byte(r.Header.Get(keelhttp.HeaderXRequestID) + " - " + resp.Header.Get(keelhttp.HeaderXRequestID)))
 			log.WithHTTPRequestOut(l, req).Info("sent internal request")
 		}
 	})
+	// handle internal http request
 	svs.HandleFunc("/internal", func(w http.ResponseWriter, r *http.Request) {
-		l := log.WithHTTPRequest(l, r)
-		l.Info("handled internal request")
+		log.WithHTTPRequest(l, r).Info("handled internal request")
 		w.WriteHeader(http.StatusOK)
 	})
 
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
 			middleware.RequestID(),
+			middleware.SessionID(),
+			middleware.TrackingID(),
 		),
 	)
 

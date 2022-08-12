@@ -17,7 +17,6 @@ type metricsHandler struct {
 	attr  []attribute.KeyValue
 }
 
-// 	scope, _ := tally.NewRootScope(opts, time.Second)
 func NewMetricsHandler(meter metric.Meter) client.MetricsHandler {
 	return metricsHandler{meter: meter}
 }

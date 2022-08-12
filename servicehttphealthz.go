@@ -16,6 +16,14 @@ const (
 	DefaultServiceHTTPHealthzPath = "/healthz"
 )
 
+var (
+	ErrUnhandledHealthzProbe = errors.New("unhandled healthz probe")
+	ErrProbeFailed           = errors.New("probe failed")
+	ErrLivenessProbeFailed   = errors.New("liveness probe failed")
+	ErrReadinessProbeFailed  = errors.New("readiness probe failed")
+	ErrStartupProbeFailed    = errors.New("startup probe failed")
+)
+
 func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[HealthzType][]interface{}) *ServiceHTTP {
 	handler := http.NewServeMux()
 
@@ -41,7 +49,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 		case ErrorPingerWithContext:
 			return true, h.Ping(ctx)
 		default:
-			return false, errors.New("unhandled healthz probe")
+			return false, ErrUnhandledHealthzProbe
 		}
 	}
 
@@ -55,7 +63,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 					unavailable(l, w, r, err)
 					return
 				} else if !ok {
-					unavailable(l, w, r, errors.New("probe failed"))
+					unavailable(l, w, r, ErrProbeFailed)
 					return
 				}
 			}
@@ -77,7 +85,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 				unavailable(l, w, r, err)
 				return
 			} else if !ok {
-				unavailable(l, w, r, errors.New("liveness probe failed"))
+				unavailable(l, w, r, ErrLivenessProbeFailed)
 				return
 			}
 		}
@@ -98,7 +106,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 				unavailable(l, w, r, err)
 				return
 			} else if !ok {
-				unavailable(l, w, r, errors.New("readiness probe failed"))
+				unavailable(l, w, r, ErrReadinessProbeFailed)
 				return
 			}
 		}
@@ -119,7 +127,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 				unavailable(l, w, r, err)
 				return
 			} else if !ok {
-				unavailable(l, w, r, errors.New("startup probe failed"))
+				unavailable(l, w, r, ErrStartupProbeFailed)
 				return
 			}
 		}

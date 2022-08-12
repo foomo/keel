@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/bson/bsonrw"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
@@ -20,7 +21,10 @@ func (d *DateTimeCodec) EncodeValue(_ bsoncodec.EncodeContext, vw bsonrw.ValueWr
 	if !val.IsValid() || val.Type() != TDateTime {
 		return bsoncodec.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
 	}
-	td := val.Interface().(DateTime)
+	td, ok := val.Interface().(DateTime)
+	if !ok {
+		return errors.New("failed to encode date time")
+	}
 	tt, err := td.Time()
 	if err != nil {
 		return bsoncodec.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
@@ -34,7 +38,7 @@ func (d *DateTimeCodec) DecodeValue(_ bsoncodec.DecodeContext, vr bsonrw.ValueRe
 	}
 
 	var dateTimeVal DateTime
-	switch t := vr.Type(); t {
+	switch t := vr.Type(); t { //nolint:exhaustive
 	case bsontype.DateTime:
 		dt, err := vr.ReadDateTime()
 		if err != nil {
@@ -48,7 +52,7 @@ func (d *DateTimeCodec) DecodeValue(_ bsoncodec.DecodeContext, vr bsonrw.ValueRe
 		}
 		dateTimeVal = DateTime(decimalStr)
 	default:
-		return fmt.Errorf("cannot decode %v into a DateTime", t)
+		return fmt.Errorf("cannot decode %v into a DateTime", t) //nolint:goerr113
 	}
 
 	val.Set(reflect.ValueOf(dateTimeVal))
