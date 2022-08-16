@@ -53,8 +53,11 @@ func main() {
 
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+			// add middleware
 			middleware.RequestID(),
+			// add middleware
 			middleware.SessionID(),
+			// add middleware
 			middleware.TrackingID(),
 		),
 	)
