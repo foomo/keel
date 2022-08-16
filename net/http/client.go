@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/net/http/roundtripware"
@@ -222,6 +223,12 @@ func HTTPClientWithForceAttemptHTTP2(o bool) HTTPClientOption {
 func HTTPClientWithRoundTripware(l *zap.Logger, roundTripware ...roundtripware.RoundTripware) HTTPClientOption {
 	return func(v *http.Client) {
 		v.Transport = roundtripware.NewRoundTripper(l, v.Transport, roundTripware...)
+	}
+}
+
+func HTTPClientWithTelemetry(opts ...otelhttp.Option) HTTPClientOption {
+	return func(v *http.Client) {
+		v.Transport = otelhttp.NewTransport(v.Transport, opts...)
 	}
 }
 
