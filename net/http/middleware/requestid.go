@@ -3,34 +3,28 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	keelhttpcontext "github.com/foomo/keel/net/http/context"
+	"github.com/foomo/keel/net/http/provider"
 )
 
 type (
 	RequestIDOptions struct {
-		Generator         RequestIDGenerator
+		Provider          provider.RequestID
 		RequestHeader     []string
 		ResponseHeader    string
 		SetRequestHeader  bool
 		SetResponseHeader bool
 		SetContext        bool
 	}
-	RequestIDOption    func(*RequestIDOptions)
-	RequestIDGenerator func() string
+	RequestIDOption func(*RequestIDOptions)
 )
-
-// DefaultRequestIDGenerator function
-func DefaultRequestIDGenerator() string {
-	return uuid.New().String()
-}
 
 // GetDefaultRequestIDOptions returns the default options
 func GetDefaultRequestIDOptions() RequestIDOptions {
 	return RequestIDOptions{
-		Generator:         DefaultRequestIDGenerator,
+		Provider:          provider.DefaultRequestID,
 		RequestHeader:     []string{"X-Request-ID", "Cf-Ray"},
 		ResponseHeader:    "X-Request-ID",
 		SetRequestHeader:  true,
@@ -68,9 +62,9 @@ func RequestIDWithSetResponseHeader(v bool) RequestIDOption {
 }
 
 // RequestIDWithGenerator middleware option
-func RequestIDWithGenerator(v RequestIDGenerator) RequestIDOption {
+func RequestIDWithGenerator(v provider.RequestID) RequestIDOption {
 	return func(o *RequestIDOptions) {
-		o.Generator = v
+		o.Provider = v
 	}
 }
 
@@ -103,7 +97,7 @@ func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 				}
 			}
 			if requestID == "" {
-				requestID = opts.Generator()
+				requestID = opts.Provider()
 			}
 			if requestID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetRequestID(r.Context(), requestID))
