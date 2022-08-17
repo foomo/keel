@@ -52,7 +52,7 @@ func DefaultClientOptions() ClientOptions {
 		Logger:            log.Logger(),
 		Namespace:         "default",
 		RegisterNamespace: nil,
-		OtelEnabled:       env.GetBool("TEMPORAL_OTEL_ENABLED", env.GetBool("OTEL_ENABLED", false)),
+		OtelEnabled:       env.GetBool("OTEL_TEMPORAL_ENABLED", env.GetBool("OTEL_ENABLED", false)),
 	}
 }
 
