@@ -52,7 +52,7 @@ func DefaultClientOptions() ClientOptions {
 		Logger:            log.Logger(),
 		Namespace:         "default",
 		RegisterNamespace: nil,
-		OtelEnabled:       env.GetBool("TEMPORAL_OTEL_ENABLED", env.GetBool("OTEL_ENABLED", false)),
+		OtelEnabled:       env.GetBool("OTEL_TEMPORAL_ENABLED", env.GetBool("OTEL_ENABLED", false)),
 	}
 }
 
@@ -84,7 +84,7 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 			}
 		} else if err != nil {
 			return nil, errors.Wrap(err, "failed to retrieve temporal namespace info")
-		} else if nsInfo := ns.GetNamespaceInfo(); nsInfo.State != enums.NAMESPACE_STATE_REGISTERED {
+		} else if nsInfo := ns.GetNamespaceInfo(); nsInfo.State != enums.NAMESPACE_STATE_REGISTERED { //nolint:nosnakecase
 			return nil, errors.New("Could not register namespace due to existing state: " + nsInfo.State.String())
 		} else if err := nsc.Update(ctx, &workflowservice.UpdateNamespaceRequest{
 			Namespace: o.RegisterNamespace.Namespace,

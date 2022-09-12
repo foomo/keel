@@ -21,17 +21,17 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 	}
 
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
-			ctx, labeler := LabelerFromContext(req.Context())
+		return func(r *http.Request) (*http.Response, error) {
+			ctx, labeler := LabelerFromContext(r.Context())
 
 			start := time.Now()
-			resp, err := next(req.WithContext(ctx))
+			resp, err := next(r.WithContext(ctx))
 			duration := time.Since(start)
 			if err != nil {
 				return resp, err
 			}
 
-			attributes := append(labeler.Get(), attribute.String("method", req.Method))
+			attributes := append(labeler.Get(), attribute.String("method", r.Method))
 
 			if resp != nil {
 				attributes = append(labeler.Get(), attribute.Int("status_code", resp.StatusCode))

@@ -23,11 +23,11 @@ func main() {
 
 	// create config reader
 	fooFn := config.GetString(c, "foo", "default_foo")
-	fmt.Println("initial foo:", fooFn())
+	fmt.Println("initial foo:", fooFn()) //nolint:forbidigo
 
 	// watch changes
 	config.WatchString(svr.CancelContext(), fooFn, func(s string) {
-		fmt.Println("change foo:", fooFn())
+		fmt.Println("change foo:", fooFn()) //nolint:forbidigo
 	})
 
 	ch := make(chan string)
@@ -36,7 +36,7 @@ func main() {
 	go func(ch chan string) {
 		for {
 			value := <-ch
-			fmt.Println("channel foo:", value)
+			fmt.Println("channel foo:", value) //nolint:forbidigo
 		}
 	}(ch)
 
@@ -44,7 +44,7 @@ func main() {
 	svr.AddService(
 		keel.NewServiceHTTP(l, "demo", "localhost:8080", http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				fmt.Println("current foo:", fooFn())
+				fmt.Println("current foo:", fooFn()) //nolint:forbidigo
 			}),
 		),
 	)
