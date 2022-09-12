@@ -21,7 +21,7 @@ func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
 }
 
 func WithError(l *zap.Logger, err error) *zap.Logger {
-	return With(l, FError(err))
+	return With(l, FErrorType(err), FError(err))
 }
 
 func WithServiceName(l *zap.Logger, name string) *zap.Logger {

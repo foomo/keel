@@ -1,11 +1,21 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
+)
+
+type CustomError struct {
+	error
+}
+
+var (
+	ErrCustom   = &CustomError{error: errors.New("custom error")}
+	ErrStandard = errors.New("string error")
 )
 
 func main() {
@@ -27,6 +37,9 @@ func main() {
 	// create demo service
 	svs := http.NewServeMux()
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.WithError(l, ErrCustom).Error("enhanced logger with custom error")
+		log.WithError(l, ErrStandard).Error("enhanced logger with standard error")
+
 		log.WithHTTPRequest(l, r).Info("handled request")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
