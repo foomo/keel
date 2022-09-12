@@ -42,33 +42,6 @@ linters-settings:
 
 linters:
   enable:
-#    - bodyclose
-#    - dogsled
-#    - exportloopref
-#    # - gci TODO re-enable
-#    - goconst
-#    - gocritic
-#    # - gocyclo
-#    - gofmt
-#    - goprintffuncname
-#    #- gosec
-#    - ifshort
-#    - misspell
-#    - nakedret
-#    - noctx
-#    - nolintlint
-#    - prealloc
-#    - revive
-#    - promlinter
-#    - rowserrcheck
-#    - sqlclosecheck
-#    - stylecheck
-#    - thelper
-#    - tparallel
-#    - unconvert
-#    - unparam
-#    - whitespace
-
     # Enabled by default linters:
     - deadcode # Finds unused code [fast: false, auto-fix: false]
     - errcheck # Errcheck is a program for checking for unchecked errors in go programs. These unchecked errors can be critical bugs in some cases [fast: false, auto-fix: false]
