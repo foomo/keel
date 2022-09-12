@@ -9,10 +9,10 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/nats-io/nats.go v1.16.0
 	github.com/pkg/errors v0.9.1
-	go.mongodb.org/mongo-driver v1.10.1
+	go.mongodb.org/mongo-driver v1.10.2
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/metric v0.30.0
-	go.uber.org/zap v1.22.0
+	go.uber.org/zap v1.23.0
 )
 
 require (
@@ -48,7 +48,7 @@ require (
 	github.com/hashicorp/serf v0.9.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
-	github.com/lib/pq v1.10.6 // indirect
+	github.com/lib/pq v1.10.7 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
@@ -109,10 +109,10 @@ require (
 	go.opentelemetry.io/proto/otlp v0.16.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
