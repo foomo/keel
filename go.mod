@@ -16,11 +16,11 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/tinylib/msgp v1.1.6
 	go.mongodb.org/mongo-driver v1.10.2
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.32.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.34.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.32.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.32.0
-	go.opentelemetry.io/otel v1.7.0
+	go.opentelemetry.io/otel v1.9.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.7.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.7.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.30.0
@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.30.0
 	go.opentelemetry.io/otel/sdk v1.7.0
 	go.opentelemetry.io/otel/sdk/metric v0.30.0
-	go.opentelemetry.io/otel/trace v1.7.0
+	go.opentelemetry.io/otel/trace v1.9.0
 	go.temporal.io/api v1.8.0
 	go.temporal.io/sdk v1.15.0
 	go.temporal.io/sdk/contrib/opentelemetry v0.1.0
