@@ -53,10 +53,15 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 					if !ok {
 						err = fmt.Errorf("%v", e) //nolint:goerr113
 					}
+					if errors.Is(err, http.ErrAbortHandler) {
+						panic(e)
+					}
+
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
 						ll = ll.With(log.FStackSkip(3))
 					}
+
 					httputils.InternalServerError(ll, w, r, errors.Wrap(err, "recovering from panic"))
 				}
 			}()
