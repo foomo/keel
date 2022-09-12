@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
+	keelhttpcontext "github.com/foomo/keel/net/http/context"
 	"github.com/foomo/keel/net/http/cookie"
 	httputils "github.com/foomo/keel/utils/net/http"
 )
@@ -33,8 +34,6 @@ type (
 )
 
 const (
-	ContextKeySessionID contextKey = "sessionId"
-
 	DefaultSessionIDCookieName = "keel-session"
 )
 
@@ -134,7 +133,7 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 				r.Header.Set(opts.Header, sessionID)
 			}
 			if sessionID != "" && opts.SetContext {
-				r = r.WithContext(context.WithValue(r.Context(), ContextKeySessionID, sessionID))
+				r = r.WithContext(keelhttpcontext.SetSessionID(r.Context(), sessionID))
 			}
 			next.ServeHTTP(w, r)
 		})
@@ -143,7 +142,7 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 
 // SessionIDFromContext helper
 func SessionIDFromContext(ctx context.Context) string {
-	if value, ok := ctx.Value(ContextKeySessionID).(string); ok {
+	if value, ok := keelhttpcontext.GetSessionID(ctx); ok {
 		return value
 	}
 	return ""

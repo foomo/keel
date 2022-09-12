@@ -19,7 +19,7 @@ type (
 		Bool            bool   `yaml:"bool"`
 		String          string `yaml:"string"`
 		CamelCaseString string `yaml:"camelCaseString"`
-		SnakeCaseString string `yaml:"snake_case_string"`
+		SnakeCaseString string `yaml:"snake_case_string"` //nolint:tagliatelle
 	}
 	Config struct {
 		Int    int    `yaml:"int"`

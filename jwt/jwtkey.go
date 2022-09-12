@@ -5,7 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt"
@@ -38,7 +38,7 @@ func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Ke
 
 	// load private key
 	if privateKeyPemFilename != "" {
-		if bytes, err := ioutil.ReadFile(privateKeyPemFilename); err != nil {
+		if bytes, err := os.ReadFile(privateKeyPemFilename); err != nil {
 			return Key{}, errors.Wrap(err, "failed to read private key: "+privateKeyPemFilename)
 		} else if key, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(strings.ReplaceAll(string(bytes), `\n`, "\n"))); err != nil {
 			return Key{}, errors.Wrap(err, "failed to parse private key: "+privateKeyPemFilename)
@@ -48,7 +48,7 @@ func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Ke
 	}
 
 	// load public key
-	if v, err := ioutil.ReadFile(publicKeyPemFilename); err != nil {
+	if v, err := os.ReadFile(publicKeyPemFilename); err != nil {
 		return Key{}, errors.Wrap(err, "failed to read public key: "+publicKeyPemFilename)
 	} else if key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(strings.ReplaceAll(string(v), `\n`, "\n"))); err != nil {
 		return Key{}, errors.Wrap(err, "failed to parse public key: "+publicKeyPemFilename)

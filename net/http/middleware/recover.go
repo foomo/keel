@@ -55,7 +55,7 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 
 					err, ok := e.(error)
 					if !ok {
-						err = fmt.Errorf("%v", e)
+						err = fmt.Errorf("%v", e) //nolint:goerr113
 					}
 
 					ll := log.WithError(l, err)

@@ -17,9 +17,9 @@ func client() {
 
 	var err error
 
-	_, err = client.Get("http://localhost:8080") // nolint
+	_, err = client.Get("http://localhost:8080") //nolint:all
 	log.Must(l, err, "failed to retrieve response")
 
-	_, err = client.Get("http://localhost:8080/404") // nolint
+	_, err = client.Get("http://localhost:8080/404") //nolint:all
 	log.Must(l, err, "failed to retrieve response")
 }

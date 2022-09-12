@@ -5,9 +5,9 @@ type Error string
 
 // Common errors
 const (
-	ErrorNotFound         Error = "notFound"
-	ErrorForbidden        Error = "forbidden"
-	ErrorPermissionDenied Error = "permissionDenied"
+	ErrorNotFound         Error = "notFound"         //nolint:errname
+	ErrorForbidden        Error = "forbidden"        //nolint:errname
+	ErrorPermissionDenied Error = "permissionDenied" //nolint:errname
 )
 
 // NewError returns a pointer error
@@ -19,7 +19,7 @@ func NewError(e Error) *Error {
 func (e *Error) Is(err error) bool {
 	if e == nil || err == nil {
 		return false
-	} else if v, ok := err.(*Error); ok && v != nil {
+	} else if v, ok := err.(*Error); ok && v != nil { //nolint:errorlint
 		return e.Error() == v.Error()
 	}
 	return false

@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
+	keelhttpcontext "github.com/foomo/keel/net/http/context"
 	"github.com/foomo/keel/net/http/cookie"
 	httputils "github.com/foomo/keel/utils/net/http"
 )
@@ -33,8 +34,6 @@ type (
 )
 
 const (
-	ContextKeyTrackingID contextKey = "tracking"
-
 	DefaultTrackingIDCookieName = "keel-tracking"
 )
 
@@ -134,7 +133,7 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 				r.Header.Set(opts.Header, tackingID)
 			}
 			if tackingID != "" && opts.SetContext {
-				r = r.WithContext(context.WithValue(r.Context(), ContextKeyTrackingID, tackingID))
+				r = r.WithContext(keelhttpcontext.SetTrackingID(r.Context(), tackingID))
 			}
 			next.ServeHTTP(w, r)
 		})
@@ -143,7 +142,7 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 
 // TrackingIDFromContext helper
 func TrackingIDFromContext(ctx context.Context) string {
-	if value, ok := ctx.Value(ContextKeyTrackingID).(string); ok {
+	if value, ok := keelhttpcontext.GetTrackingID(ctx); ok {
 		return value
 	}
 	return ""

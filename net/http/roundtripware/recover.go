@@ -44,12 +44,12 @@ func Recover(opts ...RecoverOption) RoundTripware {
 // RecoverWithOptions returns a RoundTripper which catches any panics
 func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
+		return func(r *http.Request) (*http.Response, error) {
 			defer func() {
 				if e := recover(); e != nil {
 					err, ok := e.(error)
 					if !ok {
-						err = fmt.Errorf("%v", e)
+						err = fmt.Errorf("%v", e) //nolint:goerr113
 					}
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
@@ -58,7 +58,7 @@ func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 					ll.Error("recovering from panic")
 				}
 			}()
-			return next(req)
+			return next(r)
 		}
 	}
 }

@@ -19,7 +19,7 @@ var (
 // Entity type
 type Entity struct {
 	ID     string             `json:"id" bson:"id" yaml:"id"`
-	BsonID primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty" yaml:"_id,omitempty"`
+	BsonID primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty" yaml:"_id,omitempty"` //nolint:tagliatelle
 }
 
 func NewEntity(id string) Entity {
