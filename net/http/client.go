@@ -232,19 +232,26 @@ func HTTPClientWithTelemetry(opts ...otelhttp.Option) HTTPClientOption {
 	}
 }
 
-func NewHTTPClient(opts ...HTTPClientOption) *http.Client {
-	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   45 * time.Second,
-			KeepAlive: 45 * time.Second,
-		}).DialContext,
+func DefaultHTTPTransportDialer() *net.Dialer {
+	return &net.Dialer{
+		Timeout:   45 * time.Second,
+		KeepAlive: 45 * time.Second,
+	}
+}
+
+func DefaultHTTPTransport() *http.Transport {
+	return &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           DefaultHTTPTransportDialer().DialContext,
 		DisableKeepAlives:     true,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 5 * time.Second,
 	}
+}
+
+func NewHTTPClient(opts ...HTTPClientOption) *http.Client {
 	inst := &http.Client{
-		Transport: transport,
+		Transport: DefaultHTTPTransport(),
 		Timeout:   2 * time.Minute,
 	}
 	for _, opt := range opts {
