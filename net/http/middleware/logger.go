@@ -12,7 +12,9 @@ import (
 
 type (
 	LoggerOptions struct {
-		Message string
+		Message      string
+		MinWarnCode  int
+		MinErrorCode int
 	}
 	LoggerOption func(*LoggerOptions)
 )
@@ -20,7 +22,9 @@ type (
 // GetDefaultLoggerOptions returns the default options
 func GetDefaultLoggerOptions() LoggerOptions {
 	return LoggerOptions{
-		Message: "handled http request",
+		Message:      "handled http request",
+		MinWarnCode:  400,
+		MinErrorCode: 500,
 	}
 }
 
@@ -42,6 +46,20 @@ func LoggerWithMessage(v string) LoggerOption {
 	}
 }
 
+// LoggerWithMinWarnCode middleware option
+func LoggerWithMinWarnCode(v int) LoggerOption {
+	return func(o *LoggerOptions) {
+		o.MinWarnCode = v
+	}
+}
+
+// LoggerWithMinErrorCode middleware option
+func LoggerWithMinErrorCode(v int) LoggerOption {
+	return func(o *LoggerOptions) {
+		o.MinErrorCode = v
+	}
+}
+
 // LoggerWithOptions middleware
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
@@ -53,12 +71,20 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			next.ServeHTTP(wr, r)
 
-			log.WithHTTPRequest(l, r).Info(
-				opts.Message,
+			l = log.WithHTTPRequest(l, r).With(
 				log.FDuration(time.Since(start)),
 				log.FHTTPStatusCode(wr.StatusCode()),
 				log.FHTTPWroteBytes(int64(wr.Size())),
 			)
+
+			switch {
+			case opts.MinErrorCode > 0 && wr.statusCode >= opts.MinErrorCode:
+				l.Error(opts.Message)
+			case opts.MinWarnCode > 0 && wr.statusCode >= opts.MinWarnCode:
+				l.Warn(opts.Message)
+			default:
+				l.Info(opts.Message)
+			}
 		})
 	}
 }
