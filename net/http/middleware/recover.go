@@ -49,13 +49,12 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if e := recover(); e != nil {
-					if e == http.ErrAbortHandler {
-						panic(e)
-					}
-
 					err, ok := e.(error)
 					if !ok {
 						err = fmt.Errorf("%v", e) //nolint:goerr113
+					}
+					if errors.Is(err, http.ErrAbortHandler) {
+						panic(e)
 					}
 
 					ll := log.WithError(l, err)
