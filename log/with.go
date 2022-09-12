@@ -24,10 +24,6 @@ func WithError(l *zap.Logger, err error) *zap.Logger {
 	return With(l, FError(err))
 }
 
-func WithHTTPServerName(l *zap.Logger, name string) *zap.Logger {
-	return With(l, FHTTPServerName(name))
-}
-
 func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 	return With(l, FServiceName(name))
 }
@@ -39,52 +35,69 @@ func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
 	return l
 }
 
-func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
-	fields := []zap.Field{
-		FHTTPRequestContentLength(r.ContentLength),
-		FHTTPMethod(r.Method),
-		FHTTPUserAgent(r.UserAgent()),
-		FHTTPTarget(r.RequestURI),
-	}
-	// host
-	if value := r.Header.Get("X-Forwarded-Host"); value != "" {
-		fields = append(fields, FHTTPHost(value))
-	} else if !r.URL.IsAbs() {
-		fields = append(fields, FHTTPHost(r.Host))
-	} else {
-		fields = append(fields, FHTTPHost(r.URL.Host))
-	}
-	// request id
-	if id := r.Header.Get("X-Request-ID"); id != "" {
-		fields = append(fields, FHTTPRequestID(id))
-	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
-		fields = append(fields, FHTTPRequestID(id))
-	}
-	// session id
-	if id := r.Header.Get("X-Session-ID"); id != "" {
-		fields = append(fields, FHTTPSessionID(id))
-	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
-		fields = append(fields, FHTTPSessionID(id))
-	}
-	// tracking id
-	if id := r.Header.Get("X-Tracking-ID"); id != "" {
-		fields = append(fields, FHTTPTrackingID(id))
-	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
-		fields = append(fields, FHTTPTrackingID(id))
-	}
-	// schema
-	if r.TLS != nil {
-		fields = append(fields, FHTTPScheme("https"))
-	} else {
-		fields = append(fields, FHTTPScheme("http"))
-	}
-	// flavor
-	if r.ProtoMajor == 1 {
-		fields = append(fields, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
-	} else if r.ProtoMajor == 2 {
-		fields = append(fields, FHTTPFlavor("2"))
-	}
+func WithHTTPServerName(l *zap.Logger, name string) *zap.Logger {
+	return With(l, FHTTPServerName(name))
+}
 
+func WithHTTPFlavor(l *zap.Logger, r *http.Request) *zap.Logger {
+	if r.ProtoMajor == 1 {
+		return With(l, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
+	} else if r.ProtoMajor == 2 {
+		return With(l, FHTTPFlavor("2"))
+	} else {
+		return l
+	}
+}
+
+func WithHTTPScheme(l *zap.Logger, r *http.Request) *zap.Logger {
+	if r.TLS != nil {
+		return With(l, FHTTPScheme("https"))
+	} else {
+		return With(l, FHTTPScheme("http"))
+	}
+}
+
+func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
+	if id := r.Header.Get("X-Session-ID"); id != "" {
+		return With(l, FHTTPSessionID(id))
+	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
+		return With(l, FHTTPSessionID(id))
+	} else {
+		return l
+	}
+}
+
+func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
+	if id := r.Header.Get("X-Request-ID"); id != "" {
+		return With(l, FHTTPRequestID(id))
+	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
+		return With(l, FHTTPRequestID(id))
+	} else {
+		return l
+	}
+}
+
+func WithHTTPHost(l *zap.Logger, r *http.Request) *zap.Logger {
+	if value := r.Header.Get("X-Forwarded-Host"); value != "" {
+		return With(l, FHTTPHost(value))
+	} else if !r.URL.IsAbs() {
+		return With(l, FHTTPHost(r.Host))
+	} else {
+		return With(l, FHTTPHost(r.URL.Host))
+	}
+}
+
+func WithHTTPTrackingID(l *zap.Logger, r *http.Request) *zap.Logger {
+	if id := r.Header.Get("X-Tracking-ID"); id != "" {
+		return With(l, FHTTPTrackingID(id))
+	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
+		return With(l, FHTTPTrackingID(id))
+	} else {
+		return l
+	}
+}
+
+func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 	var clientIP string
 	if value := r.Header.Get("X-Forwarded-For"); value != "" {
 		if i := strings.IndexAny(value, ", "); i > 0 {
@@ -100,60 +113,39 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 		clientIP = r.RemoteAddr
 	}
 	if clientIP != "" {
-		fields = append(fields, FHTTPClientIP(clientIP))
+		return With(l, FHTTPClientIP(clientIP))
 	}
+	return l
+}
 
-	if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
-		fields = append(fields, FTraceID(spanCtx.TraceID().String()))
-	}
-
-	return With(l, fields...)
+func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
+	l = WithHTTPHost(l, r)
+	l = WithHTTPRequestID(l, r)
+	l = WithHTTPSessionID(l, r)
+	l = WithHTTPTrackingID(l, r)
+	l = WithHTTPScheme(l, r)
+	l = WithHTTPFlavor(l, r)
+	l = WithHTTPClientIP(l, r)
+	l = WithTraceID(l, r.Context())
+	return With(l,
+		FHTTPMethod(r.Method),
+		FHTTPTarget(r.RequestURI),
+		FHTTPUserAgent(r.UserAgent()),
+		FHTTPRequestContentLength(r.ContentLength),
+	)
 }
 
 func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
-	fields := []zap.Field{
-		FHTTPWroteBytes(r.ContentLength),
+	l = WithHTTPHost(l, r)
+	l = WithHTTPRequestID(l, r)
+	l = WithHTTPSessionID(l, r)
+	l = WithHTTPTrackingID(l, r)
+	l = WithHTTPScheme(l, r)
+	l = WithHTTPFlavor(l, r)
+	l = WithTraceID(l, r.Context())
+	return With(l,
 		FHTTPMethod(r.Method),
 		FHTTPTarget(r.URL.Path),
-	}
-	// host
-	if r.URL.Host != "" {
-		fields = append(fields, FHTTPHost(r.URL.Host))
-	}
-	// request id
-	if id := r.Header.Get("X-Request-ID"); id != "" {
-		fields = append(fields, FHTTPRequestID(id))
-	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
-		fields = append(fields, FHTTPRequestID(id))
-	}
-	// session id
-	if id := r.Header.Get("X-Session-ID"); id != "" {
-		fields = append(fields, FHTTPSessionID(id))
-	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
-		fields = append(fields, FHTTPSessionID(id))
-	}
-	// tracking id
-	if id := r.Header.Get("X-Tracking-ID"); id != "" {
-		fields = append(fields, FHTTPTrackingID(id))
-	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
-		fields = append(fields, FHTTPTrackingID(id))
-	}
-	// schema
-	if r.TLS != nil {
-		fields = append(fields, FHTTPScheme("https"))
-	} else {
-		fields = append(fields, FHTTPScheme("http"))
-	}
-	// flavor
-	if r.ProtoMajor == 1 {
-		fields = append(fields, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
-	} else if r.ProtoMajor == 2 {
-		fields = append(fields, FHTTPFlavor("2"))
-	}
-
-	if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
-		fields = append(fields, FTraceID(spanCtx.TraceID().String()))
-	}
-
-	return With(l, fields...)
+		FHTTPWroteBytes(r.ContentLength),
+	)
 }
