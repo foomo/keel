@@ -28,6 +28,6 @@ func NewRoundTripper(l *zap.Logger, parent http.RoundTripper, roundTripwares ...
 	}
 }
 
-func (rt *RoundTripper) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return rt.handler(req)
 }

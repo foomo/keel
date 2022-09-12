@@ -48,9 +48,10 @@ func main() {
 	svs := http.NewServeMux()
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// retrieve from context
-		claims := r.Context().Value(contextKey).(*CustomClaims)
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(claims.Name))
+		if claims, ok := r.Context().Value(contextKey).(*CustomClaims); ok {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(claims.Name))
+		}
 	})
 	svs.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		if token, err := jwtInst.GetSignedToken(CustomClaims{

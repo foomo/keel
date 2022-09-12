@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/tinylib/msgp/msgp"
@@ -41,5 +40,5 @@ func readBodyPretty(contentType string, original io.ReadCloser) (io.ReadCloser, 
 	}
 
 	// return copy of the original
-	return ioutil.NopCloser(strings.NewReader(bs.String())), body
+	return io.NopCloser(strings.NewReader(bs.String())), body
 }

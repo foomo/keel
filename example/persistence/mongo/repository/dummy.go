@@ -30,7 +30,7 @@ func (r *DummyRepository) Get(ctx context.Context, id string, opts ...*options.F
 }
 
 // Upsert entity
-func (r *DummyRepository) Upsert(ctx context.Context, entity *store.Dummy) (err error) {
+func (r *DummyRepository) Upsert(ctx context.Context, entity *store.Dummy) error {
 	if err := r.collection.Upsert(ctx, entity.GetID(), entity); err != nil {
 		return err
 	}
