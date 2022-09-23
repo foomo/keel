@@ -30,6 +30,7 @@ func HTTPClientWithJar(o http.CookieJar) HTTPClientOption {
 
 func HTTPClientWithTransport(o http.RoundTripper) HTTPClientOption {
 	return func(v *http.Client) {
+		// TODO warn in case of overriding other options
 		v.Transport = o
 	}
 }

@@ -1,4 +1,3 @@
-# Minimum golangci-lint version required: v1.42.0
 run:
   go: "1.19"
   timeout: 3m

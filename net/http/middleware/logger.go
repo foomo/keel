@@ -71,7 +71,7 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			next.ServeHTTP(wr, r)
 
-			l = log.WithHTTPRequest(l, r).With(
+			l := log.WithHTTPRequest(l, r).With(
 				log.FDuration(time.Since(start)),
 				log.FHTTPStatusCode(wr.StatusCode()),
 				log.FHTTPWroteBytes(int64(wr.Size())),
