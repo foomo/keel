@@ -23,5 +23,5 @@ func client() {
 	_, err := client.Get("http://localhost:8080/404") //nolint:all
 	keellog.Must(l, err, "failed to retrieve response")
 
-	fmt.Printf("Repetition process is finished with: %v\n", err)
+	fmt.Printf("Repetition process is finished with: %v\n", err) //nolint:forbidigo
 }
