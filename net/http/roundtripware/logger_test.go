@@ -120,6 +120,9 @@ func TestLogger_WithErrorMessage(t *testing.T) {
 	resp, err := client.Do(req)
 	require.Nil(t, resp)
 	require.Error(t, err)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 }
 
 func TestLogger_WithMinWarnCode(t *testing.T) {
