@@ -42,7 +42,6 @@ var cbSettings = &roundtripware.CircuitBreakerSettings{
 }
 
 func TestCircuitBreaker(t *testing.T) {
-
 	// create logger
 	l := zaptest.NewLogger(t)
 
@@ -63,7 +62,7 @@ func TestCircuitBreaker(t *testing.T) {
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
 					func(err error, req *http.Request, resp *http.Response) error {
-						if resp.StatusCode >= 500 {
+						if resp.StatusCode >= http.StatusInternalServerError {
 							return errors.New("invalid status code")
 						}
 						return nil
@@ -77,7 +76,10 @@ func TestCircuitBreaker(t *testing.T) {
 	for i := 0; i <= 3; i++ {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
-		_, err = client.Do(req)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 	}
 
@@ -85,7 +87,10 @@ func TestCircuitBreaker(t *testing.T) {
 	// this should result in a circuit breaker error
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 
 	// wait for the timeout to hit
@@ -93,13 +98,14 @@ func TestCircuitBreaker(t *testing.T) {
 
 	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
-	resp, err := client.Do(req)
+	resp, err = client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	require.NoError(t, err)
-	resp.Body.Close()
 }
 
 func TestCircuitBreakerCopyBodies(t *testing.T) {
-
 	requestData := "some request"
 	responseData := "some response"
 
@@ -111,7 +117,10 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 		data, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		require.Equal(t, string(data), requestData)
-		w.Write([]byte(responseData))
+		_, err = w.Write([]byte(responseData))
+		if err != nil {
+			panic(err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer svr.Close()
@@ -122,7 +131,6 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
 					func(err error, req *http.Request, resp *http.Response) error {
-
 						// read the bodies
 						_, errRead := io.ReadAll(req.Body)
 						require.NoError(t, errRead)
@@ -144,9 +152,10 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, strings.NewReader(requestData))
 	require.NoError(t, err)
 	resp, err := client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	require.NoError(t, err)
-	defer resp.Body.Close()
-
 	// make sure the correct data is returned
 	data, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
@@ -154,7 +163,6 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 }
 
 func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
-
 	requestData := "some request"
 	responseData := "some response"
 
@@ -166,7 +174,10 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 		data, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		require.Equal(t, string(data), requestData)
-		w.Write([]byte(responseData))
+		_, err = w.Write([]byte(responseData))
+		if err != nil {
+			panic(err)
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer svr.Close()
@@ -177,7 +188,6 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
 					func(err error, req *http.Request, resp *http.Response) error {
-
 						// read the bodies
 						_, errRead := io.ReadAll(req.Body)
 						if errRead != nil {
@@ -194,7 +204,10 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	// do requests to trigger the circuit breaker
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, strings.NewReader(requestData))
 	require.NoError(t, err)
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	require.Error(t, err)
 
 	// same thing for the response
@@ -203,7 +216,6 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
 					func(err error, req *http.Request, resp *http.Response) error {
-
 						// read the bodies
 						_, errRead := io.ReadAll(resp.Body)
 						if errRead != nil {
@@ -220,12 +232,14 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	// do requests to trigger the circuit breaker
 	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, strings.NewReader(requestData))
 	require.NoError(t, err)
-	_, err = client.Do(req)
+	resp, err = client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	require.Error(t, err)
 }
 
 func TestCircuitBreakerInterval(t *testing.T) {
-
 	// create logger
 	l := zaptest.NewLogger(t)
 
@@ -250,7 +264,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 			},
 				roundtripware.CircuitBreakerWithIsSuccessful(
 					func(err error, req *http.Request, resp *http.Response) error {
-						if resp.StatusCode >= 500 {
+						if resp.StatusCode >= http.StatusInternalServerError {
 							return errors.New("invalid status code")
 						}
 						return nil
@@ -264,7 +278,10 @@ func TestCircuitBreakerInterval(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
-		_, err = client.Do(req)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 	}
 
@@ -276,13 +293,19 @@ func TestCircuitBreakerInterval(t *testing.T) {
 	for i := 0; i <= 3; i++ {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
-		_, err = client.Do(req)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 	}
 
 	// this request should now finally trigger the circuit breaker
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 }

@@ -28,7 +28,7 @@ var (
 	ErrCircuitBreaker = errors.New("circuit breaker triggered")
 )
 
-// CircuitBreakerSettings is a copy of the gobreaker.Settings, except that the IsSuccessful function is ommited since we
+// CircuitBreakerSettings is a copy of the gobreaker.Settings, except that the IsSuccessful function is omitted since we
 // want to allow access to the request and response. See `CircuitBreakerWithIsSuccessful` for more.
 type CircuitBreakerSettings struct {
 	// Name is the name of the CircuitBreaker.
@@ -128,16 +128,16 @@ func CircuitBreakerWithIsSuccessful(
 
 // CircuitBreaker returns a RoundTripper which wraps all the following RoundTripwares and the Handler with a circuit
 // breaker. This will prevent further request once a certain number of requests failed.
-// NOTE: It's strongly adviced to add this Roundripware before the metric middleware (if both are used). As the measure-
+// NOTE: It's strongly advised to add this Roundripware before the metric middleware (if both are used). As the measure-
 // ments of the execution time will otherwise be falsified
 func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) RoundTripware {
-	// intialize the options
+	// intitialize the options
 	o := newDefaultCircuitBreakerOptions()
 	for _, opt := range opts {
 		opt(o)
 	}
 
-	// intialize the state change counter
+	// intitialize the state change counter
 	var stateCounter syncint64.Counter
 	if o.stateMeter != nil {
 		var err error
@@ -150,7 +150,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 		}
 	}
 
-	// intialize the state (un-)success counter
+	// intitialize the state (un-)success counter
 	var successCounter syncint64.Counter
 	if o.successMeter != nil {
 		var err error
@@ -163,7 +163,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 		}
 	}
 
-	// Initialize the gobreaker
+	// intitialize the gobreaker
 	cbrSettings := gobreaker.Settings{
 		Name:          set.Name,
 		MaxRequests:   set.MaxRequests,
@@ -200,7 +200,6 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 			// call the next handler enclosed in the circuit breaker.
 			resp, err := circuitBreaker.Execute(func() (interface{}, error) {
-
 				resp, err := next(r)
 
 				// clone the response and the body if wanted
@@ -219,7 +218,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			// detect and log a state change
 			toState := circuitBreaker.State()
 			if fromState != toState {
-				l.Warn("state change occured",
+				l.Warn("state change occurred",
 					zap.String("from", fromState.String()),
 					zap.String("to", toState.String()),
 				)
@@ -258,7 +257,11 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				successCounter.Add(ctx, 1, attributes...)
 			}
 
-			return resp.(*http.Response), nil
+			if res, ok := resp.(*http.Response); ok {
+				return res, nil
+			} else {
+				return nil, errors.New("result is no *http.Response")
+			}
 		}
 	}
 }
@@ -293,7 +296,6 @@ func copyRequest(req *http.Request, body bool) (*http.Request, error) {
 			// if it is attempted to read from the body in isSuccessful we actually want the read to fail
 			out.Body = failureToReadBody{}
 		}
-
 	} else if req.Body == nil {
 		req.Body = nil
 		out.Body = nil
@@ -337,7 +339,8 @@ func copyResponse(resp *http.Response, body bool) (*http.Response, error) {
 }
 
 // copied from httputil
-func drainBody(b io.ReadCloser) (r1, r2 io.ReadCloser, err error) {
+func drainBody(b io.ReadCloser) (io.ReadCloser, io.ReadCloser, error) {
+	var err error
 	if b == nil || b == http.NoBody {
 		// No copying needed. Preserve the magic sentinel meaning of NoBody.
 		return http.NoBody, http.NoBody, nil
