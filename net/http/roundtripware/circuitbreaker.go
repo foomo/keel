@@ -193,7 +193,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			if errCopy != nil {
 				l.Error("unable to copy request", log.FError(errCopy))
 				return nil, errCopy
-			} else if o.copyReqBody {
+			} else if o.copyReqBody && reqCopy.Body != nil {
 				// make sure the body is closed again - since it is a NopCloser it does not make a difference though
 				defer reqCopy.Body.Close()
 			}
@@ -208,7 +208,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				if errCopy != nil {
 					l.Error("unable to copy response", log.FError(errCopy))
 					return nil, errCopy
-				} else if o.copyRespBody {
+				} else if o.copyRespBody && respCopy.Body != nil {
 					// make sure the body is closed again - since it is a NopCloser it does not make a difference though
 					defer respCopy.Body.Close()
 				}
