@@ -2,7 +2,6 @@ package roundtripware
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -50,9 +49,7 @@ type CircuitBreakerSettings struct {
 }
 
 type CircuitBreakerOptions struct {
-	StateCounter syncint64.Counter
-
-	SuccessCounter syncint64.Counter
+	Counter syncint64.Counter
 
 	IsSuccessful func(err error, req *http.Request, resp *http.Response) error
 	CopyReqBody  bool
@@ -61,9 +58,7 @@ type CircuitBreakerOptions struct {
 
 func NewDefaultCircuitBreakerOptions() *CircuitBreakerOptions {
 	return &CircuitBreakerOptions{
-		StateCounter: nil,
-
-		SuccessCounter: nil,
+		Counter: nil,
 
 		IsSuccessful: func(err error, req *http.Request, resp *http.Response) error {
 			return err
@@ -75,43 +70,23 @@ func NewDefaultCircuitBreakerOptions() *CircuitBreakerOptions {
 
 type CircuitBreakerOption func(opts *CircuitBreakerOptions)
 
-// CircuitBreakerWithSuccessMetric adds a metric that counts the state changes of the circuit breaker
-func CircuitBreakerWithStateChangeMetric(
-	stateMeter metric.Meter,
-	stateMeterName string,
-	stateMeterDescription string,
-) CircuitBreakerOption {
-	// intitialize the state change counter
-	stateCounter, err := stateMeter.SyncInt64().Counter(
-		stateMeterName,
-		instrument.WithDescription(stateMeterDescription),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	return func(opts *CircuitBreakerOptions) {
-		opts.StateCounter = stateCounter
-	}
-}
-
-// CircuitBreakerWithSuccessMetric adds a metric that counts the (un-)successful requests
-func CircuitBreakerWithSuccessMetric(
-	successMeter metric.Meter,
-	successMeterName string,
-	successMeterDescription string,
+// CircuitBreakerWithMetric adds a metric that counts the (un-)successful requests
+func CircuitBreakerWithMetric(
+	meter metric.Meter,
+	meterName string,
+	meterDescription string,
 ) CircuitBreakerOption {
 	// intitialize the success counter
-	successCounter, err := successMeter.SyncInt64().Counter(
-		successMeterName,
-		instrument.WithDescription(successMeterDescription),
+	counter, err := meter.SyncInt64().Counter(
+		meterName,
+		instrument.WithDescription(meterDescription),
 	)
 	if err != nil {
 		panic(err)
 	}
 
 	return func(opts *CircuitBreakerOptions) {
-		opts.SuccessCounter = successCounter
+		opts.Counter = counter
 	}
 }
 
@@ -151,7 +126,6 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
-
 			// we need to detect the state change by ourselves, because the context does not allow us to hand in a context
 			fromState := circuitBreaker.State()
 
@@ -189,14 +163,6 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					zap.String("from", fromState.String()),
 					zap.String("to", toState.String()),
 				)
-
-				// recording the metric if desired
-				if o.StateCounter != nil {
-					attributes := []attribute.KeyValue{
-						attribute.String("state_change", fmt.Sprintf("%s -> %s", fromState.String(), toState.String())),
-					}
-					o.StateCounter.Add(r.Context(), 1, attributes...)
-				}
 			}
 
 			// wrap the error in case it was produced because of the circuit breaker being (half-)open
@@ -204,21 +170,22 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
 			}
 
+			attributes := []attribute.KeyValue{
+				attribute.String("current_state", toState.String()),
+				attribute.String("previous_state", fromState.String()),
+				attribute.Bool("state_change", fromState != toState),
+			}
 			if err != nil {
-				if o.SuccessCounter != nil {
-					attributes := []attribute.KeyValue{
-						attribute.Bool("success", false),
-					}
-					o.SuccessCounter.Add(r.Context(), 1, attributes...)
+				if o.Counter != nil {
+					attributes := append(attributes, attribute.Bool("error", true))
+					o.Counter.Add(r.Context(), 1, attributes...)
 				}
 				return nil, err
 			}
 
-			if o.SuccessCounter != nil {
-				attributes := []attribute.KeyValue{
-					attribute.Bool("success", true),
-				}
-				o.SuccessCounter.Add(r.Context(), 1, attributes...)
+			if o.Counter != nil {
+				attributes := append(attributes, attribute.Bool("error", false))
+				o.Counter.Add(r.Context(), 1, attributes...)
 			}
 
 			if res, ok := resp.(*http.Response); ok {
