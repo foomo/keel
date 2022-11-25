@@ -73,6 +73,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/sagikazarmark/crypt v0.6.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.3 // indirect
+	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
