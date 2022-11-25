@@ -15,7 +15,7 @@ func NewWrappedError(err, cause error) error {
 }
 
 func (e *wrappedError) As(target interface{}) bool {
-	return errors.As(e.err, &target) || errors.As(e.cause, &target)
+	return errors.As(e.err, target) || errors.As(e.cause, target)
 }
 
 func (e *wrappedError) Is(target error) bool {
