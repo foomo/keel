@@ -320,7 +320,7 @@ func (s *Server) Run() {
 	}
 
 	defer s.ctxCancelFn()
-	s.l.Info("starting keel server :)")
+	s.l.Info("starting keel server")
 
 	// start services
 	s.startService(s.services...)
