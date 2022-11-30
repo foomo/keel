@@ -51,7 +51,7 @@ type CircuitBreakerSettings struct {
 type CircuitBreakerOptions struct {
 	Counter syncint64.Counter
 
-	IsSuccessful func(err error, req *http.Request, resp *http.Response) error
+	IsSuccessful func(err error, req *http.Request, resp *http.Response) (e error, ignore bool)
 	CopyReqBody  bool
 	CopyRespBody bool
 }
@@ -60,8 +60,8 @@ func NewDefaultCircuitBreakerOptions() *CircuitBreakerOptions {
 	return &CircuitBreakerOptions{
 		Counter: nil,
 
-		IsSuccessful: func(err error, req *http.Request, resp *http.Response) error {
-			return err
+		IsSuccessful: func(err error, req *http.Request, resp *http.Response) (e error, ignore bool) {
+			return err, false
 		},
 		CopyReqBody:  false,
 		CopyRespBody: false,
@@ -91,7 +91,7 @@ func CircuitBreakerWithMetric(
 }
 
 func CircuitBreakerWithIsSuccessful(
-	isSuccessful func(err error, req *http.Request, resp *http.Response) error,
+	isSuccessful func(err error, req *http.Request, resp *http.Response) (e error, ignore bool),
 	copyReqBody bool,
 	copyRespBody bool,
 ) CircuitBreakerOption {
@@ -122,7 +122,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 		ReadyToTrip:   set.ReadyToTrip,
 		OnStateChange: set.OnStateChange,
 	}
-	circuitBreaker := gobreaker.NewCircuitBreaker(cbrSettings)
+	circuitBreaker := gobreaker.NewTwoStepCircuitBreaker(cbrSettings)
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
@@ -139,9 +139,15 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				defer reqCopy.Body.Close()
 			}
 
-			// call the next handler enclosed in the circuit breaker.
-			resp, err := circuitBreaker.Execute(func() (interface{}, error) {
-				resp, err := next(r)
+			// check whether the circuit breaker is closed (an error is returned if not)
+			done, err := circuitBreaker.Allow()
+
+			var resp *http.Response
+			// wrap the error in case it was produced because of the circuit breaker being (half-)open
+			if errors.Is(gobreaker.ErrTooManyRequests, err) || errors.Is(gobreaker.ErrOpenState, err) {
+				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
+			} else if err == nil {
+				resp, err = next(r)
 
 				// clone the response and the body if wanted
 				respCopy, errCopy := copyResponse(resp, o.CopyRespBody)
@@ -153,8 +159,12 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					defer respCopy.Body.Close()
 				}
 
-				return resp, o.IsSuccessful(err, reqCopy, respCopy)
-			})
+				var ignore bool
+				err, ignore = o.IsSuccessful(err, reqCopy, respCopy)
+				if !ignore {
+					done(err == nil)
+				}
+			}
 
 			// detect and log a state change
 			toState := circuitBreaker.State()
@@ -163,11 +173,6 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					zap.String("from", fromState.String()),
 					zap.String("to", toState.String()),
 				)
-			}
-
-			// wrap the error in case it was produced because of the circuit breaker being (half-)open
-			if errors.Is(gobreaker.ErrTooManyRequests, err) || errors.Is(gobreaker.ErrOpenState, err) {
-				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
 			}
 
 			attributes := []attribute.KeyValue{
@@ -188,11 +193,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				o.Counter.Add(r.Context(), 1, attributes...)
 			}
 
-			if res, ok := resp.(*http.Response); ok {
-				return res, nil
-			} else {
-				return nil, errors.New("result is no *http.Response")
-			}
+			return resp, nil
 		}
 	}
 }

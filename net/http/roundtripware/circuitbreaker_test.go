@@ -61,16 +61,36 @@ func TestCircuitBreaker(t *testing.T) {
 		keelhttp.HTTPClientWithRoundTripware(l,
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
-					func(err error, req *http.Request, resp *http.Response) error {
+					func(err error, req *http.Request, resp *http.Response) (error, bool) {
 						if resp.StatusCode >= http.StatusInternalServerError {
-							return errors.New("invalid status code")
+							return errors.New("invalid status code"), false
 						}
-						return nil
+						return nil, false
 					}, true, true,
 				),
 			),
 		),
 	)
+
+	{
+		client := keelhttp.NewHTTPClient(
+			keelhttp.HTTPClientWithRoundTripware(l,
+				roundtripware.CircuitBreaker(
+					&roundtripware.CircuitBreakerSettings{
+						Name:        "my little circuit breaker™",
+						MaxRequests: 1,
+						Interval:    time.Minute,
+						Timeout:     30 * time.Second,
+						ReadyToTrip: func(counts gobreaker.Counts) bool {
+							return counts.ConsecutiveFailures > 3
+						},
+					},
+				),
+			),
+		)
+
+		_ = client
+	}
 
 	// do requests to trigger the circuit breaker
 	for i := 0; i <= 3; i++ {
@@ -130,7 +150,7 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 		keelhttp.HTTPClientWithRoundTripware(l,
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
-					func(err error, req *http.Request, resp *http.Response) error {
+					func(err error, req *http.Request, resp *http.Response) (error, bool) {
 						// read the bodies
 						_, errRead := io.ReadAll(req.Body)
 						require.NoError(t, errRead)
@@ -141,7 +161,7 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 						// also try to close one of the bodies (should also be handled by the RoundTripware)
 						req.Body.Close()
 
-						return err
+						return err, false
 					}, true, true,
 				),
 			),
@@ -187,14 +207,14 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 		keelhttp.HTTPClientWithRoundTripware(l,
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
-					func(err error, req *http.Request, resp *http.Response) error {
+					func(err error, req *http.Request, resp *http.Response) (error, bool) {
 						// read the bodies
 						_, errRead := io.ReadAll(req.Body)
 						if errRead != nil {
-							return errRead
+							return errRead, false
 						}
 
-						return err
+						return err, false
 					}, false, true,
 				),
 			),
@@ -215,14 +235,14 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 		keelhttp.HTTPClientWithRoundTripware(l,
 			roundtripware.CircuitBreaker(cbSettings,
 				roundtripware.CircuitBreakerWithIsSuccessful(
-					func(err error, req *http.Request, resp *http.Response) error {
+					func(err error, req *http.Request, resp *http.Response) (error, bool) {
 						// read the bodies
 						_, errRead := io.ReadAll(resp.Body)
 						if errRead != nil {
-							return errRead
+							return errRead, false
 						}
 
-						return err
+						return err, false
 					}, true, false,
 				),
 			),
@@ -263,11 +283,11 @@ func TestCircuitBreakerInterval(t *testing.T) {
 				},
 			},
 				roundtripware.CircuitBreakerWithIsSuccessful(
-					func(err error, req *http.Request, resp *http.Response) error {
+					func(err error, req *http.Request, resp *http.Response) (error, bool) {
 						if resp.StatusCode >= http.StatusInternalServerError {
-							return errors.New("invalid status code")
+							return errors.New("invalid status code"), false
 						}
-						return nil
+						return nil, false
 					}, true, true,
 				),
 			),
@@ -308,4 +328,48 @@ func TestCircuitBreakerInterval(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
+}
+
+func TestCircuitBreakerIgnore(t *testing.T) {
+	// create logger
+	l := zaptest.NewLogger(t)
+
+	// create http server with handler
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// always return an invalid status code
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer svr.Close()
+
+	// create http client
+	client := keelhttp.NewHTTPClient(
+		keelhttp.HTTPClientWithRoundTripware(l,
+			roundtripware.CircuitBreaker(cbSettings,
+				roundtripware.CircuitBreakerWithIsSuccessful(
+					func(err error, req *http.Request, resp *http.Response) (error, bool) {
+						if req.Method == http.MethodGet {
+							return errors.New("some ignored error"), true
+						}
+						if resp.StatusCode >= http.StatusInternalServerError {
+							return errors.New("invalid status code"), false
+						}
+						return nil, false
+					}, true, true,
+				),
+			),
+		),
+	)
+
+	// send 4 requests (lower than the maximum amount of allowed consecutive failures), but they are ignored
+	// -> circuit breaker should remain open
+	for i := 0; i < 5; i++ {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
+		require.Error(t, err)
+	}
 }
