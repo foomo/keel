@@ -52,7 +52,6 @@ func TestCircuitBreaker(t *testing.T) {
 		if i < 5 {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		w.WriteHeader(http.StatusOK)
 	}))
 	defer svr.Close()
 
@@ -66,7 +65,7 @@ func TestCircuitBreaker(t *testing.T) {
 							return errors.New("invalid status code"), false
 						}
 						return nil, false
-					}, true, true,
+					}, false, false,
 				),
 			),
 		),
@@ -141,7 +140,6 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		w.WriteHeader(http.StatusOK)
 	}))
 	defer svr.Close()
 
@@ -198,7 +196,6 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		w.WriteHeader(http.StatusOK)
 	}))
 	defer svr.Close()
 
@@ -288,7 +285,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 							return errors.New("invalid status code"), false
 						}
 						return nil, false
-					}, true, true,
+					}, false, false,
 				),
 			),
 		),
@@ -354,15 +351,15 @@ func TestCircuitBreakerIgnore(t *testing.T) {
 							return errors.New("invalid status code"), false
 						}
 						return nil, false
-					}, true, true,
+					}, false, false,
 				),
 			),
 		),
 	)
 
-	// send 4 requests (lower than the maximum amount of allowed consecutive failures), but they are ignored
+	// send 4 requests (higher than the maximum amount of allowed consecutive failures), but they are ignored
 	// -> circuit breaker should remain open
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 4; i++ {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
@@ -372,4 +369,50 @@ func TestCircuitBreakerIgnore(t *testing.T) {
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 		require.Error(t, err)
 	}
+}
+
+func TestCircuitBreakerTimeout(t *testing.T) {
+	// create logger
+	l := zaptest.NewLogger(t)
+
+	// create http server with handler
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(250 * time.Millisecond)
+	}))
+	defer svr.Close()
+
+	// create http client
+	client := keelhttp.NewHTTPClient(
+		keelhttp.HTTPClientWithRoundTripware(l,
+			roundtripware.CircuitBreaker(cbSettings),
+		),
+	)
+
+	// send 4 requests (more than the maximum amount of allowed consecutive failures)
+	// -> circuit breaker should change to open state
+	for i := 0; i < 4; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		if err == nil {
+			defer resp.Body.Close()
+		}
+		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+	}
+
+	// send another request with a bigger timeout
+	// this should be blocked by the circuit breaker though
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
+	require.NoError(t, err)
+	resp, err := client.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
+	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 }

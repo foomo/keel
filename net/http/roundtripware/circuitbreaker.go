@@ -149,14 +149,17 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			} else if err == nil {
 				resp, err = next(r)
 
-				// clone the response and the body if wanted
-				respCopy, errCopy := copyResponse(resp, o.CopyRespBody)
-				if errCopy != nil {
-					l.Error("unable to copy response", log.FError(errCopy))
-					return nil, errCopy
-				} else if o.CopyRespBody && respCopy.Body != nil {
-					// make sure the body is closed again - since it is a NopCloser it does not make a difference though
-					defer respCopy.Body.Close()
+				var respCopy *http.Response
+				if resp != nil {
+					// clone the response and the body if wanted
+					respCopy, errCopy := copyResponse(resp, o.CopyRespBody)
+					if errCopy != nil {
+						l.Error("unable to copy response", log.FError(errCopy))
+						return nil, errCopy
+					} else if o.CopyRespBody && respCopy.Body != nil {
+						// make sure the body is closed again - since it is a NopCloser it does not make a difference though
+						defer respCopy.Body.Close()
+					}
 				}
 
 				var ignore bool
