@@ -20,6 +20,9 @@ var (
 	// RoundTripware. It wraps the two gobreaker errors (ErrTooManyRequests & ErrOpenState) so only one comparison is
 	// needed
 	ErrCircuitBreaker = errors.New("circuit breaker triggered")
+
+	// ErrIgnoreSuccessfulness
+	ErrIgnoreSuccessfulness = errors.New("ignored successfulness")
 )
 
 // CircuitBreakerSettings is a copy of the gobreaker.Settings, except that the IsSuccessful function is omitted since we
@@ -51,7 +54,7 @@ type CircuitBreakerSettings struct {
 type CircuitBreakerOptions struct {
 	Counter syncint64.Counter
 
-	IsSuccessful func(err error, req *http.Request, resp *http.Response) (e error, ignore bool)
+	IsSuccessful func(err error, req *http.Request, resp *http.Response) error
 	CopyReqBody  bool
 	CopyRespBody bool
 }
@@ -60,8 +63,8 @@ func NewDefaultCircuitBreakerOptions() *CircuitBreakerOptions {
 	return &CircuitBreakerOptions{
 		Counter: nil,
 
-		IsSuccessful: func(err error, req *http.Request, resp *http.Response) (e error, ignore bool) {
-			return err, false
+		IsSuccessful: func(err error, req *http.Request, resp *http.Response) error {
+			return err
 		},
 		CopyReqBody:  false,
 		CopyRespBody: false,
@@ -91,7 +94,7 @@ func CircuitBreakerWithMetric(
 }
 
 func CircuitBreakerWithIsSuccessful(
-	isSuccessful func(err error, req *http.Request, resp *http.Response) (e error, ignore bool),
+	isSuccessful func(err error, req *http.Request, resp *http.Response) (e error),
 	copyReqBody bool,
 	copyRespBody bool,
 ) CircuitBreakerOption {
@@ -144,15 +147,15 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 			var resp *http.Response
 			// wrap the error in case it was produced because of the circuit breaker being (half-)open
-			if errors.Is(gobreaker.ErrTooManyRequests, err) || errors.Is(gobreaker.ErrOpenState, err) {
+			if errors.Is(err, gobreaker.ErrTooManyRequests) || errors.Is(err, gobreaker.ErrOpenState) {
 				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
 			} else if err != nil {
 				l.Error("unexpected error in circuit breaker",
 					log.FError(err),
-					zap.String("from", fromState.String()),
+					zap.String("state", fromState.String()),
 				)
 			} else {
-				//continue with the middleware chain
+				// continue with the middleware chain
 				resp, err = next(r)
 
 				var respCopy *http.Response
@@ -168,9 +171,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					}
 				}
 
-				var ignore bool
-				err, ignore = o.IsSuccessful(err, reqCopy, respCopy)
-				if !ignore {
+				if err = o.IsSuccessful(err, reqCopy, respCopy); !errors.Is(err, ErrIgnoreSuccessfulness) {
 					done(err == nil)
 				}
 			}
