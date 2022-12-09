@@ -146,13 +146,19 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			// wrap the error in case it was produced because of the circuit breaker being (half-)open
 			if errors.Is(gobreaker.ErrTooManyRequests, err) || errors.Is(gobreaker.ErrOpenState, err) {
 				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
-			} else if err == nil {
+			} else if err != nil {
+				l.Error("unexpected error in circuit breaker",
+					log.FError(err),
+					zap.String("from", fromState.String()),
+				)
+			} else {
+				//continue with the middleware chain
 				resp, err = next(r)
 
 				var respCopy *http.Response
 				if resp != nil {
 					// clone the response and the body if wanted
-					respCopy, errCopy := copyResponse(resp, o.CopyRespBody)
+					respCopy, errCopy = copyResponse(resp, o.CopyRespBody)
 					if errCopy != nil {
 						l.Error("unable to copy response", log.FError(errCopy))
 						return nil, errCopy
@@ -173,8 +179,8 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			toState := circuitBreaker.State()
 			if fromState != toState {
 				l.Warn("state change occurred",
-					zap.String("from", fromState.String()),
-					zap.String("to", toState.String()),
+					zap.String("state_from", fromState.String()),
+					zap.String("state_to", toState.String()),
 				)
 			}
 
