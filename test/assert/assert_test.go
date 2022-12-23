@@ -15,19 +15,19 @@ func TestEqualInline(t *testing.T) {
 		{
 			name: "equal int",
 			when: func(t *testing.T) bool { //nolint:thelper
-				return keelassert.InlineEqual(t, 15) // Expect: 15
+				return keelassert.InlineEqual(t, 15) // INLINE: 15
 			},
 		},
 		{
 			name: "equal bool",
 			when: func(t *testing.T) bool { //nolint:thelper
-				return keelassert.InlineEqual(t, true) // Expect: true
+				return keelassert.InlineEqual(t, true) // INLINE: true
 			},
 		},
 		{
 			name: "equal string",
 			when: func(t *testing.T) bool { //nolint:thelper
-				return keelassert.InlineEqual(t, "foo bar") // Expect: foo bar
+				return keelassert.InlineEqual(t, "foo bar") // INLINE: foo bar
 			},
 		},
 	}
