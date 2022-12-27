@@ -37,3 +37,27 @@ func TestEqualInline(t *testing.T) {
 		})
 	}
 }
+
+func TestEqualInlineJSONEq(t *testing.T) {
+	tests := []struct {
+		name string
+		when func(t *testing.T) bool
+	}{
+		{
+			name: "equal json",
+			when: func(t *testing.T) bool { //nolint:thelper
+				x := struct {
+					Foo string `json:"foo"`
+				}{
+					Foo: "bar",
+				}
+				return keelassert.InlineJSONEq(t, x) // INLINE: {"foo":"bar"}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.True(t, tt.when(t))
+		})
+	}
+}

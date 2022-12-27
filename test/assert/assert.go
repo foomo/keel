@@ -14,7 +14,7 @@ import (
 func InlineEqual(t *testing.T, actual interface{}, msgAndArgs ...interface{}) bool {
 	t.Helper()
 
-	expected, ok := keeltestutil.Inline(t, actual, 2)
+	expected, ok := keeltestutil.Inline(t, 2, "%v", actual)
 	if ok {
 		return assert.Equal(t, expected, fmt.Sprintf("%v", actual), msgAndArgs...)
 	} else {
@@ -30,7 +30,7 @@ func InlineJSONEq(t *testing.T, actual interface{}, msgAndArgs ...interface{}) b
 		t.Fatal("failed to marshal json", log.FError(err))
 	}
 
-	expected, ok := keeltestutil.Inline(t, string(actualBytes), 2)
+	expected, ok := keeltestutil.Inline(t, 2, string(actualBytes))
 	if ok {
 		return assert.Equal(t, string(pretty.Pretty([]byte(expected))), string(pretty.Pretty(actualBytes)), msgAndArgs...)
 	} else {
