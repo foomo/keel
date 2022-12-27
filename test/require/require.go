@@ -13,9 +13,6 @@ import (
 
 func InlineEqual(t *testing.T, actual interface{}, msgAndArgs ...interface{}) {
 	t.Helper()
-	if t.Failed() {
-		return
-	}
 	if expected, ok := keeltestutil.Inline(t, 2, "%v", actual); ok {
 		require.Equal(t, expected, fmt.Sprintf("%v", actual), msgAndArgs...)
 	}
@@ -23,9 +20,6 @@ func InlineEqual(t *testing.T, actual interface{}, msgAndArgs ...interface{}) {
 
 func InlineJSONEq(t *testing.T, actual interface{}, msgAndArgs ...interface{}) {
 	t.Helper()
-	if t.Failed() {
-		return
-	}
 	// marshal value
 	actualBytes, err := json.Marshal(actual)
 	if err != nil {
