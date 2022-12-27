@@ -1,7 +1,14 @@
 package keelassert
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
+
+	"github.com/foomo/keel/log"
+	keeltestutil "github.com/foomo/keel/test/util"
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/pretty"
 )
 
 // Assertions provides assertion methods around the
@@ -19,10 +26,26 @@ func New(t *testing.T) *Assertions { //nolint:thelper
 
 func (a *Assertions) InlineEqual(actual interface{}, msgAndArgs ...interface{}) bool {
 	a.t.Helper()
-	return InlineEqual(a.t, actual, msgAndArgs...)
+	expected, ok := keeltestutil.Inline(a.t, 2, "%v", actual)
+	if ok {
+		return assert.Equal(a.t, expected, fmt.Sprintf("%v", actual), msgAndArgs...)
+	} else {
+		return false
+	}
 }
 
 func (a *Assertions) InlineJSONEq(actual interface{}, msgAndArgs ...interface{}) bool {
 	a.t.Helper()
-	return InlineJSONEq(a.t, actual, msgAndArgs...)
+	// marshal value
+	actualBytes, err := json.Marshal(actual)
+	if err != nil {
+		a.t.Fatal("failed to marshal json", log.FError(err))
+	}
+
+	expected, ok := keeltestutil.Inline(a.t, 2, string(actualBytes))
+	if ok {
+		return assert.Equal(a.t, string(pretty.Pretty([]byte(expected))), string(pretty.Pretty(actualBytes)), msgAndArgs...)
+	} else {
+		return false
+	}
 }
