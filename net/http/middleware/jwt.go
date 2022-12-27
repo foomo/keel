@@ -23,8 +23,8 @@ type (
 		ErrorHandler        JWTErrorHandler
 	}
 	JWTOption              func(*JWTOptions)
-	JWTClaimsHandler       func(*zap.Logger, http.ResponseWriter, *http.Request, jwt2.Claims) bool
 	JWTClaimsProvider      func() jwt2.Claims
+	JWTClaimsHandler       func(*zap.Logger, http.ResponseWriter, *http.Request, jwt2.Claims) bool
 	JWTErrorHandler        func(*zap.Logger, http.ResponseWriter, *http.Request, error) bool
 	JWTMissingTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request) (jwt2.Claims, bool)
 	JWTInvalidTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request, *jwt2.Token) bool
@@ -167,6 +167,12 @@ func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middl
 				}
 			}
 
+			// don't validate if not required
+			if !opts.SetContext {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			// handle existing token
 			jwtToken, err := jwt.ParseWithClaims(token, claims)
 			if err != nil {
@@ -183,16 +189,10 @@ func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middl
 				} else {
 					return
 				}
-			}
-
-			// handle existing claims and serve
-			if resume := opts.ClaimsHandler(l, w, r, claims); !resume {
-				return
-			} else if opts.SetContext {
-				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey, claims)))
+			} else if resume := opts.ClaimsHandler(l, w, r, claims); !resume {
 				return
 			} else {
-				next.ServeHTTP(w, r)
+				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey, claims)))
 				return
 			}
 		})
