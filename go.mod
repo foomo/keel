@@ -15,6 +15,7 @@ require (
 	github.com/sony/gobreaker v0.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
+	github.com/tidwall/pretty v1.0.0
 	github.com/tinylib/msgp v1.1.6
 	go.mongodb.org/mongo-driver v1.10.2
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.32.0
