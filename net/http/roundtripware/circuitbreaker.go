@@ -126,10 +126,15 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
+			if r == nil {
+				return nil, errors.New("request is nil")
+			}
+
 			// we need to detect the state change by ourselves, because the context does not allow us to hand in a context
 			fromState := circuitBreaker.State()
 
 			// clone the request and the body if wanted
+			var errCopy error
 			reqCopy, errCopy := copyRequest(r, o.CopyReqBody)
 			if errCopy != nil {
 				l.Error("unable to copy request", log.FError(errCopy))
@@ -142,6 +147,9 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			// call the next handler enclosed in the circuit breaker.
 			resp, err := circuitBreaker.Execute(func() (interface{}, error) {
 				resp, err := next(r)
+				if resp == nil {
+					return nil, o.IsSuccessful(err, reqCopy, nil)
+				}
 
 				// clone the response and the body if wanted
 				respCopy, errCopy := copyResponse(resp, o.CopyRespBody)
