@@ -1,5 +1,4 @@
-# This workflow runs all dockerfiles in this repo
-name: checks
+name: Pull Requests
 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
@@ -16,7 +15,7 @@ env:
 
 jobs:
   matrix:
-    name: matrix
+    name: Matrix
     runs-on: ubuntu-latest
     outputs:
       gomod: ${{ steps.gomod.outputs.matrix }}
@@ -27,8 +26,8 @@ jobs:
           matrix=$(find . -type f -name "go.mod" -print0 | xargs -0 -n1 dirname | sort --unique | jq -R -s -c 'split("\n")[:-1]')
           echo "${matrix}"
           echo "::set-output name=matrix::${matrix}"
-  lint:
-    name: lint
+  check:
+    name: Check
     needs: matrix
     runs-on: ubuntu-latest
     strategy:
@@ -46,7 +45,7 @@ jobs:
         with:
           working-directory: ${{ matrix.gomod }}
   test:
-    name: test
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

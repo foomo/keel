@@ -2,11 +2,6 @@
 
 ## === Tasks ===
 
-.PHONY: act.push
-## Run github push action
-act.push:
-	@act
-
 .PHONY: check
 ## Run tests and linters
 check: test lint
