@@ -4,8 +4,11 @@ import (
 	"context"
 	"time"
 
+	keelpersistence "github.com/foomo/keel/persistence"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/foomo/keel"
@@ -62,17 +65,45 @@ func main() {
 	newEntity := &store.Dummy{
 		Entity: store.NewEntity(uuid.New().String()),
 	}
-	log.Must(l, repo.Upsert(context.Background(), newEntity), "failed to insert")
+	log.Must(l, repo.Insert(context.Background(), newEntity), "failed to insert")
 
 	// fail insert for duplicate entity
-	duplicateEntity := &store.Dummy{
+	l.Info("Try to insert with duplicate key")
+	if err := repo.Insert(context.Background(), &store.Dummy{
 		Entity: store.NewEntity(newEntity.ID),
-	}
-	if err := repo.Upsert(context.Background(), duplicateEntity); err != nil {
+	}); mongo.IsDuplicateKeyError(err) {
 		l.Info("OK: expected error", log.FValue(err.Error()))
+	} else if err != nil {
+		l.Error("unexpected error", log.FValue(err.Error()))
+	} else {
+		l.Error("unexpected success")
+	}
+
+	// fail insert for duplicate entity
+	l.Info("Try to upsert with duplicate key")
+	if err := repo.Upsert(context.Background(), &store.Dummy{
+		Entity: store.NewEntity(newEntity.ID),
+	}); mongo.IsDuplicateKeyError(err) {
+		l.Info("OK: expected error", log.FValue(err.Error()))
+	} else if err != nil {
+		l.Error("unexpected error", log.FValue(err.Error()))
+	} else {
+		l.Error("unexpected success")
+	}
+
+	l.Info("Try to upsert many with duplicate key")
+	if err := repo.UpsertMany(context.Background(), []*store.Dummy{{
+		Entity: store.NewEntity(newEntity.ID),
+	}}); mongo.IsDuplicateKeyError(err) {
+		l.Info("OK: expected error", log.FValue(err.Error()))
+	} else if err != nil {
+		l.Error("unexpected error", log.FValue(err.Error()))
+	} else {
+		l.Error("unexpected success")
 	}
 
 	// get entity x2
+	l.Info("Try to upsert with dirty write")
 	newEntityA, err := repo.Get(context.Background(), newEntity.ID)
 	log.Must(l, err, "failed to load new entity")
 
@@ -80,12 +111,34 @@ func main() {
 	log.Must(l, err, "failed to load new entity")
 
 	// update entity A
-	if err := repo.Upsert(context.Background(), newEntityA); err != nil {
-		l.Error("ERROR: failed to load new entity")
-	}
+	log.Must(l, repo.Upsert(context.Background(), newEntityA), "ERROR: failed to load new entity")
+
 	// update entity B
-	if err := repo.Upsert(context.Background(), newEntityB); err != nil {
+	if err := repo.Upsert(context.Background(), newEntityB); errors.Is(err, keelpersistence.ErrDirtyWrite) {
 		l.Info("OK: expected error", log.FValue(err.Error()))
+	} else if err != nil {
+		l.Error("unexpected error", log.FValue(err.Error()))
+	} else {
+		l.Error("unexpected success")
+	}
+
+	l.Info("Try to upsert many with dirty write")
+	newEntityA, err = repo.Get(context.Background(), newEntity.ID)
+	log.Must(l, err, "failed to load new entity")
+
+	newEntityB, err = repo.Get(context.Background(), newEntity.ID)
+	log.Must(l, err, "failed to load new entity")
+
+	// update entity A
+	log.Must(l, repo.UpsertMany(context.Background(), []*store.Dummy{newEntityA}), "ERROR: failed to load new entity")
+
+	l.Info("Try to upsert many with dirty write")
+	if err := repo.UpsertMany(context.Background(), []*store.Dummy{newEntityB}); errors.Is(err, keelpersistence.ErrDirtyWrite) {
+		l.Info("OK: expected error", log.FValue(err.Error()))
+	} else if err != nil {
+		l.Error("unexpected error", log.FValue(err.Error()))
+	} else {
+		l.Error("unexpected success")
 	}
 
 	svr.Run()
