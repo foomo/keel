@@ -21,6 +21,11 @@ func Inline(t *testing.T, skip int, msgAndArgs ...interface{}) (string, bool) {
 		t.Fatal("failed to retrieve caller")
 	}
 
+	fileStat, err := os.Stat(file)
+	if err != nil {
+		t.Fatal("failed to stat caller file", log.FError(err))
+	}
+
 	// read file
 	fileBytes, err := os.ReadFile(file)
 	if err != nil {
@@ -41,7 +46,7 @@ func Inline(t *testing.T, skip int, msgAndArgs ...interface{}) (string, bool) {
 		t.Fatal("missing inline message")
 	} else {
 		fileLines[line-1] = fmt.Sprintf("%s // INLINE: %s", fileLine, value)
-		if err := os.WriteFile(file, []byte(strings.Join(fileLines, "\n")), 0644); err != nil {
+		if err := os.WriteFile(file, []byte(strings.Join(fileLines, "\n")), fileStat.Mode().Perm()); err != nil {
 			t.Fatal("failed to write inline", log.FError(err))
 		}
 		t.Errorf("wrote inline for %s:%d", file, line)
