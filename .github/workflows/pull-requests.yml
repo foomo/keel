@@ -19,7 +19,6 @@ env:
 
 jobs:
   lint:
-    needs: matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
