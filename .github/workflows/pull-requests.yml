@@ -9,13 +9,16 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   GOFLAGS: -mod=readonly
   GOPROXY: https://proxy.golang.org
 
 jobs:
   matrix:
-    name: Matrix
     runs-on: ubuntu-latest
     outputs:
       gomod: ${{ steps.gomod.outputs.matrix }}
