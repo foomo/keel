@@ -20,9 +20,6 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        path: [".", "./example"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -31,9 +28,9 @@ jobs:
           check-latest: true
           go-version-file: 'go.mod'
       - uses: golangci/golangci-lint-action@v3
+      - uses: golangci/golangci-lint-action@v3
         with:
-          skip-pkg-cache: true
-          working-directory: ${{ matrix.path }}
+          working-directory: example
   test:
     runs-on: ubuntu-latest
     steps:
