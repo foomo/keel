@@ -146,7 +146,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 			// call the next handler enclosed in the circuit breaker.
 			resp, err := circuitBreaker.Execute(func() (interface{}, error) {
-				resp, err := next(r)
+				resp, err := next(r) //nolint:bodyclose
 				if resp == nil {
 					return nil, o.IsSuccessful(err, reqCopy, nil)
 				}
