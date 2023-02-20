@@ -3,6 +3,7 @@ module github.com/foomo/keel
 go 1.19
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/foomo/gotsrpc/v2 v2.6.2
 	github.com/go-logr/logr v1.2.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
