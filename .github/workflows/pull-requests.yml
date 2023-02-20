@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        path: [".", "example"]
+        path: [".", "./example"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -32,6 +32,7 @@ jobs:
           go-version-file: 'go.mod'
       - uses: golangci/golangci-lint-action@v3
         with:
+          skip-pkg-cache: true
           working-directory: ${{ matrix.path }}
   test:
     runs-on: ubuntu-latest
