@@ -90,16 +90,12 @@ func Retry(opts ...RetryOption) RoundTripware {
 		return func(req *http.Request) (*http.Response, error) {
 			var resp *http.Response
 			err := retry.Do(func() error {
-				value, err := next(req)
-				defer value.Body.Close()
+				var err error
+				resp, err = next(req) //nolint:bodyclose
 				if err != nil {
 					return err
-				} else if err := o.Handler(value); err != nil {
-					return err
-				} else {
-					resp = value
-					return nil
 				}
+				return o.Handler(resp)
 			}, o.retryOptions...)
 			return resp, err
 		}
