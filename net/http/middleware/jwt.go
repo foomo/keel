@@ -17,12 +17,14 @@ type (
 		SetContext          bool
 		TokenProvider       TokenProvider
 		ClaimsProvider      JWTClaimsProvider
+		ClaimsHandler       JWTClaimsHandler
 		MissingTokenHandler JWTMissingTokenHandler
 		InvalidTokenHandler JWTInvalidTokenHandler
 		ErrorHandler        JWTErrorHandler
 	}
 	JWTOption              func(*JWTOptions)
 	JWTClaimsProvider      func() jwt2.Claims
+	JWTClaimsHandler       func(*zap.Logger, http.ResponseWriter, *http.Request, jwt2.Claims) bool
 	JWTErrorHandler        func(*zap.Logger, http.ResponseWriter, *http.Request, error) bool
 	JWTMissingTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request) (jwt2.Claims, bool)
 	JWTInvalidTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request, *jwt2.Token) bool
@@ -56,12 +58,18 @@ func DefaultJWTClaimsProvider() jwt2.Claims {
 	return &jwt2.StandardClaims{}
 }
 
+// DefaultJWTClaimsHandler function
+func DefaultJWTClaimsHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims jwt2.Claims) bool {
+	return true
+}
+
 // GetDefaultJWTOptions returns the default options
 func GetDefaultJWTOptions() JWTOptions {
 	return JWTOptions{
 		SetContext:          true,
 		TokenProvider:       HeaderTokenProvider(),
 		ClaimsProvider:      DefaultJWTClaimsProvider,
+		ClaimsHandler:       DefaultJWTClaimsHandler,
 		ErrorHandler:        DefaultJWTErrorHandler,
 		InvalidTokenHandler: DefaultJWTInvalidTokenHandler,
 		MissingTokenHandler: DefaultJWTMissingTokenHandler,
@@ -79,6 +87,13 @@ func JWTWithTokenProvider(v TokenProvider) JWTOption {
 func JWTWithClaimsProvider(v JWTClaimsProvider) JWTOption {
 	return func(o *JWTOptions) {
 		o.ClaimsProvider = v
+	}
+}
+
+// JWTWithClaimsHandler middleware option
+func JWTWithClaimsHandler(v JWTClaimsHandler) JWTOption {
+	return func(o *JWTOptions) {
+		o.ClaimsHandler = v
 	}
 }
 
@@ -125,30 +140,60 @@ func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middl
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims := opts.ClaimsProvider()
+
+			// check existing claims from context
 			if value := r.Context().Value(contextKey); value != nil {
-				// TODO check if type matches the existing
 				next.ServeHTTP(w, r)
-			} else if value, err := opts.TokenProvider(r); err != nil {
+				return
+			}
+
+			// retrieve token from provider
+			token, err := opts.TokenProvider(r)
+			if err != nil {
 				httputils.BadRequestServerError(l, w, r, errors.Wrap(err, "failed to retrieve token"))
-			} else if value == "" {
-				if claims, resume := opts.MissingTokenHandler(l, w, r); resume && claims != nil && opts.SetContext {
+				return
+			}
+
+			// handle missing token
+			if token == "" {
+				if claims, resume := opts.MissingTokenHandler(l, w, r); claims != nil && resume && opts.SetContext {
 					next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey, claims)))
+					return
 				} else if resume {
 					next.ServeHTTP(w, r)
+					return
+				} else {
+					return
 				}
-			} else if !opts.SetContext {
+			}
+
+			// don't validate if not required
+			if !opts.SetContext {
 				next.ServeHTTP(w, r)
-			} else if token, err := jwt.ParseWithClaims(value, claims); err != nil {
-				// TODO check if type matches the existing
-				if opts.ErrorHandler(l, w, r, err) {
+				return
+			}
+
+			// handle existing token
+			jwtToken, err := jwt.ParseWithClaims(token, claims)
+			if err != nil {
+				if resume := opts.ErrorHandler(l, w, r, err); resume {
 					next.ServeHTTP(w, r)
+					return
+				} else {
+					return
 				}
-			} else if !token.Valid {
-				if opts.InvalidTokenHandler(l, w, r, token) {
+			} else if !jwtToken.Valid {
+				if resume := opts.InvalidTokenHandler(l, w, r, jwtToken); resume {
 					next.ServeHTTP(w, r)
+					return
+				} else {
+					return
 				}
+			} else if resume := opts.ClaimsHandler(l, w, r, claims); !resume {
+				return
 			} else {
 				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKey, claims)))
+				return
 			}
 		})
 	}
