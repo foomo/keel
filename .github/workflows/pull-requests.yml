@@ -44,7 +44,6 @@ jobs:
           go-version-file: 'go.mod'
       - uses: golangci/golangci-lint-action@v3
         with:
-          only-new-issues: true
           working-directory: ${{ matrix.gomod }}
   test:
     runs-on: ubuntu-latest
