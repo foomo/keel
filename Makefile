@@ -2,10 +2,6 @@
 
 ## === Tasks ===
 
-.PHONY: check
-## Run tests and linters
-check: test lint
-
 .PHONY: test
 ## Run tests
 test:
@@ -16,7 +12,7 @@ test:
 lint: files=$(shell find . -type f -name go.mod)
 lint: dirs=$(foreach file,$(files),$(dir $(file)) )
 lint:
-	@for dir in $(dirs); do cd $$dir && golangci-lint run; done
+	@for dir in $(dirs); do cd $$dir && pwd && golangci-lint run; done
 
 .PHONY: lint.fix
 ## Fix lint violations
@@ -24,18 +20,6 @@ lint.fix: files=$(shell find . -type f -name go.mod)
 lint.fix: dirs=$(foreach file,$(files),$(dir $(file)) )
 lint.fix:
 	@for dir in $(dirs); do cd $$dir && golangci-lint run --fix; done
-
-.PHONY: lint.super
-## Run super linter
-lint.super:
-	docker run --rm -it \
-		-e 'RUN_LOCAL=true' \
-		-e 'DEFAULT_BRANCH=main' \
-		-e 'IGNORE_GITIGNORED_FILES=true' \
-		-e 'VALIDATE_JSCPD=false' \
-		-e 'VALIDATE_GO=false' \
-		-v $(PWD):/tmp/lint \
-		github/super-linter
 
 ## === Utils ===
 
@@ -45,9 +29,9 @@ gomod:
 	go mod tidy
 	cd example && go mod tidy
 
-.PHONY: outdated
+.PHONY: gomod.outdated
 ## Show outdated direct dependencies
-outdated:
+gomod.outdated:
 	go list -u -m -json all | go-mod-outdated -update -direct
 
 ## Show help text
