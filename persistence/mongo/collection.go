@@ -355,9 +355,12 @@ func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts
 	} else if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
-	err = cursor.All(ctx, results)
-	return err
+
+	if err = cursor.All(ctx, results); err != nil {
+		return err
+	}
+
+	return cursor.Err()
 }
 
 func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, opts ...*options.FindOneOptions) error {
@@ -367,6 +370,7 @@ func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, op
 	} else if res.Err() != nil {
 		return res.Err()
 	}
+
 	return res.Decode(result)
 }
 
@@ -377,13 +381,16 @@ func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handle
 	} else if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
+
+	defer CloseCursor(cursor)
+
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {
 			return err
 		}
 	}
-	return err
+
+	return cursor.Err()
 }
 
 func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, results interface{}, opts ...*options.AggregateOptions) error {
@@ -391,9 +398,12 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, res
 	if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
-	err = cursor.All(ctx, results)
-	return err
+
+	if err = cursor.All(ctx, results); err != nil {
+		return err
+	}
+
+	return cursor.Err()
 }
 
 func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeline, handler IterateHandlerFn, opts ...*options.AggregateOptions) error {
@@ -401,13 +411,16 @@ func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeli
 	if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
+
+	defer CloseCursor(cursor)
+
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {
 			return err
 		}
 	}
-	return nil
+
+	return cursor.Err()
 }
 
 // Count returns the count of documents
