@@ -7,7 +7,7 @@ import (
 )
 
 // Middleware your way to handle requests
-type Middleware func(*zap.Logger, string, http.Handler) http.Handler
+type Middleware func(l *zap.Logger, name string, next http.Handler) http.Handler
 
 func Compose(l *zap.Logger, name string, handler http.Handler, middlewares ...Middleware) http.Handler {
 	composed := func(l *zap.Logger, name string, next http.Handler) http.Handler {

@@ -24,16 +24,10 @@ func init() {
 	var level string
 	switch env.Get("LOG_MODE", ModeProd) {
 	case ModeDev:
-		config = zap.NewDevelopmentConfig()
-		config.Encoding = env.Get("LOG_ENCODING", "console")
-		config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		config = NewDevelopmentConfig()
 		level = env.Get("LOG_LEVEL", "debug")
-		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
 	default:
-		config = zap.NewProductionConfig()
-		config.Encoding = env.Get("LOG_ENCODING", "json")
-		config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		config = NewProductionConfig()
 		level = env.Get("LOG_LEVEL", "info")
 	}
 	config.Level = atomicLevel
@@ -52,6 +46,22 @@ func init() {
 	} else {
 		atomicLevel.SetLevel(value)
 	}
+}
+
+func NewProductionConfig() zap.Config {
+	config = zap.NewProductionConfig()
+	config.Encoding = env.Get("LOG_ENCODING", "json")
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	return config
+}
+
+func NewDevelopmentConfig() zap.Config {
+	config = zap.NewDevelopmentConfig()
+	config.Encoding = env.Get("LOG_ENCODING", "console")
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
+	return config
 }
 
 // Logger return the logger instance
