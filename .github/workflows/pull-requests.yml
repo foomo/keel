@@ -24,7 +24,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          cache: true
           check-latest: true
           go-version-file: 'go.mod'
       - uses: golangci/golangci-lint-action@v3
@@ -37,7 +36,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          cache: true
           check-latest: true
           go-version-file: 'go.mod'
       - run: go test -v ./...
