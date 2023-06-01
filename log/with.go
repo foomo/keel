@@ -77,6 +77,16 @@ func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 	}
 }
 
+func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
+	if value := r.Header.Get("X-Referer"); value != "" {
+		return With(l, FHTTPReferer(value))
+	} else if value := r.Referer(); value != "" {
+		return With(l, FHTTPHost(value))
+	} else {
+		return l
+	}
+}
+
 func WithHTTPHost(l *zap.Logger, r *http.Request) *zap.Logger {
 	if value := r.Header.Get("X-Forwarded-Host"); value != "" {
 		return With(l, FHTTPHost(value))
@@ -120,6 +130,7 @@ func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPHost(l, r)
+	l = WithHTTPReferer(l, r)
 	l = WithHTTPRequestID(l, r)
 	l = WithHTTPSessionID(l, r)
 	l = WithHTTPTrackingID(l, r)

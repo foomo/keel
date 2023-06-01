@@ -48,6 +48,9 @@ const (
 
 	// HTTPTrackingIDKey represents the HTTP tracking id if known (e.g. from X-Tracking-ID).
 	HTTPTrackingIDKey = "http_tracking_id"
+
+	// HTTPRefererKey identifies the address of the web page (i.e., the URI or IRI), from which the resource has been requested.
+	HTTPRefererKey = "http_referer"
 )
 
 func FHTTPServerName(id string) zap.Field {
@@ -96,6 +99,10 @@ func FHTTPScheme(scheme string) zap.Field {
 
 func FHTTPUserAgent(userAgent string) zap.Field {
 	return zap.String(HTTPUserAgentKey, userAgent)
+}
+
+func FHTTPReferer(host string) zap.Field {
+	return zap.String(HTTPRefererKey, host)
 }
 
 func FHTTPHost(host string) zap.Field {
