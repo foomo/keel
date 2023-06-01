@@ -38,7 +38,8 @@ func (d *DateTimeCodec) DecodeValue(_ bsoncodec.DecodeContext, vr bsonrw.ValueRe
 	}
 
 	var dateTimeVal DateTime
-	switch t := vr.Type(); t { //nolint:exhaustive
+	//nolint:exhaustive
+	switch t := vr.Type(); t {
 	case bsontype.DateTime:
 		dt, err := vr.ReadDateTime()
 		if err != nil {
