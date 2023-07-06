@@ -15,6 +15,7 @@ const (
 	HeaderLastModified        = "Last-Modified"
 	HeaderLocation            = "Location"
 	HeaderUpgrade             = "Upgrade"
+	HeaderReferrer            = "Referer"
 	HeaderVary                = "Vary"
 	HeaderWWWAuthenticate     = "WWW-Authenticate"
 	HeaderXForwardedHost      = "X-Forwarded-Host"
@@ -36,6 +37,7 @@ const (
 	HeaderServer              = "Server"
 	HeaderTrueClientIP        = "True-Client-Ip"
 	HeaderOrigin              = "Origin"
+	HeaderXReferrer           = "X-Referrer"
 	HeaderUserAgent           = "User-Agent"
 
 	// Cloudflare
