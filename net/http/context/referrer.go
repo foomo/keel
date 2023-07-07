@@ -4,16 +4,16 @@ import (
 	"context"
 )
 
-const ContextKeyReferrer contextKey = "referrer"
+const ContextKeyReferer contextKey = "referer"
 
-func GetReferrer(ctx context.Context) (string, bool) {
-	if value, ok := ctx.Value(ContextKeyReferrer).(string); ok {
+func GetReferer(ctx context.Context) (string, bool) {
+	if value, ok := ctx.Value(ContextKeyReferer).(string); ok {
 		return value, true
 	} else {
 		return "", false
 	}
 }
 
-func SetReferrer(ctx context.Context, referer string) context.Context {
-	return context.WithValue(ctx, ContextKeyReferrer, referer)
+func SetReferer(ctx context.Context, referer string) context.Context {
+	return context.WithValue(ctx, ContextKeyReferer, referer)
 }
