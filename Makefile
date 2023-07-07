@@ -25,13 +25,13 @@ lint.fix:
 
 .PHONY: gomod
 ## Run go mod tidy
-gomod:
+tidy:
 	go mod tidy
 	cd example && go mod tidy
 
 .PHONY: gomod.outdated
 ## Show outdated direct dependencies
-gomod.outdated:
+outdated:
 	go list -u -m -json all | go-mod-outdated -update -direct
 
 ## Show help text

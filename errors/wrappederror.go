@@ -1,12 +1,11 @@
 package keelerrors
 
-import "errors"
-
 type wrappedError struct {
 	err   error
 	cause error
 }
 
+// NewWrappedError returns a new wrapped error
 func NewWrappedError(err, cause error) error {
 	return &wrappedError{
 		err:   err,
@@ -14,22 +13,10 @@ func NewWrappedError(err, cause error) error {
 	}
 }
 
-func (e *wrappedError) As(target interface{}) bool {
-	return errors.As(e.err, target) || errors.As(e.cause, target)
-}
-
-func (e *wrappedError) Is(target error) bool {
-	return errors.Is(e.err, target) || errors.Is(e.cause, target)
-}
-
-func (e *wrappedError) Cause() error {
-	return e.cause
-}
-
-func (e *wrappedError) Unwrap() error {
-	return e.err
-}
-
 func (e *wrappedError) Error() string {
 	return e.err.Error() + ": " + e.cause.Error()
+}
+
+func (e *wrappedError) Unwrap() []error {
+	return []error{e.err, e.cause}
 }
