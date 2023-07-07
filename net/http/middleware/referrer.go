@@ -18,7 +18,7 @@ type (
 // GetDefaultRefererOptions returns the default options
 func GetDefaultRefererOptions() RefererOptions {
 	return RefererOptions{
-		RequestHeader: []string{"X-Referer", "X-Referrer", "Referer", "Referrer"},
+		RequestHeader: []string{"X-Referer", "Referer"},
 		SetContext:    true,
 	}
 }
@@ -59,7 +59,7 @@ func RefererWithOptions(opts RefererOptions) Middleware {
 				}
 			}
 			if referer != "" && opts.SetContext {
-				r = r.WithContext(context.SetReferrer(r.Context(), referer))
+				r = r.WithContext(context.SetReferer(r.Context(), referer))
 			}
 			next.ServeHTTP(w, r)
 		})
