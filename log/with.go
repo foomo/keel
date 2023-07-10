@@ -81,7 +81,7 @@ func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
 	if value := r.Header.Get("X-Referer"); value != "" {
 		return With(l, FHTTPReferer(value))
 	} else if value := r.Referer(); value != "" {
-		return With(l, FHTTPHost(value))
+		return With(l, FHTTPReferer(value))
 	} else {
 		return l
 	}
