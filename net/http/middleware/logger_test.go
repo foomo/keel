@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/foomo/keel/log"
+	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/foomo/keel/net/http/middleware"
 	keeltest "github.com/foomo/keel/test"
 	"go.uber.org/zap"
@@ -57,7 +58,7 @@ func ExampleLoggerWithInjectLabeler() {
 		keeltest.NewServiceHTTP(l, "demo", svs,
 			func(l *zap.Logger, s string, next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if labeler, ok := middleware.LoggerLabelerFromRequest(r); ok {
+					if labeler, ok := httplog.LabelerFromRequest(r); ok {
 						labeler.Add(zap.String("injected", "message"))
 					}
 					next.ServeHTTP(w, r)

@@ -3,8 +3,7 @@ package httputils
 import (
 	"net/http"
 
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
+	httplog "github.com/foomo/keel/net/http/log"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -43,11 +42,13 @@ func NotFoundServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, 
 // ServerError http response
 func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int, err error) {
 	if err != nil {
-		l = log.WithError(l, err)
-		if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-			labeler.Add(attribute.Bool("error", true))
+		if labeler, ok := httplog.LabelerFromRequest(r); ok {
+			labeler.Add(log.FErrorType(err), log.FError(err))
+		} else {
+			l = log.WithError(l, err)
+			l = log.WithHTTPRequest(l, r)
+			l.Error("http server error", log.FHTTPStatusCode(code))
 		}
-		log.WithHTTPRequest(l, r).Error("http server error", log.FHTTPStatusCode(code))
 		// w.Header().Set(keelhttp.HeaderXError, err.Error()) TODO make configurable with better value
 		http.Error(w, http.StatusText(code), code)
 	}

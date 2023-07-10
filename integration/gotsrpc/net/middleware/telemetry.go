@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
+	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
@@ -41,7 +42,7 @@ func Telemetry() middleware.Middleware {
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				if labeler, ok := middleware.LoggerLabelerFromRequest(r); ok {
+				if labeler, ok := httplog.LabelerFromRequest(r); ok {
 					labeler.Add(
 						zap.String(defaultGOTSRPCFunctionLabel, stats.Func),
 						zap.String(defaultGOTSRPCServiceLabel, stats.Service),

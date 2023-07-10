@@ -1,17 +1,15 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"time"
 
+	httplog "github.com/foomo/keel/net/http/log"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
 	keeltime "github.com/foomo/keel/time"
 )
-
-const loggerLabelerContextKey log.LabelerContextKey = "github.com/foomo/keel/net/middleware.Logger"
 
 type (
 	LoggerOptions struct {
@@ -86,9 +84,7 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 			var labeler *log.Labeler
 
 			if labeler == nil && opts.InjectLabeler {
-				var labelerCtx context.Context
-				labelerCtx, labeler = log.InjectLabeler(r.Context(), loggerLabelerContextKey)
-				r = r.WithContext(labelerCtx)
+				r, labeler = httplog.InjectLabelerIntoRequest(r)
 			}
 
 			next.ServeHTTP(wr, r)
@@ -113,12 +109,4 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 			}
 		})
 	}
-}
-
-func LoggerLabelerFromContext(ctx context.Context) (*log.Labeler, bool) {
-	return log.LabelerFromContext(ctx, loggerLabelerContextKey)
-}
-
-func LoggerLabelerFromRequest(r *http.Request) (*log.Labeler, bool) {
-	return log.LabelerFromContext(r.Context(), loggerLabelerContextKey)
 }
