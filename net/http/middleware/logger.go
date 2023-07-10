@@ -15,9 +15,10 @@ const loggerLabelerContextKey log.LabelerContextKey = "github.com/foomo/keel/net
 
 type (
 	LoggerOptions struct {
-		Message      string
-		MinWarnCode  int
-		MinErrorCode int
+		Message       string
+		MinWarnCode   int
+		MinErrorCode  int
+		InjectLabeler bool
 	}
 	LoggerOption func(*LoggerOptions)
 )
@@ -25,9 +26,10 @@ type (
 // GetDefaultLoggerOptions returns the default options
 func GetDefaultLoggerOptions() LoggerOptions {
 	return LoggerOptions{
-		Message:      "handled http request",
-		MinWarnCode:  400,
-		MinErrorCode: 500,
+		Message:       "handled http request",
+		MinWarnCode:   400,
+		MinErrorCode:  500,
+		InjectLabeler: true,
 	}
 }
 
@@ -63,6 +65,13 @@ func LoggerWithMinErrorCode(v int) LoggerOption {
 	}
 }
 
+// LoggerWithInjectLabeler middleware option
+func LoggerWithInjectLabeler(v bool) LoggerOption {
+	return func(o *LoggerOptions) {
+		o.InjectLabeler = v
+	}
+}
+
 // LoggerWithOptions middleware
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
@@ -74,8 +83,13 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			l := log.WithHTTPRequest(l, r)
 
-			// retrieve or inject labeler
-			r, labeler := LoggerLabelerFromRequest(r)
+			var labeler *log.Labeler
+
+			if labeler == nil && opts.InjectLabeler {
+				var labelerCtx context.Context
+				labelerCtx, labeler = log.InjectLabeler(r.Context(), loggerLabelerContextKey)
+				r = r.WithContext(labelerCtx)
+			}
 
 			next.ServeHTTP(wr, r)
 
@@ -101,11 +115,10 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 	}
 }
 
-func LoggerLabelerFromContext(ctx context.Context) (context.Context, *log.Labeler) {
+func LoggerLabelerFromContext(ctx context.Context) (*log.Labeler, bool) {
 	return log.LabelerFromContext(ctx, loggerLabelerContextKey)
 }
 
-func LoggerLabelerFromRequest(r *http.Request) (*http.Request, *log.Labeler) {
-	ctx, l := log.LabelerFromContext(r.Context(), loggerLabelerContextKey)
-	return r.WithContext(ctx), l
+func LoggerLabelerFromRequest(r *http.Request) (*log.Labeler, bool) {
+	return log.LabelerFromContext(r.Context(), loggerLabelerContextKey)
 }

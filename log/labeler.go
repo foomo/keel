@@ -35,9 +35,9 @@ func InjectLabeler(ctx context.Context, key LabelerContextKey) (context.Context,
 	return context.WithValue(ctx, key, l), l
 }
 
-func LabelerFromContext(ctx context.Context, key LabelerContextKey) (context.Context, *Labeler) {
+func LabelerFromContext(ctx context.Context, key LabelerContextKey) (*Labeler, bool) {
 	if l, ok := ctx.Value(key).(*Labeler); ok {
-		return ctx, l
+		return l, true
 	}
-	return InjectLabeler(ctx, key)
+	return nil, false
 }

@@ -38,21 +38,20 @@ func Telemetry() middleware.Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			*r = *gotsrpc.RequestWithStatsContext(r)
 
-			// retrieve or inject labeler
-			r, labeler := middleware.LoggerLabelerFromRequest(r)
-
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				labeler.Add(
-					zap.String(defaultGOTSRPCFunctionLabel, stats.Func),
-					zap.String(defaultGOTSRPCServiceLabel, stats.Service),
-					zap.String(defaultGOTSRPCPackageLabel, stats.Package),
-				)
-				if stats.ErrorCode != 0 {
-					labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
-					if stats.ErrorMessage != "" {
-						labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
+				if labeler, ok := middleware.LoggerLabelerFromRequest(r); ok {
+					labeler.Add(
+						zap.String(defaultGOTSRPCFunctionLabel, stats.Func),
+						zap.String(defaultGOTSRPCServiceLabel, stats.Service),
+						zap.String(defaultGOTSRPCPackageLabel, stats.Package),
+					)
+					if stats.ErrorCode != 0 {
+						labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
+						if stats.ErrorMessage != "" {
+							labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
+						}
 					}
 				}
 
