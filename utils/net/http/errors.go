@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	httplog "github.com/foomo/keel/net/http/log"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -43,7 +44,7 @@ func NotFoundServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, 
 func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int, err error) {
 	if err != nil {
 		if labeler, ok := httplog.LabelerFromRequest(r); ok {
-			labeler.Add(log.FErrorType(err), log.FError(err))
+			labeler.Add(log.FErrorType(err), log.FError(errors.Wrap(err, "http server error")))
 		} else {
 			l = log.WithError(l, err)
 			l = log.WithHTTPRequest(l, r)
