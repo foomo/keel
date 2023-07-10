@@ -37,8 +37,12 @@ func Telemetry() middleware.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			*r = *gotsrpc.RequestWithStatsContext(r)
-			ctx, labeler := middleware.LoggerLabelerFromContext(r.Context())
-			next.ServeHTTP(w, r.WithContext(ctx))
+
+			// retrieve or inject labeler
+			r, labeler := middleware.LoggerLabelerFromRequest(r)
+
+			next.ServeHTTP(w, r)
+
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
 				labeler.Add(
 					zap.String(defaultGOTSRPCFunctionLabel, stats.Func),

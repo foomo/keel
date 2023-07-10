@@ -15,10 +15,9 @@ const loggerLabelerContextKey log.LabelerContextKey = "github.com/foomo/keel/net
 
 type (
 	LoggerOptions struct {
-		Message       string
-		MinWarnCode   int
-		MinErrorCode  int
-		InjectLabeler bool
+		Message      string
+		MinWarnCode  int
+		MinErrorCode int
 	}
 	LoggerOption func(*LoggerOptions)
 )
@@ -26,10 +25,9 @@ type (
 // GetDefaultLoggerOptions returns the default options
 func GetDefaultLoggerOptions() LoggerOptions {
 	return LoggerOptions{
-		Message:       "handled http request",
-		MinWarnCode:   400,
-		MinErrorCode:  500,
-		InjectLabeler: false,
+		Message:      "handled http request",
+		MinWarnCode:  400,
+		MinErrorCode: 500,
 	}
 }
 
@@ -65,13 +63,6 @@ func LoggerWithMinErrorCode(v int) LoggerOption {
 	}
 }
 
-// LoggerWithInjectLabeler middleware option
-func LoggerWithInjectLabeler(v bool) LoggerOption {
-	return func(o *LoggerOptions) {
-		o.InjectLabeler = v
-	}
-}
-
 // LoggerWithOptions middleware
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
@@ -83,11 +74,8 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			l := log.WithHTTPRequest(l, r)
 
-			var labeler *log.Labeler
-
-			if opts.InjectLabeler {
-				r, labeler = LoggerLabelerFromRequest(r)
-			}
+			// retrieve or inject labeler
+			r, labeler := LoggerLabelerFromRequest(r)
 
 			next.ServeHTTP(wr, r)
 
