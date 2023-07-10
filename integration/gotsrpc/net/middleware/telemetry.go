@@ -8,8 +8,6 @@ import (
 	"github.com/foomo/gotsrpc/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/net/http/middleware"
@@ -40,32 +38,33 @@ func Telemetry() middleware.Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			*r = *gotsrpc.RequestWithStatsContext(r)
 			next.ServeHTTP(w, r)
-			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-					labeler.Add(attribute.String(defaultGOTSRPCFunctionLabel, stats.Func))
-					labeler.Add(attribute.String(defaultGOTSRPCServiceLabel, stats.Service))
-					labeler.Add(attribute.String(defaultGOTSRPCPackageLabel, stats.Package))
-					if stats.ErrorCode != 0 {
-						labeler.Add(attribute.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
-					}
+			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				_, labeler := middleware.LoggerLabelerFromContext(r.Context())
+				labeler.Add(
+					zap.String(defaultGOTSRPCFunctionLabel, stats.Func),
+					zap.String(defaultGOTSRPCServiceLabel, stats.Service),
+					zap.String(defaultGOTSRPCPackageLabel, stats.Package),
+				)
+				if stats.ErrorCode != 0 {
+					labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
 					if stats.ErrorMessage != "" {
-						labeler.Add(attribute.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
+						labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
 					}
-
-					observe := func(operation string, duration time.Duration) {
-						gotsrpcRequestDurationSummary.WithLabelValues(
-							stats.Func,
-							stats.Service,
-							stats.Package,
-							operation,
-							strconv.FormatBool(stats.ErrorCode != 0),
-						).Observe(duration.Seconds())
-					}
-
-					observe("marshalling", stats.Marshalling)
-					observe("unmarshalling", stats.Unmarshalling)
-					observe("execution", stats.Execution)
 				}
+
+				observe := func(operation string, duration time.Duration) {
+					gotsrpcRequestDurationSummary.WithLabelValues(
+						stats.Func,
+						stats.Service,
+						stats.Package,
+						operation,
+						strconv.FormatBool(stats.ErrorCode != 0),
+					).Observe(duration.Seconds())
+				}
+
+				observe("marshalling", stats.Marshalling)
+				observe("unmarshalling", stats.Unmarshalling)
+				observe("execution", stats.Execution)
 			}
 		})
 	}
