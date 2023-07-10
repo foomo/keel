@@ -2,6 +2,7 @@ package keelgotsrpcmiddleware
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
@@ -20,6 +21,9 @@ const (
 	defaultGOTSRPCServiceLabel     = "gotsrpc_service"
 	defaultGOTSRPCPackageLabel     = "gotsrpc_package"
 	defaultGOTSRPCPackageOperation = "gotsrpc_operation"
+	defaultGOTSRPCError            = "gotsrpc_error"
+	defaultGOTSRPCErrorCode        = "gotsrpc_error_code"
+	defaultGOTSRPCErrorMessage     = "gotsrpc_error_message"
 )
 
 var (
@@ -27,7 +31,7 @@ var (
 		Name:       "gotsrpc_request_duration_seconds",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		Help:       "Specifies the duration of gotsrpc request in seconds",
-	}, []string{defaultGOTSRPCFunctionLabel, defaultGOTSRPCServiceLabel, defaultGOTSRPCPackageLabel, defaultGOTSRPCPackageOperation})
+	}, []string{defaultGOTSRPCFunctionLabel, defaultGOTSRPCServiceLabel, defaultGOTSRPCPackageLabel, defaultGOTSRPCPackageOperation, defaultGOTSRPCError})
 )
 
 // Telemetry middleware
@@ -41,6 +45,12 @@ func Telemetry() middleware.Middleware {
 					labeler.Add(attribute.String(defaultGOTSRPCFunctionLabel, stats.Func))
 					labeler.Add(attribute.String(defaultGOTSRPCServiceLabel, stats.Service))
 					labeler.Add(attribute.String(defaultGOTSRPCPackageLabel, stats.Package))
+					if stats.ErrorCode != 0 {
+						labeler.Add(attribute.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
+					}
+					if stats.ErrorMessage != "" {
+						labeler.Add(attribute.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
+					}
 
 					observe := func(operation string, duration time.Duration) {
 						gotsrpcRequestDurationSummary.WithLabelValues(
@@ -48,6 +58,7 @@ func Telemetry() middleware.Middleware {
 							stats.Service,
 							stats.Package,
 							operation,
+							strconv.FormatBool(stats.ErrorCode != 0),
 						).Observe(duration.Seconds())
 					}
 
