@@ -3,6 +3,8 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/foomo/keel/log"
+	httplog "github.com/foomo/keel/net/http/log"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
@@ -10,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -84,13 +87,20 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
 			}
 
+			if labeler, ok := httplog.LabelerFromRequest(r); ok {
+				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
+					labeler.Add(log.FTraceID(spanCtx.TraceID().String()))
+				}
+			}
+
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
 
 			next.ServeHTTP(wr, r)
 
-			labeler, _ := otelhttp.LabelerFromContext(r.Context())
-			c.Add(r.Context(), 1, append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
+			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+				c.Add(r.Context(), 1, append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
+			}
 		}), name, opts.OtelOpts...)
 	}
 }
