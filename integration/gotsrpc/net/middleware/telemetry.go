@@ -2,13 +2,14 @@ package keelgotsrpcmiddleware
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/net/http/middleware"
@@ -42,6 +43,27 @@ func Telemetry() middleware.Middleware {
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				// enricht otel http metrics
+				if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+					labeler.Add(attribute.String(defaultGOTSRPCFunctionLabel, stats.Func))
+					labeler.Add(attribute.String(defaultGOTSRPCServiceLabel, stats.Service))
+					labeler.Add(attribute.String(defaultGOTSRPCPackageLabel, stats.Package))
+				}
+
+				// create custom metics
+				observe := func(operation string, duration time.Duration) {
+					gotsrpcRequestDurationSummary.WithLabelValues(
+						stats.Func,
+						stats.Service,
+						stats.Package,
+						operation,
+					).Observe(duration.Seconds())
+				}
+				observe("marshalling", stats.Marshalling)
+				observe("unmarshalling", stats.Unmarshalling)
+				observe("execution", stats.Execution)
+
+				// enrich logger
 				if labeler, ok := httplog.LabelerFromRequest(r); ok {
 					labeler.Add(
 						zap.String(defaultGOTSRPCFunctionLabel, stats.Func),
@@ -55,20 +77,6 @@ func Telemetry() middleware.Middleware {
 						}
 					}
 				}
-
-				observe := func(operation string, duration time.Duration) {
-					gotsrpcRequestDurationSummary.WithLabelValues(
-						stats.Func,
-						stats.Service,
-						stats.Package,
-						operation,
-						strconv.FormatBool(stats.ErrorCode != 0),
-					).Observe(duration.Seconds())
-				}
-
-				observe("marshalling", stats.Marshalling)
-				observe("unmarshalling", stats.Unmarshalling)
-				observe("execution", stats.Execution)
 			}
 		})
 	}
