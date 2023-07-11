@@ -2,6 +2,7 @@ package keelgotsrpcmiddleware
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
@@ -57,6 +58,7 @@ func Telemetry() middleware.Middleware {
 						stats.Service,
 						stats.Package,
 						operation,
+						strconv.FormatBool(stats.ErrorCode != 0),
 					).Observe(duration.Seconds())
 				}
 				observe("marshalling", stats.Marshalling)
