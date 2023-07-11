@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/avast/retry-go v3.0.0+incompatible
-	github.com/foomo/gotsrpc/v2 v2.7.1-0.20230710070331-3d520949b454
+	github.com/foomo/gotsrpc/v2 v2.7.1
 	github.com/go-logr/logr v1.2.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
