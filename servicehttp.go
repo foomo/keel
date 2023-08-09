@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -15,7 +16,7 @@ import (
 
 // ServiceHTTP struct
 type ServiceHTTP struct {
-	running bool
+	running atomic.Bool
 	server  *http.Server
 	name    string
 	l       *zap.Logger
@@ -44,7 +45,7 @@ func (s *ServiceHTTP) Name() string {
 }
 
 func (s *ServiceHTTP) Healthz() error {
-	if !s.running {
+	if !s.running.Load() {
 		return ErrServiceNotRunning
 	}
 	return nil
@@ -62,9 +63,9 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 	s.l.Info("starting http service", fields...)
 	s.server.BaseContext = func(_ net.Listener) context.Context { return ctx }
 	s.server.RegisterOnShutdown(func() {
-		s.running = false
+		s.running.Store(false)
 	})
-	s.running = true
+	s.running.Store(true)
 	if err := s.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		log.WithError(s.l, err).Error("service error")
 		return err

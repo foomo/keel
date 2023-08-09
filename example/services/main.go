@@ -11,6 +11,7 @@ func main() {
 	// you can override the below config by settings env vars
 	_ = os.Setenv("SERVICE_ZAP_ENABLED", "true")
 	_ = os.Setenv("SERVICE_VIPER_ENABLED", "true")
+	_ = os.Setenv("SERVICE_PPROF_ENABLED", "true")
 	_ = os.Setenv("SERVICE_PROMETHEUS_ENABLED", "true")
 
 	svr := keel.NewServer(
@@ -23,6 +24,9 @@ func main() {
 		// add prometheus service listening on 0.0.0.0:9200
 		// allows you to collect prometheus metrics: GET 0.0.0.0:9200/metrics
 		keel.WithHTTPPrometheusService(false),
+		// add go pprof service listening on 0.0.0.0:6060
+		// allows you to use go tool pprof: GET 0.0.0.0:6060/debug/pprof
+		keel.WithHTTPPProfService(false),
 	)
 
 	l := svr.Logger()
@@ -30,6 +34,7 @@ func main() {
 	// alternatively you can add them manually
 	// svr.AddServices(keel.NewDefaultServiceHTTPZap())
 	// svr.AddServices(keel.NewDefaultServiceHTTPViper())
+	// svr.AddServices(keel.NewDefaultServiceHTTPPProf())
 	// svr.AddServices(keel.NewDefaultServiceHTTPPrometheus())
 
 	// create demo service
@@ -40,7 +45,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		keel.NewServiceHTTP(l, "demo", ":8080", svs),
 	)
 
 	svr.Run()
