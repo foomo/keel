@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	keelconfig "github.com/foomo/keel/config"
 	"github.com/foomo/keel/log"
 	"go.uber.org/zap"
 )
@@ -35,15 +34,4 @@ func NewDefaultServiceHTTPPProf() *ServiceHTTP {
 		DefaultServiceHTTPPProfAddr,
 		DefaultServiceHTTPPProfPath,
 	)
-}
-
-// WithPProfService option with default value
-func WithPProfService(enabled bool) Option {
-	return func(inst *Server) {
-		if keelconfig.GetBool(inst.Config(), "service.pprof.enabled", enabled)() {
-			service := NewDefaultServiceHTTPPProf()
-			inst.initServices = append(inst.initServices, service)
-			inst.AddAlwaysHealthzers(service)
-		}
-	}
 }

@@ -156,6 +156,18 @@ func WithHTTPPrometheusService(enabled bool) Option {
 	}
 }
 
+// WithHTTPPProfService option with default value
+func WithHTTPPProfService(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "service.pprof.enabled", enabled)() {
+			service := NewDefaultServiceHTTPPProf()
+			inst.initServices = append(inst.initServices, service)
+			inst.AddAlwaysHealthzers(service)
+		}
+	}
+}
+
+// WithHTTPHealthzService option with default value
 func WithHTTPHealthzService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.healthz.enabled", enabled)() {
