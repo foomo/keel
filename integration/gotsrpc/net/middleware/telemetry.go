@@ -117,8 +117,8 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 
 // TelemetryWithOptions middleware
 func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
-	observe := func(l *zap.Logger, r *http.Request, observer prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
-		observer.WithLabelValues(
+	observe := func(l *zap.Logger, r *http.Request, metric prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
+		observer := metric.WithLabelValues(
 			stats.Func,
 			stats.Service,
 			stats.Package,
@@ -140,24 +140,20 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
 				"traceID": spanCtx.TraceID().String(),
 			})
-		} else if v, ok2 := observer.(prometheus.Observer); ok2 {
-			l.Info("==> no exemplar")
-			if !ok {
-				l.Info("==> not ok")
-			}
-			if !opts.Exemplars {
-				l.Info("==> not exemplar")
-			}
-			if !spanCtx.HasTraceID() {
-				l.Info("==> not traceID")
-			}
-			if !spanCtx.IsSampled() {
-				l.Info("==> not sampled")
-			}
-			v.Observe(duration.Seconds())
-		} else {
-			l.Info("======> nothing")
+			return
 		}
+
+		l.Info("==> no exemplar")
+		if !opts.Exemplars {
+			l.Info("==> not exemplar")
+		}
+		if !spanCtx.HasTraceID() {
+			l.Info("==> not traceID")
+		}
+		if !spanCtx.IsSampled() {
+			l.Info("==> not sampled")
+		}
+		observer.Observe(duration.Seconds())
 	}
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
