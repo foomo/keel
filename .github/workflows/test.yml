@@ -1,0 +1,35 @@
+name: Test Branch
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  merge_group:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  GOFLAGS: -mod=readonly
+  GOPROXY: https://proxy.golang.org
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          check-latest: true
+          go-version-file: 'go.mod'
+
+      - uses: golangci/golangci-lint-action@v3
+
+      - name: Run tests
+        run: go test -v ./...
+
