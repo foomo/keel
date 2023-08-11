@@ -155,6 +155,8 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				l.Info("==> not sampled")
 			}
 			v.Observe(duration.Seconds())
+		} else {
+			l.Info("======> nothing")
 		}
 	}
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
