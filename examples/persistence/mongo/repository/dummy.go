@@ -5,7 +5,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/foomo/keel/example/persistence/mongo/store"
+	"github.com/foomo/keel/examples/persistence/mongo/store"
 	keelmongo "github.com/foomo/keel/persistence/mongo"
 )
 

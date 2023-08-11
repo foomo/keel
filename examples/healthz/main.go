@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/foomo/keel"
-	"github.com/foomo/keel/example/healthz/handler"
+	"github.com/foomo/keel/examples/healthz/handler"
 )
 
 // See k8s for probe documentation

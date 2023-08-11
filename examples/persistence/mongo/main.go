@@ -12,8 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/foomo/keel"
-	"github.com/foomo/keel/example/persistence/mongo/repository"
-	"github.com/foomo/keel/example/persistence/mongo/store"
+	"github.com/foomo/keel/examples/persistence/mongo/repository"
+	"github.com/foomo/keel/examples/persistence/mongo/store"
 	"github.com/foomo/keel/log"
 	keelmongo "github.com/foomo/keel/persistence/mongo"
 )

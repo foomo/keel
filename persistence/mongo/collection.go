@@ -189,8 +189,8 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 			return c.Insert(ctx, entity)
 		} else if err := c.collection.FindOneAndUpdate(
 			ctx,
-			bson.D{{Key: "id", Value: id}, {Key: "version", Value: currentVersion}},
-			bson.D{{Key: "$set", Value: entity}},
+			bson.D{bson.E{Key: "id", Value: id}, bson.E{Key: "version", Value: currentVersion}},
+			bson.D{bson.E{Key: "$set", Value: entity}},
 			options.FindOneAndUpdate().SetUpsert(false),
 		).Err(); errors.Is(err, mongo.ErrNoDocuments) {
 			return keelerrors.NewWrappedError(keelpersistence.ErrDirtyWrite, err)
@@ -199,8 +199,8 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 		}
 	} else if _, err := c.collection.UpdateOne(
 		ctx,
-		bson.D{{Key: "id", Value: id}},
-		bson.D{{Key: "$set", Value: entity}},
+		bson.D{bson.E{Key: "id", Value: id}},
+		bson.D{bson.E{Key: "$set", Value: entity}},
 		options.Update().SetUpsert(true),
 	); err != nil {
 		return err
@@ -242,16 +242,16 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 				versionUpserts++
 				operations = append(operations,
 					mongo.NewUpdateOneModel().
-						SetFilter(bson.D{{Key: "id", Value: entity.GetID()}, {Key: "version", Value: currentVersion}}).
-						SetUpdate(bson.D{{Key: "$set", Value: entity}}).
+						SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}, bson.E{Key: "version", Value: currentVersion}}).
+						SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
 						SetUpsert(false),
 				)
 			}
 		} else {
 			operations = append(operations,
 				mongo.NewUpdateOneModel().
-					SetFilter(bson.D{{Key: "id", Value: entity.GetID()}}).
-					SetUpdate(bson.D{{Key: "$set", Value: entity}}).
+					SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}}).
+					SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
 					SetUpsert(true),
 			)
 		}
