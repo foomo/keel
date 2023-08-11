@@ -137,9 +137,9 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		spanCtx := trace.SpanContextFromContext(r.Context())
 		if v, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() {
 			v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
-				"TraceID": spanCtx.TraceID().String(),
+				"traceID": spanCtx.TraceID().String(),
 			})
-		} else if v, ok := observer.(prometheus.Observer); ok {
+		} else if v, ok2 := observer.(prometheus.Observer); ok2 {
 			if !ok {
 				l.Info("==> not ok")
 			}
