@@ -117,7 +117,7 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 
 // TelemetryWithOptions middleware
 func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
-	observe := func(l *zap.Logger, r *http.Request, metric prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
+	observe := func(r *http.Request, metric prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
 		observer := metric.WithLabelValues(
 			stats.Func,
 			stats.Service,
@@ -135,23 +135,11 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			duration = stats.Execution
 		}
 		spanCtx := trace.SpanContextFromContext(r.Context())
-		if v, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() {
-			l.Info("==> exemplar")
-			v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
+		if exemplarObserver, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() && spanCtx.IsSampled() {
+			exemplarObserver.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
 				"traceID": spanCtx.TraceID().String(),
 			})
 			return
-		}
-
-		l.Info("==> no exemplar")
-		if !opts.Exemplars {
-			l.Info("==> not exemplar")
-		}
-		if !spanCtx.HasTraceID() {
-			l.Info("==> not traceID")
-		}
-		if !spanCtx.IsSampled() {
-			l.Info("==> not sampled")
 		}
 		observer.Observe(duration.Seconds())
 	}
@@ -164,16 +152,16 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
 				// create custom metics
 				if opts.Marshalling {
-					observe(l, r, gotsrpcRequestDurationSummary, stats, "marshalling")
-					observe(l, r, gotsrpcRequestDurationHistogram, stats, "marshalling")
+					observe(r, gotsrpcRequestDurationSummary, stats, "marshalling")
+					observe(r, gotsrpcRequestDurationHistogram, stats, "marshalling")
 				}
 				if opts.Unmarshalling {
-					observe(l, r, gotsrpcRequestDurationSummary, stats, "unmarshalling")
-					observe(l, r, gotsrpcRequestDurationHistogram, stats, "unmarshalling")
+					observe(r, gotsrpcRequestDurationSummary, stats, "unmarshalling")
+					observe(r, gotsrpcRequestDurationHistogram, stats, "unmarshalling")
 				}
 				if opts.Execution {
-					observe(l, r, gotsrpcRequestDurationSummary, stats, "execution")
-					observe(l, r, gotsrpcRequestDurationHistogram, stats, "execution")
+					observe(r, gotsrpcRequestDurationSummary, stats, "execution")
+					observe(r, gotsrpcRequestDurationHistogram, stats, "execution")
 				}
 
 				// enrich logger
