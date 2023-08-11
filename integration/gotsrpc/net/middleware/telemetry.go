@@ -141,6 +141,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				"traceID": spanCtx.TraceID().String(),
 			})
 		} else if v, ok2 := observer.(prometheus.Observer); ok2 {
+			l.Info("==> no exemplar")
 			if !ok {
 				l.Info("==> not ok")
 			}
