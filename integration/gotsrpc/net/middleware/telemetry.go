@@ -136,6 +136,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		}
 		spanCtx := trace.SpanContextFromContext(r.Context())
 		if v, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() {
+			l.Info("==> exemplar")
 			v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
 				"traceID": spanCtx.TraceID().String(),
 			})
@@ -183,14 +184,14 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 						zap.String(defaultGOTSRPCServiceLabel, stats.Service),
 						zap.String(defaultGOTSRPCPackageLabel, stats.Package),
 					)
+					if stats.ErrorCode != 0 {
+						labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
+					}
 					if stats.ErrorType != "" {
 						labeler.Add(zap.String(defaultGOTSRPCErrorType, stats.ErrorType))
 					}
-					if stats.ErrorCode != 0 {
-						labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
-						if stats.ErrorMessage != "" {
-							labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
-						}
+					if stats.ErrorMessage != "" {
+						labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
 					}
 				}
 			}
