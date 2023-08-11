@@ -9,8 +9,7 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/net/http/middleware"
@@ -24,19 +23,53 @@ const (
 	defaultGOTSRPCPackageOperation = "gotsrpc_operation"
 	defaultGOTSRPCError            = "gotsrpc_error"
 	defaultGOTSRPCErrorCode        = "gotsrpc_error_code"
+	defaultGOTSRPCErrorType        = "gotsrpc_error_type"
 	defaultGOTSRPCErrorMessage     = "gotsrpc_error_message"
+)
+
+type (
+	TelemetryOptions struct {
+		Exemplars bool
+	}
+	TelemetryOption func(*TelemetryOptions)
 )
 
 var (
 	gotsrpcRequestDurationSummary = promauto.NewSummaryVec(prometheus.SummaryOpts{
-		Name:       "gotsrpc_request_duration_seconds",
+		Namespace:  "gotsrpc",
+		Name:       "request_duration_seconds",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		Help:       "Specifies the duration of gotsrpc request in seconds",
 	}, []string{defaultGOTSRPCFunctionLabel, defaultGOTSRPCServiceLabel, defaultGOTSRPCPackageLabel, defaultGOTSRPCPackageOperation, defaultGOTSRPCError})
 )
 
+// DefaultTelemetryOptions returns the default options
+func DefaultTelemetryOptions() TelemetryOptions {
+	return TelemetryOptions{
+		Exemplars: false,
+	}
+}
+
+// TelemetryWithExemplars middleware option
+func TelemetryWithExemplars(v bool) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.Exemplars = v
+	}
+}
+
 // Telemetry middleware
-func Telemetry() middleware.Middleware {
+func Telemetry(opts ...TelemetryOption) middleware.Middleware {
+	options := DefaultTelemetryOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&options)
+		}
+	}
+	return TelemetryWithOptions(options)
+}
+
+// TelemetryWithOptions middleware
+func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			*r = *gotsrpc.RequestWithStatsContext(r)
@@ -44,22 +77,23 @@ func Telemetry() middleware.Middleware {
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				// enricht otel http metrics
-				if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-					labeler.Add(attribute.String(defaultGOTSRPCFunctionLabel, stats.Func))
-					labeler.Add(attribute.String(defaultGOTSRPCServiceLabel, stats.Service))
-					labeler.Add(attribute.String(defaultGOTSRPCPackageLabel, stats.Package))
-				}
-
 				// create custom metics
 				observe := func(operation string, duration time.Duration) {
-					gotsrpcRequestDurationSummary.WithLabelValues(
+					observer := gotsrpcRequestDurationSummary.WithLabelValues(
 						stats.Func,
 						stats.Service,
 						stats.Package,
 						operation,
 						strconv.FormatBool(stats.ErrorCode != 0),
-					).Observe(duration.Seconds())
+					)
+					spanCtx := trace.SpanContextFromContext(r.Context())
+					if v, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() {
+						v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
+							"TraceID": spanCtx.TraceID().String(),
+						})
+					} else {
+						observer.Observe(duration.Seconds())
+					}
 				}
 				observe("marshalling", stats.Marshalling)
 				observe("unmarshalling", stats.Unmarshalling)
@@ -72,6 +106,9 @@ func Telemetry() middleware.Middleware {
 						zap.String(defaultGOTSRPCServiceLabel, stats.Service),
 						zap.String(defaultGOTSRPCPackageLabel, stats.Package),
 					)
+					if stats.ErrorType != "" {
+						labeler.Add(zap.String(defaultGOTSRPCErrorType, stats.ErrorType))
+					}
 					if stats.ErrorCode != 0 {
 						labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
 						if stats.ErrorMessage != "" {
