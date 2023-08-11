@@ -92,6 +92,15 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 							"TraceID": spanCtx.TraceID().String(),
 						})
 					} else {
+						if !ok {
+							l.Info("=> not ok")
+						}
+						if !opts.Exemplars {
+							l.Info("=> no exemplars")
+						}
+						if !spanCtx.HasTraceID() {
+							l.Info("=> no trace id")
+						}
 						observer.Observe(duration.Seconds())
 					}
 				}
