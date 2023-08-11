@@ -40,8 +40,8 @@ type (
 var (
 	gotsrpcRequestDurationHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace:   "gotsrpc",
-		Name:        "request_duration_seconds",
-		Help:        "Specifies the duration of gotsrpc request in seconds",
+		Name:        "process_duration_seconds",
+		Help:        "Specifies the duration of the gotsrpc process in seconds",
 		ConstLabels: nil,
 		Buckets:     []float64{0.05, 0.1, 0.5, 1, 3, 5, 10},
 	}, []string{
@@ -51,11 +51,12 @@ var (
 		defaultGOTSRPCPackageOperation,
 		defaultGOTSRPCError,
 	})
+	// Deprecated: use gotsrpc_process_duration_seconds
 	gotsrpcRequestDurationSummary = promauto.NewSummaryVec(prometheus.SummaryOpts{
 		Namespace:  "gotsrpc",
 		Name:       "request_duration_seconds",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		Help:       "Specifies the duration of gotsrpc request in seconds",
+		Help:       "Specifies the duration of gotsrpc request in seconds summary",
 	}, []string{
 		defaultGOTSRPCFunctionLabel,
 		defaultGOTSRPCServiceLabel,
