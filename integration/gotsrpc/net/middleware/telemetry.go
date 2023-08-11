@@ -147,7 +147,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			if !opts.Exemplars {
 				l.Info("==> not exemplar")
 			}
-			if !spanCtx.HasSpanID() {
+			if !spanCtx.HasTraceID() {
 				l.Info("==> not traceID")
 			}
 			if !spanCtx.IsSampled() {
