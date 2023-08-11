@@ -7,11 +7,7 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -69,18 +65,6 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		if opts.Name != "" {
 			name = opts.Name
 		}
-		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
-		m := global.MeterProvider().Meter(
-			"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-			metric.WithInstrumentationVersion(otelhttp.SemVersion()),
-		)
-		c, err := m.SyncInt64().Counter(
-			otelhttp.RequestCount,
-			instrument.WithDescription("counts number of requests withs specific status code"),
-		)
-		if err != nil {
-			otel.Handle(err)
-		}
 
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if opts.InjectPropagationHeader {
@@ -97,10 +81,6 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			wr := WrapResponseWriter(w)
 
 			next.ServeHTTP(wr, r)
-
-			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				c.Add(r.Context(), 1, append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
-			}
 		}), name, opts.OtelOpts...)
 	}
 }
