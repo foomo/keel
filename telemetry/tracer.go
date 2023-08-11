@@ -34,6 +34,9 @@ func NewStdOutTraceProvider(ctx context.Context) (trace.TracerProvider, error) {
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
 		exportOpts = append(exportOpts, stdouttrace.WithPrettyPrint())
 	}
+	if !env.GetBool("OTEL_EXPORTER_STDOUT_TIMESTAMPS", true) {
+		exportOpts = append(exportOpts, stdouttrace.WithoutTimestamps())
+	}
 
 	exporter, err := stdouttrace.New(exportOpts...)
 	if err != nil {

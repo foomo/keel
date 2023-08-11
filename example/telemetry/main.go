@@ -3,14 +3,24 @@ package main
 import (
 	"math/rand"
 	"net/http"
-
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/net/http/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var metricRequestLatency = promauto.NewHistogram(prometheus.HistogramOpts{
+	Namespace: "demo",
+	Name:      "request_latency_seconds",
+	Help:      "Request Latency",
+	Buckets:   prometheus.ExponentialBuckets(.0001, 2, 50),
+})
 
 func main() {
 	// Run this example with the following env vars:
@@ -45,47 +55,61 @@ func main() {
 	svs := http.NewServeMux()
 
 	{ // counter
-		counter, err := meter.SyncInt64().Counter(
+		counter, err := meter.Int64Counter(
 			"a.counter",
-			instrument.WithDescription("Count things"),
+			metric.WithDescription("Count things"),
 		)
 		log.Must(l, err, "failed to create counter meter")
 
 		svs.HandleFunc("/count", func(w http.ResponseWriter, r *http.Request) {
-			counter.Add(r.Context(), 1, attribute.String("key", "value"))
+			counter.Add(r.Context(), 1, metric.WithAttributes(attribute.String("key", "value")))
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("OK!"))
 		})
 	}
 
 	{ // up down
-		upDown, err := meter.SyncInt64().UpDownCounter(
+		upDown, err := meter.Int64UpDownCounter(
 			"a.updown",
-			instrument.WithDescription("Up down values"),
+			metric.WithDescription("Up down values"),
 		)
 		log.Must(l, err, "failed to create up down meter")
 
 		svs.HandleFunc("/up", func(w http.ResponseWriter, r *http.Request) {
-			upDown.Add(r.Context(), 1, attribute.String("key", "value"))
+			upDown.Add(r.Context(), 1, metric.WithAttributes(attribute.String("key", "value")))
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("OK!"))
 		})
 		svs.HandleFunc("/down", func(w http.ResponseWriter, r *http.Request) {
-			upDown.Add(r.Context(), -1, attribute.String("key", "value"))
+			upDown.Add(r.Context(), -1, metric.WithAttributes(attribute.String("key", "value")))
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("OK!"))
 		})
 	}
 
 	{ // histogram
-		histogram, err := meter.SyncInt64().Histogram(
+		histogram, err := meter.Int64Histogram(
 			"a.histogram",
-			instrument.WithDescription("Up down values"),
+			metric.WithDescription("Up down values"),
+			metric.WithUnit("ms"),
 		)
 		log.Must(l, err, "failed to create up down meter")
 
 		svs.HandleFunc("/histogram", func(w http.ResponseWriter, r *http.Request) {
-			histogram.Record(r.Context(), int64(rand.Int()), attribute.String("key", "value"))
+			start := time.Now()
+			time.Sleep(time.Second)
+			traceID := trace.SpanContextFromContext(r.Context())
+			histogram.Record(r.Context(), int64(rand.Int()),
+				metric.WithAttributes(
+					attribute.String("key", "value"),
+					attribute.String("traceID", traceID.TraceID().String()),
+				),
+			)
+
+			metricRequestLatency.(prometheus.ExemplarObserver).ObserveWithExemplar(
+				time.Since(start).Seconds(), prometheus.Labels{"traceID": traceID.TraceID().String()},
+			)
+
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte("OK!"))
 		})

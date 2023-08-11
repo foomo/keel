@@ -8,8 +8,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.opentelemetry.io/otel/trace"
@@ -70,13 +68,13 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			name = opts.Name
 		}
 		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
-		m := global.MeterProvider().Meter(
+		m := otel.Meter(
 			"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-			metric.WithInstrumentationVersion(otelhttp.SemVersion()),
+			metric.WithInstrumentationVersion(otelhttp.Version()),
 		)
-		c, err := m.SyncInt64().Counter(
-			otelhttp.RequestCount,
-			instrument.WithDescription("counts number of requests withs specific status code"),
+		c, err := m.Int64Counter(
+			"foo_"+otelhttp.RequestCount,
+			metric.WithDescription("counts number of requests withs specific status code"),
 		)
 		if err != nil {
 			otel.Handle(err)
@@ -99,7 +97,7 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			next.ServeHTTP(wr, r)
 
 			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				c.Add(r.Context(), 1, append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...)
+				c.Add(r.Context(), 1, metric.WithAttributes(append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...))
 			}
 		}), name, opts.OtelOpts...)
 	}

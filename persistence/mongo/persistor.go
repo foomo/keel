@@ -30,6 +30,10 @@ type (
 	Option func(o *Options)
 )
 
+// ------------------------------------------------------------------------------------------------
+// ~ Options
+// ------------------------------------------------------------------------------------------------
+
 func WithOtelEnabled(v bool) Option {
 	return func(o *Options) {
 		o.OtelEnabled = v
@@ -44,13 +48,13 @@ func WithOtelOptions(v ...otelmongo.Option) Option {
 
 func WithClientOptions(v *options.ClientOptions) Option {
 	return func(o *Options) {
-		o.ClientOptions = options.MergeClientOptions(o.ClientOptions, v)
+		o.ClientOptions = v
 	}
 }
 
 func WithDatabaseOptions(v *options.DatabaseOptions) Option {
 	return func(o *Options) {
-		o.DatabaseOptions = options.MergeDatabaseOptions(o.DatabaseOptions, v)
+		o.DatabaseOptions = v
 	}
 }
 
@@ -62,12 +66,15 @@ func DefaultOptions() Options {
 		},
 		ClientOptions: options.Client().
 			SetReadConcern(readconcern.Majority()).
-			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
+			SetWriteConcern(writeconcern.Majority()),
 		DatabaseOptions: nil,
 	}
 }
 
-// New ...
+// ------------------------------------------------------------------------------------------------
+// ~ Constructor
+// ------------------------------------------------------------------------------------------------
+
 func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	o := DefaultOptions()
 
