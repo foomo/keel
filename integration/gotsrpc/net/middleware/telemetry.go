@@ -29,24 +29,49 @@ const (
 
 type (
 	TelemetryOptions struct {
-		Exemplars bool
+		Exemplars     bool
+		Execution     bool
+		Marshalling   bool
+		Unmarshalling bool
 	}
 	TelemetryOption func(*TelemetryOptions)
 )
 
 var (
+	gotsrpcRequestDurationHistogram = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace:   "gotsrpc",
+		Name:        "request_duration_seconds",
+		Help:        "Specifies the duration of gotsrpc request in seconds",
+		ConstLabels: nil,
+		Buckets:     []float64{0.05, 0.1, 0.5, 1, 3, 5, 10},
+	}, []string{
+		defaultGOTSRPCFunctionLabel,
+		defaultGOTSRPCServiceLabel,
+		defaultGOTSRPCPackageLabel,
+		defaultGOTSRPCPackageOperation,
+		defaultGOTSRPCError,
+	})
 	gotsrpcRequestDurationSummary = promauto.NewSummaryVec(prometheus.SummaryOpts{
 		Namespace:  "gotsrpc",
 		Name:       "request_duration_seconds",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		Help:       "Specifies the duration of gotsrpc request in seconds",
-	}, []string{defaultGOTSRPCFunctionLabel, defaultGOTSRPCServiceLabel, defaultGOTSRPCPackageLabel, defaultGOTSRPCPackageOperation, defaultGOTSRPCError})
+	}, []string{
+		defaultGOTSRPCFunctionLabel,
+		defaultGOTSRPCServiceLabel,
+		defaultGOTSRPCPackageLabel,
+		defaultGOTSRPCPackageOperation,
+		defaultGOTSRPCError,
+	})
 )
 
 // DefaultTelemetryOptions returns the default options
 func DefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
-		Exemplars: false,
+		Exemplars:     false,
+		Execution:     true,
+		Marshalling:   false,
+		Unmarshalling: false,
 	}
 }
 
@@ -54,6 +79,27 @@ func DefaultTelemetryOptions() TelemetryOptions {
 func TelemetryWithExemplars(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 		o.Exemplars = v
+	}
+}
+
+// TelemetryWithExecution middleware option
+func TelemetryWithExecution(v bool) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.Execution = v
+	}
+}
+
+// TelemetryWithMarshalling middleware option
+func TelemetryWithMarshalling(v bool) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.Marshalling = v
+	}
+}
+
+// TelemetryWithUnmarshalling middleware option
+func TelemetryWithUnmarshalling(v bool) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.Unmarshalling = v
 	}
 }
 
@@ -70,6 +116,32 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 
 // TelemetryWithOptions middleware
 func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
+	observe := func(r *http.Request, observer prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
+		observer.WithLabelValues(
+			stats.Func,
+			stats.Service,
+			stats.Package,
+			operation,
+			strconv.FormatBool(stats.ErrorCode != 0),
+		)
+		var duration time.Duration
+		switch operation {
+		case "marshalling":
+			duration = stats.Marshalling
+		case "unmarshalling":
+			duration = stats.Unmarshalling
+		case "execution":
+			duration = stats.Execution
+		}
+		spanCtx := trace.SpanContextFromContext(r.Context())
+		if v, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() {
+			v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
+				"TraceID": spanCtx.TraceID().String(),
+			})
+		} else if v, ok := observer.(prometheus.Observer); ok {
+			v.Observe(duration.Seconds())
+		}
+	}
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			*r = *gotsrpc.RequestWithStatsContext(r)
@@ -78,35 +150,18 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
 				// create custom metics
-				observe := func(operation string, duration time.Duration) {
-					observer := gotsrpcRequestDurationSummary.WithLabelValues(
-						stats.Func,
-						stats.Service,
-						stats.Package,
-						operation,
-						strconv.FormatBool(stats.ErrorCode != 0),
-					)
-					spanCtx := trace.SpanContextFromContext(r.Context())
-					if v, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() {
-						v.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
-							"TraceID": spanCtx.TraceID().String(),
-						})
-					} else {
-						if !ok {
-							l.Info("=> not ok")
-						}
-						if !opts.Exemplars {
-							l.Info("=> no exemplars")
-						}
-						if !spanCtx.HasTraceID() {
-							l.Info("=> no trace id")
-						}
-						observer.Observe(duration.Seconds())
-					}
+				if opts.Marshalling {
+					observe(r, gotsrpcRequestDurationSummary, stats, "marshalling")
+					observe(r, gotsrpcRequestDurationHistogram, stats, "marshalling")
 				}
-				observe("marshalling", stats.Marshalling)
-				observe("unmarshalling", stats.Unmarshalling)
-				observe("execution", stats.Execution)
+				if opts.Unmarshalling {
+					observe(r, gotsrpcRequestDurationSummary, stats, "unmarshalling")
+					observe(r, gotsrpcRequestDurationHistogram, stats, "unmarshalling")
+				}
+				if opts.Execution {
+					observe(r, gotsrpcRequestDurationSummary, stats, "execution")
+					observe(r, gotsrpcRequestDurationHistogram, stats, "execution")
+				}
 
 				// enrich logger
 				if labeler, ok := httplog.LabelerFromRequest(r); ok {
