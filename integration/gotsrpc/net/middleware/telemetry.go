@@ -1,15 +1,18 @@
 package keelgotsrpcmiddleware
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
 	httplog "github.com/foomo/keel/net/http/log"
+	"github.com/foomo/keel/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -145,22 +148,23 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 	}
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			*r = *gotsrpc.RequestWithStatsContext(r)
+			ctx, span := telemetry.Start(r.Context(), "gotsrpc")
+			*r = *gotsrpc.RequestWithStatsContext(r.WithContext(ctx))
 
 			next.ServeHTTP(w, r)
 
-			span := trace.SpanFromContext(r.Context())
-
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				span.SetName(fmt.Sprintf("gotsrpc: %s.%s", stats.Service, stats.Func))
 				span.SetAttributes(
 					attribute.String("gotsrpc.func", stats.Func),
 					attribute.String("gotsrpc.service", stats.Service),
 					attribute.String("gotsrpc.package", stats.Package),
 					attribute.Float64("gotsrpc.execution.marshalling", stats.Marshalling.Seconds()),
 					attribute.Float64("gotsrpc.execution.unmarshalling", stats.Unmarshalling.Seconds()),
-					attribute.Float64("gotsrpc.execution.execution", stats.Unmarshalling.Seconds()),
+					attribute.Float64("gotsrpc.execution.execution", stats.Execution.Seconds()),
 				)
 				if stats.ErrorCode != 0 {
+					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
 				}
 				if stats.ErrorType != "" {
@@ -202,6 +206,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					}
 				}
 			}
+			telemetry.End(span, nil)
 		})
 	}
 }
