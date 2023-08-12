@@ -9,6 +9,7 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -117,7 +118,7 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 
 // TelemetryWithOptions middleware
 func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
-	observe := func(r *http.Request, metric prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
+	observe := func(spanCtx trace.SpanContext, metric prometheus.ObserverVec, stats *gotsrpc.CallStats, operation string) {
 		observer := metric.WithLabelValues(
 			stats.Func,
 			stats.Service,
@@ -134,7 +135,6 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		case "execution":
 			duration = stats.Execution
 		}
-		spanCtx := trace.SpanContextFromContext(r.Context())
 		if exemplarObserver, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() && spanCtx.IsSampled() {
 			exemplarObserver.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
 				"traceID": spanCtx.TraceID().String(),
@@ -149,19 +149,39 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 			next.ServeHTTP(w, r)
 
+			span := trace.SpanFromContext(r.Context())
+
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				span.SetAttributes(
+					attribute.String("gotsrpc.func", stats.Func),
+					attribute.String("gotsrpc.service", stats.Service),
+					attribute.String("gotsrpc.package", stats.Package),
+					attribute.Float64("gotsrcp.execution.marshalling", stats.Marshalling.Seconds()),
+					attribute.Float64("gotsrcp.execution.unmarshalling", stats.Unmarshalling.Seconds()),
+					attribute.Float64("gotsrcp.execution.execution", stats.Unmarshalling.Seconds()),
+				)
+				if stats.ErrorCode != 0 {
+					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
+				}
+				if stats.ErrorType != "" {
+					span.SetAttributes(attribute.String("gotsrpc.error.type", stats.ErrorType))
+				}
+				if stats.ErrorMessage != "" {
+					span.SetAttributes(attribute.String("gotsrpc.error.message", stats.ErrorMessage))
+				}
+
 				// create custom metics
 				if opts.Marshalling {
-					observe(r, gotsrpcRequestDurationSummary, stats, "marshalling")
-					observe(r, gotsrpcRequestDurationHistogram, stats, "marshalling")
+					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "marshalling")
+					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "marshalling")
 				}
 				if opts.Unmarshalling {
-					observe(r, gotsrpcRequestDurationSummary, stats, "unmarshalling")
-					observe(r, gotsrpcRequestDurationHistogram, stats, "unmarshalling")
+					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "unmarshalling")
+					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "unmarshalling")
 				}
 				if opts.Execution {
-					observe(r, gotsrpcRequestDurationSummary, stats, "execution")
-					observe(r, gotsrpcRequestDurationHistogram, stats, "execution")
+					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "execution")
+					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "execution")
 				}
 
 				// enrich logger
