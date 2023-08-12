@@ -156,9 +156,9 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					attribute.String("gotsrpc.func", stats.Func),
 					attribute.String("gotsrpc.service", stats.Service),
 					attribute.String("gotsrpc.package", stats.Package),
-					attribute.Float64("gotsrcp.execution.marshalling", stats.Marshalling.Seconds()),
-					attribute.Float64("gotsrcp.execution.unmarshalling", stats.Unmarshalling.Seconds()),
-					attribute.Float64("gotsrcp.execution.execution", stats.Unmarshalling.Seconds()),
+					attribute.Float64("gotsrpc.execution.marshalling", stats.Marshalling.Seconds()),
+					attribute.Float64("gotsrpc.execution.unmarshalling", stats.Unmarshalling.Seconds()),
+					attribute.Float64("gotsrpc.execution.execution", stats.Unmarshalling.Seconds()),
 				)
 				if stats.ErrorCode != 0 {
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
