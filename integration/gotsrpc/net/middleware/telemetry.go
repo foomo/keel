@@ -148,20 +148,18 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 	}
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, span := telemetry.Start(r.Context(), "gotsrpc")
+			ctx, span := telemetry.Start(r.Context(), "GOTSRPC")
 			*r = *gotsrpc.RequestWithStatsContext(r.WithContext(ctx))
 
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				span.SetName(fmt.Sprintf("gotsrpc: %s.%s", stats.Service, stats.Func))
 				span.SetAttributes(
 					attribute.String("gotsrpc.func", stats.Func),
 					attribute.String("gotsrpc.service", stats.Service),
 					attribute.String("gotsrpc.package", stats.Package),
-					attribute.Float64("gotsrpc.execution.marshalling", stats.Marshalling.Seconds()),
-					attribute.Float64("gotsrpc.execution.unmarshalling", stats.Unmarshalling.Seconds()),
-					attribute.Float64("gotsrpc.execution.execution", stats.Execution.Seconds()),
+					attribute.Int64("gotsrpc.marshalling", stats.Marshalling.Milliseconds()),
+					attribute.Int64("gotsrpc.unmarshalling", stats.Unmarshalling.Milliseconds()),
 				)
 				if stats.ErrorCode != 0 {
 					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
