@@ -29,8 +29,8 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 }
 
 func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
-	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		l = With(l, FTraceID(spanCtx.TraceID().String()))
+	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
+		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
 	}
 	return l
 }

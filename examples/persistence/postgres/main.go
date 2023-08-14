@@ -4,7 +4,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 
 	"github.com/foomo/keel"
-	"github.com/foomo/keel/example/persistence/postgres/repository"
+	"github.com/foomo/keel/examples/persistence/postgres/repository"
 	"github.com/foomo/keel/log"
 	keelpostgres "github.com/foomo/keel/persistence/postgres"
 )
