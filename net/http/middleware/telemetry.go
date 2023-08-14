@@ -72,8 +72,9 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			}
 
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {
-				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
+				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() && spanCtx.IsSampled() {
 					labeler.Add(log.FTraceID(spanCtx.TraceID().String()))
+					labeler.Add(log.FSpanID(spanCtx.SpanID().String()))
 				}
 			}
 
