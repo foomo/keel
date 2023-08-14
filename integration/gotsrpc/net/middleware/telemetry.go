@@ -158,21 +158,26 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		}
 		observer.Observe(duration.Seconds())
 	}
+
 	sanitizePayload := func(r *http.Request) string {
 		if r.Method != http.MethodPost {
 			return ""
 		}
-		bodyBytes, _ := io.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return ""
+		}
 		if err := r.Body.Close(); err != nil {
 			return ""
 		}
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-		b, err := bson.MarshalExtJSON(bodyBytes, false, false)
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+		b, err := bson.MarshalExtJSON(body, false, false)
 		if err != nil {
 			return ""
 		}
 		return string(b)
 	}
+
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx, span := telemetry.Start(r.Context(), "GOTSRPC")
