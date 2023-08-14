@@ -2,6 +2,7 @@ package keelgotsrpcmiddleware
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"github.com/foomo/keel/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -171,11 +171,11 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			return ""
 		}
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
-		b, err := bson.MarshalExtJSON(body, false, false)
-		if err != nil {
+		var out bytes.Buffer
+		if err = json.Indent(&out, body, "", "  "); err != nil {
 			return ""
 		}
-		return string(b)
+		return out.String()
 	}
 
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
