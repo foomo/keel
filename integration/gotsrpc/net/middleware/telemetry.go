@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
+	"github.com/foomo/keel/env"
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/foomo/keel/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,7 +37,7 @@ const (
 
 type (
 	TelemetryOptions struct {
-		Exemplars                bool
+		ExemplarsDisabled        bool
 		ObserveExecution         bool
 		ObserveMarshalling       bool
 		ObserveUnmarshalling     bool
@@ -77,18 +78,18 @@ var (
 // DefaultTelemetryOptions returns the default options
 func DefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
-		Exemplars:                false,
 		ObserveExecution:         true,
 		ObserveMarshalling:       false,
 		ObserveUnmarshalling:     false,
-		PayloadAttributeDisabled: true,
+		PayloadAttributeDisabled: env.GetBool("OTEL_GOTSRPC_PAYLOAD_ATTRIBUTE_DISABLED", true),
+		ExemplarsDisabled:        env.GetBool("OTEL_GOTSRPC_EXEMPLARS_DISABLED", false),
 	}
 }
 
-// TelemetryWithExemplars middleware option
-func TelemetryWithExemplars(v bool) TelemetryOption {
+// TelemetryWithExemplarsDisabled middleware option
+func TelemetryWithExemplarsDisabled(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.Exemplars = v
+		o.ExemplarsDisabled = v
 	}
 }
 
@@ -150,7 +151,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		case "execution":
 			duration = stats.Execution
 		}
-		if exemplarObserver, ok := observer.(prometheus.ExemplarObserver); ok && opts.Exemplars && spanCtx.HasTraceID() && spanCtx.IsSampled() {
+		if exemplarObserver, ok := observer.(prometheus.ExemplarObserver); ok && opts.ExemplarsDisabled && spanCtx.HasTraceID() && spanCtx.IsSampled() {
 			exemplarObserver.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
 				"traceID": spanCtx.TraceID().String(),
 			})
