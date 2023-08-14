@@ -183,6 +183,10 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			ctx, span := telemetry.Start(r.Context(), "GOTSRPC")
 			*r = *gotsrpc.RequestWithStatsContext(r.WithContext(ctx))
 
+			if !opts.PayloadAttributeDisabled {
+				span.SetAttributes(attribute.String("gotsprc.payload", sanitizePayload(r)))
+			}
+
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
@@ -194,9 +198,6 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					attribute.Int64("gotsrpc.marshalling", stats.Marshalling.Milliseconds()),
 					attribute.Int64("gotsrpc.unmarshalling", stats.Unmarshalling.Milliseconds()),
 				)
-				if !opts.PayloadAttributeDisabled {
-					span.SetAttributes(attribute.String("gotsprc.payload", sanitizePayload(r)))
-				}
 				if stats.ErrorCode != 0 {
 					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
