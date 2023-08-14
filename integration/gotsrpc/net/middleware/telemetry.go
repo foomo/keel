@@ -1,7 +1,9 @@
 package keelgotsrpcmiddleware
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"github.com/foomo/keel/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -33,10 +36,11 @@ const (
 
 type (
 	TelemetryOptions struct {
-		Exemplars     bool
-		Execution     bool
-		Marshalling   bool
-		Unmarshalling bool
+		Exemplars                bool
+		ObserveExecution         bool
+		ObserveMarshalling       bool
+		ObserveUnmarshalling     bool
+		PayloadAttributeDisabled bool
 	}
 	TelemetryOption func(*TelemetryOptions)
 )
@@ -73,10 +77,11 @@ var (
 // DefaultTelemetryOptions returns the default options
 func DefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
-		Exemplars:     false,
-		Execution:     true,
-		Marshalling:   false,
-		Unmarshalling: false,
+		Exemplars:                false,
+		ObserveExecution:         true,
+		ObserveMarshalling:       false,
+		ObserveUnmarshalling:     false,
+		PayloadAttributeDisabled: true,
 	}
 }
 
@@ -87,24 +92,31 @@ func TelemetryWithExemplars(v bool) TelemetryOption {
 	}
 }
 
-// TelemetryWithExecution middleware option
-func TelemetryWithExecution(v bool) TelemetryOption {
+// TelemetryWithObserveExecution middleware option
+func TelemetryWithObserveExecution(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.Execution = v
+		o.ObserveExecution = v
 	}
 }
 
-// TelemetryWithMarshalling middleware option
-func TelemetryWithMarshalling(v bool) TelemetryOption {
+// TelemetryWithObserveMarshalling middleware option
+func TelemetryWithObserveMarshalling(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.Marshalling = v
+		o.ObserveMarshalling = v
 	}
 }
 
-// TelemetryWithUnmarshalling middleware option
-func TelemetryWithUnmarshalling(v bool) TelemetryOption {
+// TelemetryWithObserveUnmarshalling middleware option
+func TelemetryWithObserveUnmarshalling(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.Unmarshalling = v
+		o.ObserveUnmarshalling = v
+	}
+}
+
+// TelemetryWithPayloadAttributeDisabled middleware option
+func TelemetryWithPayloadAttributeDisabled(v bool) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.PayloadAttributeDisabled = v
 	}
 }
 
@@ -146,6 +158,21 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		}
 		observer.Observe(duration.Seconds())
 	}
+	sanitizePayload := func(r *http.Request) string {
+		if r.Method != http.MethodPost {
+			return ""
+		}
+		bodyBytes, _ := io.ReadAll(r.Body)
+		if err := r.Body.Close(); err != nil {
+			return ""
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		b, err := bson.MarshalExtJSON(bodyBytes, false, false)
+		if err != nil {
+			return ""
+		}
+		return string(b)
+	}
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx, span := telemetry.Start(r.Context(), "GOTSRPC")
@@ -154,7 +181,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				span.SetName(fmt.Sprintf("GOTSRPC %s.%s", stats.Package, stats.Service))
+				span.SetName(fmt.Sprintf("GOTSRPC %s.%s", stats.Service, stats.Func))
 				span.SetAttributes(
 					attribute.String("gotsrpc.func", stats.Func),
 					attribute.String("gotsrpc.service", stats.Service),
@@ -162,6 +189,9 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					attribute.Int64("gotsrpc.marshalling", stats.Marshalling.Milliseconds()),
 					attribute.Int64("gotsrpc.unmarshalling", stats.Unmarshalling.Milliseconds()),
 				)
+				if !opts.PayloadAttributeDisabled {
+					span.SetAttributes(attribute.String("gotsprc.payload", sanitizePayload(r)))
+				}
 				if stats.ErrorCode != 0 {
 					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
@@ -174,15 +204,15 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				}
 
 				// create custom metics
-				if opts.Marshalling {
+				if opts.ObserveMarshalling {
 					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "marshalling")
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "marshalling")
 				}
-				if opts.Unmarshalling {
+				if opts.ObserveUnmarshalling {
 					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "unmarshalling")
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "unmarshalling")
 				}
-				if opts.Execution {
+				if opts.ObserveExecution {
 					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "execution")
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "execution")
 				}
