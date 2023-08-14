@@ -154,6 +154,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				span.SetName(fmt.Sprintf("GOTSRPC %s.%s", stats.Package, stats.Service))
 				span.SetAttributes(
 					attribute.String("gotsrpc.func", stats.Func),
 					attribute.String("gotsrpc.service", stats.Service),

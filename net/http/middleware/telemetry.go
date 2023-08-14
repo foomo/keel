@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/foomo/keel/log"
@@ -24,7 +25,11 @@ type (
 // GetDefaultTelemetryOptions returns the default options
 func GetDefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
-		OtelOpts:                []otelhttp.Option{},
+		OtelOpts: []otelhttp.Option{
+			otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+				return fmt.Sprintf("HTTP %s", operation)
+			}),
+		},
 		InjectPropagationHeader: true,
 	}
 }
@@ -55,7 +60,7 @@ func TelemetryWithInjectPropagationHeader(v bool) TelemetryOption {
 // TelemetryWithOtelOpts middleware options
 func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.OtelOpts = v
+		o.OtelOpts = append(o.OtelOpts, v...)
 	}
 }
 
