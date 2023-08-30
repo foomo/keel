@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -37,7 +38,7 @@ type Server struct {
 	traceProvider   trace.TracerProvider
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
-	running         bool
+	running         atomic.Bool
 	closers         []interface{}
 	probes          map[HealthzType][]interface{}
 	ctx             context.Context
@@ -306,7 +307,7 @@ func (s *Server) IsCanceled() bool {
 
 // Healthz returns true if the server is running
 func (s *Server) Healthz() error {
-	if !s.running {
+	if !s.running.Load() {
 		return ErrServerNotRunning
 	}
 	return nil
@@ -332,9 +333,9 @@ func (s *Server) Run() {
 
 	// set running
 	defer func() {
-		s.running = false
+		s.running.Store(false)
 	}()
-	s.running = true
+	s.running.Store(true)
 
 	// wait for shutdown
 	if err := s.g.Wait(); err != nil && !errors.Is(err, context.Canceled) {

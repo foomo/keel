@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	httplog "github.com/foomo/keel/net/http/log"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -12,9 +13,10 @@ import (
 
 type (
 	LoggerOptions struct {
-		Message      string
-		MinWarnCode  int
-		MinErrorCode int
+		Message       string
+		MinWarnCode   int
+		MinErrorCode  int
+		InjectLabeler bool
 	}
 	LoggerOption func(*LoggerOptions)
 )
@@ -22,9 +24,10 @@ type (
 // GetDefaultLoggerOptions returns the default options
 func GetDefaultLoggerOptions() LoggerOptions {
 	return LoggerOptions{
-		Message:      "handled http request",
-		MinWarnCode:  400,
-		MinErrorCode: 500,
+		Message:       "handled http request",
+		MinWarnCode:   400,
+		MinErrorCode:  500,
+		InjectLabeler: true,
 	}
 }
 
@@ -60,6 +63,13 @@ func LoggerWithMinErrorCode(v int) LoggerOption {
 	}
 }
 
+// LoggerWithInjectLabeler middleware option
+func LoggerWithInjectLabeler(v bool) LoggerOption {
+	return func(o *LoggerOptions) {
+		o.InjectLabeler = v
+	}
+}
+
 // LoggerWithOptions middleware
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
@@ -69,13 +79,25 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
 
+			l := log.WithHTTPRequest(l, r)
+
+			var labeler *log.Labeler
+
+			if labeler == nil && opts.InjectLabeler {
+				r, labeler = httplog.InjectLabelerIntoRequest(r)
+			}
+
 			next.ServeHTTP(wr, r)
 
-			l := log.WithHTTPRequest(l, r).With(
+			l = l.With(
 				log.FDuration(time.Since(start)),
 				log.FHTTPStatusCode(wr.StatusCode()),
 				log.FHTTPWroteBytes(int64(wr.Size())),
 			)
+
+			if labeler != nil {
+				l = l.With(labeler.Get()...)
+			}
 
 			switch {
 			case opts.MinErrorCode > 0 && wr.statusCode >= opts.MinErrorCode:

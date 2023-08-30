@@ -29,8 +29,8 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 }
 
 func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
-	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		l = With(l, FTraceID(spanCtx.TraceID().String()))
+	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
+		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
 	}
 	return l
 }
@@ -72,6 +72,16 @@ func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 		return With(l, FHTTPRequestID(id))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
 		return With(l, FHTTPRequestID(id))
+	} else {
+		return l
+	}
+}
+
+func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
+	if value := r.Header.Get("X-Referer"); value != "" {
+		return With(l, FHTTPReferer(value))
+	} else if value := r.Referer(); value != "" {
+		return With(l, FHTTPReferer(value))
 	} else {
 		return l
 	}
@@ -120,6 +130,7 @@ func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPHost(l, r)
+	l = WithHTTPReferer(l, r)
 	l = WithHTTPRequestID(l, r)
 	l = WithHTTPSessionID(l, r)
 	l = WithHTTPTrackingID(l, r)

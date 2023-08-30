@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	keelerrors "github.com/foomo/keel/errors"
+	keelpersistence "github.com/foomo/keel/persistence"
+	keeltime "github.com/foomo/keel/time"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
@@ -12,10 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-
-	keelerrors "github.com/foomo/keel/errors"
-	keelpersistence "github.com/foomo/keel/persistence"
-	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -37,6 +36,10 @@ type (
 	}
 	CollectionOption func(*CollectionOptions)
 )
+
+// ------------------------------------------------------------------------------------------------
+// ~ Options
+// ------------------------------------------------------------------------------------------------
 
 func DefaultCollectionOptions() CollectionOptions {
 	return CollectionOptions{
@@ -106,6 +109,10 @@ func CollectionWithIndexesCommitQuorumVotingMembers(v context.Context) Collectio
 	}
 }
 
+// ------------------------------------------------------------------------------------------------
+// ~ Constructor
+// ------------------------------------------------------------------------------------------------
+
 func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*Collection, error) {
 	o := DefaultCollectionOptions()
 	for _, opt := range opts {
@@ -126,6 +133,10 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 	}, nil
 }
 
+// ------------------------------------------------------------------------------------------------
+// ~ Getter
+// ------------------------------------------------------------------------------------------------
+
 func (c *Collection) DB() *mongo.Database {
 	return c.db
 }
@@ -134,7 +145,10 @@ func (c *Collection) Col() *mongo.Collection {
 	return c.collection
 }
 
-// Get ...
+// ------------------------------------------------------------------------------------------------
+// ~ Public methods
+// ------------------------------------------------------------------------------------------------
+
 func (c *Collection) Get(ctx context.Context, id string, result interface{}, opts ...*options.FindOneOptions) error {
 	if id == "" {
 		return keelpersistence.ErrNotFound
@@ -142,7 +156,6 @@ func (c *Collection) Get(ctx context.Context, id string, result interface{}, opt
 	return c.FindOne(ctx, bson.M{"id": id}, result, opts...)
 }
 
-// Exists ...
 func (c *Collection) Exists(ctx context.Context, id string) (bool, error) {
 	if id == "" {
 		return false, nil
@@ -151,8 +164,6 @@ func (c *Collection) Exists(ctx context.Context, id string) (bool, error) {
 	return ret > 0, err
 }
 
-// Upsert inserts/updates with protection against dirty-writes
-// requires an unique index on id AND id + version
 func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error {
 	if id == "" {
 		return errors.New("id must not be empty")
@@ -178,8 +189,8 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 			return c.Insert(ctx, entity)
 		} else if err := c.collection.FindOneAndUpdate(
 			ctx,
-			bson.D{{Key: "id", Value: id}, {Key: "version", Value: currentVersion}},
-			bson.D{{Key: "$set", Value: entity}},
+			bson.D{bson.E{Key: "id", Value: id}, bson.E{Key: "version", Value: currentVersion}},
+			bson.D{bson.E{Key: "$set", Value: entity}},
 			options.FindOneAndUpdate().SetUpsert(false),
 		).Err(); errors.Is(err, mongo.ErrNoDocuments) {
 			return keelerrors.NewWrappedError(keelpersistence.ErrDirtyWrite, err)
@@ -188,8 +199,8 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 		}
 	} else if _, err := c.collection.UpdateOne(
 		ctx,
-		bson.D{{Key: "id", Value: id}},
-		bson.D{{Key: "$set", Value: entity}},
+		bson.D{bson.E{Key: "id", Value: id}},
+		bson.D{bson.E{Key: "$set", Value: entity}},
 		options.Update().SetUpsert(true),
 	); err != nil {
 		return err
@@ -198,8 +209,128 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	return nil
 }
 
+// UpsertMany - NOTE: upsert many does NOT through an explicit error on dirty write so we can only assume it.
+func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
+	var versionUpserts int64
+	var operations []mongo.WriteModel
+
+	for _, entity := range entities {
+		if entity == nil {
+			return errors.New("entity must not be nil")
+		} else if entity.GetID() == "" {
+			return errors.New("id must not be empty")
+		}
+
+		if v, ok := entity.(EntityWithTimestamps); ok {
+			now := keeltime.Now()
+			if ct := v.GetCreatedAt(); ct.IsZero() {
+				v.SetCreatedAt(now)
+			}
+			v.SetUpdatedAt(now)
+		}
+
+		if v, ok := entity.(EntityWithVersion); ok {
+			currentVersion := v.GetVersion()
+			// increment version
+			v.IncreaseVersion()
+
+			if currentVersion == 0 {
+				operations = append(operations,
+					mongo.NewInsertOneModel().SetDocument(entity),
+				)
+			} else {
+				versionUpserts++
+				operations = append(operations,
+					mongo.NewUpdateOneModel().
+						SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}, bson.E{Key: "version", Value: currentVersion}}).
+						SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
+						SetUpsert(false),
+				)
+			}
+		} else {
+			operations = append(operations,
+				mongo.NewUpdateOneModel().
+					SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}}).
+					SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
+					SetUpsert(true),
+			)
+		}
+	}
+
+	// Specify an option to turn the bulk insertion in order of operation
+	bulkOption := options.BulkWriteOptions{}
+	bulkOption.SetOrdered(false)
+
+	res, err := c.Col().BulkWrite(ctx, operations, &bulkOption)
+	if err != nil {
+		return err
+	} else if versionUpserts > 0 && (res.MatchedCount < versionUpserts || res.ModifiedCount != res.MatchedCount) {
+		// log.Logger().Info("missing upserts",
+		// 	zap.Int64("MatchedCount", res.MatchedCount),
+		// 	zap.Int64("InsertedCount", res.InsertedCount),
+		// 	zap.Int64("UpsertedCount", res.UpsertedCount),
+		// 	zap.Int64("ModifiedCount", res.ModifiedCount),
+		// 	zap.Any("UpsertedIDs", res.UpsertedIDs),
+		// 	zap.Any("versionUpserts", versionUpserts),
+		// )
+		return keelpersistence.ErrDirtyWrite
+	}
+
+	return nil
+}
+
 func (c *Collection) Insert(ctx context.Context, entity Entity) error {
+	if entity == nil {
+		return errors.New("entity must not be nil")
+	} else if entity.GetID() == "" {
+		return errors.New("id must not be empty")
+	}
+
+	if v, ok := entity.(EntityWithTimestamps); ok {
+		now := keeltime.Now()
+		if ct := v.GetCreatedAt(); ct.IsZero() {
+			v.SetCreatedAt(now)
+		}
+		v.SetUpdatedAt(now)
+	}
+
+	if v, ok := entity.(EntityWithVersion); ok {
+		// increment version
+		v.IncreaseVersion()
+	}
+
 	if _, err := c.collection.InsertOne(ctx, entity); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Collection) InsertMany(ctx context.Context, entities []Entity) error {
+	inserts := make([]interface{}, len(entities))
+	for i, entity := range entities {
+		if entity == nil {
+			return errors.New("entity must not be nil")
+		} else if entity.GetID() == "" {
+			return errors.New("id must not be empty")
+		}
+
+		if v, ok := entity.(EntityWithTimestamps); ok {
+			now := keeltime.Now()
+			if ct := v.GetCreatedAt(); ct.IsZero() {
+				v.SetCreatedAt(now)
+			}
+			v.SetUpdatedAt(now)
+		}
+
+		if v, ok := entity.(EntityWithVersion); ok {
+			// increment version
+			v.IncreaseVersion()
+		}
+
+		inserts[i] = entity
+	}
+
+	if _, err := c.collection.InsertMany(ctx, inserts); err != nil {
 		return err
 	}
 	return nil
@@ -217,7 +348,6 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Find ...
 func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -225,12 +355,14 @@ func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts
 	} else if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
-	err = cursor.All(ctx, results)
-	return err
+
+	if err = cursor.All(ctx, results); err != nil {
+		return err
+	}
+
+	return cursor.Err()
 }
 
-// FindOne ...
 func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, opts ...*options.FindOneOptions) error {
 	res := c.collection.FindOne(ctx, filter, opts...)
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
@@ -238,10 +370,10 @@ func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, op
 	} else if res.Err() != nil {
 		return res.Err()
 	}
+
 	return res.Decode(result)
 }
 
-// FindIterate ...
 func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handler IterateHandlerFn, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -249,43 +381,46 @@ func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handle
 	} else if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
+
+	defer CloseCursor(cursor)
+
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {
 			return err
 		}
 	}
-	return err
+
+	return cursor.Err()
 }
 
-// Aggregate ...
 func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, results interface{}, opts ...*options.AggregateOptions) error {
 	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
-	err = cursor.All(ctx, results)
-	return err
+
+	if err = cursor.All(ctx, results); err != nil {
+		return err
+	}
+
+	return cursor.Err()
 }
 
-func (c *Collection) AggregateIterate(
-	ctx context.Context,
-	pipeline mongo.Pipeline,
-	handler IterateHandlerFn,
-	opts ...*options.AggregateOptions,
-) error {
+func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeline, handler IterateHandlerFn, opts ...*options.AggregateOptions) error {
 	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
 	}
-	defer CloseCursor(ctx, cursor, &err)
+
+	defer CloseCursor(cursor)
+
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {
 			return err
 		}
 	}
-	return nil
+
+	return cursor.Err()
 }
 
 // Count returns the count of documents
