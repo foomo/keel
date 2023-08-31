@@ -21,8 +21,13 @@ var (
 	// needed
 	ErrCircuitBreaker = errors.New("circuit breaker triggered")
 
-	// ErrIgnoreSuccessfulness
+	// ErrIgnoreSuccessfulness can be returned by the IsSuccessful callback in order for the RoundTripware to ignore the
+	// result of the function
 	ErrIgnoreSuccessfulness = errors.New("ignored successfulness")
+
+	// ErrReadFromActualBody when it is attempted to read from a body in the IsSuccessful callback that has not
+	// previously been copied.
+	ErrReadFromActualBody = errors.New("read from actual body")
 )
 
 // CircuitBreakerSettings is a copy of the gobreaker.Settings, except that the IsSuccessful function is omitted since we
@@ -184,7 +189,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					// we actually want to return an error instead of the original request and error since the user
 					// should be made aware that there is a misconfiguration
 					resp = nil
-					err = errSuccess
+					err = ErrReadFromActualBody
 				} else if !errors.Is(errSuccess, ErrIgnoreSuccessfulness) {
 					done(errSuccess == nil)
 				}

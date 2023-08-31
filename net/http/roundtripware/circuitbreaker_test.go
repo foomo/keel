@@ -230,6 +230,7 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	require.Error(t, err)
+	require.ErrorIs(t, err, roundtripware.ErrReadFromActualBody)
 
 	// same thing for the response
 	client = keelhttp.NewHTTPClient(
@@ -258,6 +259,7 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 		defer resp.Body.Close()
 	}
 	require.Error(t, err)
+	require.ErrorIs(t, err, roundtripware.ErrReadFromActualBody)
 }
 
 func TestCircuitBreakerInterval(t *testing.T) {
