@@ -176,8 +176,17 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					}
 				}
 
-				if err = o.IsSuccessful(err, reqCopy, respCopy); !errors.Is(err, ErrIgnoreSuccessfulness) {
-					done(err == nil)
+				if errSuccess := o.IsSuccessful(err, reqCopy, respCopy); errors.Is(errSuccess, errNoBody) {
+					l.Error("encountered read from not previously copied request/response body",
+						zap.Bool("copy_request", o.CopyReqBody),
+						zap.Bool("copy_response", o.CopyRespBody),
+					)
+					// we actually want to return an error instead of the original request and error since the user
+					// should be made aware that there is a misconfiguration
+					resp = nil
+					err = errSuccess
+				} else if !errors.Is(errSuccess, ErrIgnoreSuccessfulness) {
+					done(errSuccess == nil)
 				}
 			}
 
@@ -200,15 +209,12 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					attributes := append(attributes, attribute.Bool("error", true))
 					o.Counter.Add(r.Context(), 1, attributes...)
 				}
-				return nil, err
-			}
-
-			if o.Counter != nil {
+			} else if o.Counter != nil {
 				attributes := append(attributes, attribute.Bool("error", false))
 				o.Counter.Add(r.Context(), 1, attributes...)
 			}
 
-			return resp, nil
+			return resp, err
 		}
 	}
 }

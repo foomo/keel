@@ -3,6 +3,7 @@ package roundtripware_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,7 @@ var cbSettings = &roundtripware.CircuitBreakerSettings{
 	// MaxRequests is the maximum number of requests allowed to pass through
 	// when the CircuitBreaker is half-open.
 	// If MaxRequests is 0, the CircuitBreaker allows only 1 request.
-	MaxRequests: 1,
+	MaxRequests: 2,
 	// Interval is the cyclic period of the closed state
 	// for the CircuitBreaker to clear the internal Counts.
 	// If Interval is less than or equal to 0, the CircuitBreaker doesn't clear internal Counts during the closed state.
@@ -38,6 +39,9 @@ var cbSettings = &roundtripware.CircuitBreakerSettings{
 	// Default ReadyToTrip returns true when the number of consecutive failures is more than 5.
 	ReadyToTrip: func(counts gobreaker.Counts) bool {
 		return counts.ConsecutiveFailures > 3
+	},
+	OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+		fmt.Printf("\n\nstate changed from %s to %s\n\n", from, to)
 	},
 }
 
@@ -96,7 +100,7 @@ func TestCircuitBreaker(t *testing.T) {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
-		if err == nil {
+		if resp != nil {
 			defer resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
@@ -118,7 +122,7 @@ func TestCircuitBreaker(t *testing.T) {
 	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 	resp, err = client.Do(req)
-	if err == nil {
+	if resp != nil {
 		defer resp.Body.Close()
 	}
 	require.NoError(t, err)
@@ -170,7 +174,7 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, strings.NewReader(requestData))
 	require.NoError(t, err)
 	resp, err := client.Do(req)
-	if err == nil {
+	if resp != nil {
 		defer resp.Body.Close()
 	}
 	require.NoError(t, err)
@@ -222,7 +226,7 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, strings.NewReader(requestData))
 	require.NoError(t, err)
 	resp, err := client.Do(req)
-	if err == nil {
+	if resp != nil {
 		defer resp.Body.Close()
 	}
 	require.Error(t, err)
@@ -250,7 +254,7 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, strings.NewReader(requestData))
 	require.NoError(t, err)
 	resp, err = client.Do(req)
-	if err == nil {
+	if resp != nil {
 		defer resp.Body.Close()
 	}
 	require.Error(t, err)
@@ -296,7 +300,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
-		if err == nil {
+		if resp != nil {
 			defer resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
@@ -311,7 +315,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
-		if err == nil {
+		if resp != nil {
 			defer resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
@@ -321,7 +325,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 	resp, err := client.Do(req)
-	if err == nil {
+	if resp != nil {
 		defer resp.Body.Close()
 	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
@@ -363,11 +367,12 @@ func TestCircuitBreakerIgnore(t *testing.T) {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
-		if err == nil {
+		if resp != nil {
 			defer resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
-		require.Error(t, err)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
 	}
 }
 
@@ -397,7 +402,7 @@ func TestCircuitBreakerTimeout(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
-		if err == nil {
+		if resp != nil {
 			defer resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
@@ -411,7 +416,7 @@ func TestCircuitBreakerTimeout(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 	resp, err := client.Do(req)
-	if err == nil {
+	if resp != nil {
 		defer resp.Body.Close()
 	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
