@@ -133,13 +133,39 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 	circuitBreaker := gobreaker.NewTwoStepCircuitBreaker(cbrSettings)
 
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(r *http.Request) (*http.Response, error) {
+		return func(r *http.Request) (resp *http.Response, err error) {
 			if r == nil {
 				return nil, errors.New("request is nil")
 			}
 
 			// we need to detect the state change by ourselves, because the context does not allow us to hand in a context
 			fromState := circuitBreaker.State()
+
+			defer func() {
+				// detect and log a state change
+				toState := circuitBreaker.State()
+				if fromState != toState {
+					l.Warn("state change occurred",
+						zap.String("state_from", fromState.String()),
+						zap.String("state_to", toState.String()),
+					)
+				}
+
+				attributes := []attribute.KeyValue{
+					attribute.String("current_state", toState.String()),
+					attribute.String("previous_state", fromState.String()),
+					attribute.Bool("state_change", fromState != toState),
+				}
+				if err != nil {
+					if o.Counter != nil {
+						attributes := append(attributes, attribute.Bool("error", true))
+						o.Counter.Add(r.Context(), 1, attributes...)
+					}
+				} else if o.Counter != nil {
+					attributes := append(attributes, attribute.Bool("error", false))
+					o.Counter.Add(r.Context(), 1, attributes...)
+				}
+			}()
 
 			// clone the request and the body if wanted
 			var errCopy error
@@ -155,71 +181,46 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			// check whether the circuit breaker is closed (an error is returned if not)
 			done, err := circuitBreaker.Allow()
 
-			var resp *http.Response
 			// wrap the error in case it was produced because of the circuit breaker being (half-)open
 			if errors.Is(err, gobreaker.ErrTooManyRequests) || errors.Is(err, gobreaker.ErrOpenState) {
-				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
+				return nil, keelerrors.NewWrappedError(ErrCircuitBreaker, err)
 			} else if err != nil {
 				l.Error("unexpected error in circuit breaker",
 					log.FError(err),
 					zap.String("state", fromState.String()),
 				)
-			} else {
-				// continue with the middleware chain
-				resp, err = next(r) //nolint:bodyclose
+				return nil, err
+			}
 
-				var respCopy *http.Response
-				if resp != nil {
-					// clone the response and the body if wanted
-					respCopy, errCopy = copyResponse(resp, o.CopyRespBody)
-					if errCopy != nil {
-						l.Error("unable to copy response", log.FError(errCopy))
-						return nil, errCopy
-					} else if o.CopyRespBody && respCopy.Body != nil {
-						// make sure the body is closed again - since it is a NopCloser it does not make a difference though
-						defer respCopy.Body.Close()
-					}
-				}
+			// continue with the middleware chain
+			resp, err = next(r) //nolint:bodyclose
 
-				if errSuccess := o.IsSuccessful(err, reqCopy, respCopy); errors.Is(errSuccess, errNoBody) {
-					l.Error("encountered read from not previously copied request/response body",
-						zap.Bool("copy_request", o.CopyReqBody),
-						zap.Bool("copy_response", o.CopyRespBody),
-					)
-					// we actually want to return an error instead of the original request and error since the user
-					// should be made aware that there is a misconfiguration
-					resp = nil
-					err = ErrReadFromActualBody
-				} else if !errors.Is(errSuccess, ErrIgnoreSuccessfulness) {
-					done(errSuccess == nil)
+			var respCopy *http.Response
+			if resp != nil {
+				// clone the response and the body if wanted
+				respCopy, errCopy = copyResponse(resp, o.CopyRespBody)
+				if errCopy != nil {
+					l.Error("unable to copy response", log.FError(errCopy))
+					return nil, errCopy
+				} else if o.CopyRespBody && respCopy.Body != nil {
+					// make sure the body is closed again - since it is a NopCloser it does not make a difference though
+					defer respCopy.Body.Close()
 				}
 			}
 
-			// detect and log a state change
-			toState := circuitBreaker.State()
-			if fromState != toState {
-				l.Warn("state change occurred",
-					zap.String("state_from", fromState.String()),
-					zap.String("state_to", toState.String()),
+			if errSuccess := o.IsSuccessful(err, reqCopy, respCopy); errors.Is(errSuccess, errNoBody) {
+				l.Error("encountered read from not previously copied request/response body",
+					zap.Bool("copy_request", o.CopyReqBody),
+					zap.Bool("copy_response", o.CopyRespBody),
 				)
+				// we actually want to return an error instead of the original request and error since the user
+				// should be made aware that there is a misconfiguration
+				return nil, ErrReadFromActualBody
+			} else if !errors.Is(errSuccess, ErrIgnoreSuccessfulness) {
+				done(errSuccess == nil)
 			}
 
-			attributes := []attribute.KeyValue{
-				attribute.String("current_state", toState.String()),
-				attribute.String("previous_state", fromState.String()),
-				attribute.Bool("state_change", fromState != toState),
-			}
-			if err != nil {
-				if o.Counter != nil {
-					attributes := append(attributes, attribute.Bool("error", true))
-					o.Counter.Add(r.Context(), 1, attributes...)
-				}
-			} else if o.Counter != nil {
-				attributes := append(attributes, attribute.Bool("error", false))
-				o.Counter.Add(r.Context(), 1, attributes...)
-			}
-
-			return resp, err
+			return resp, nil
 		}
 	}
 }
