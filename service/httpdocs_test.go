@@ -138,4 +138,11 @@ func ExampleNewHTTPDocs() {
 	// | `go_memstats_stack_sys_bytes`      | GAUGE   | Number of bytes obtained from system for stack allocator.          |
 	// | `go_memstats_sys_bytes`            | GAUGE   | Number of bytes obtained from system.                              |
 	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |
+	// | `process_cpu_seconds_total`        | COUNTER | Total user and system CPU time spent in seconds.                   |
+	// | `process_max_fds`                  | GAUGE   | Maximum number of open file descriptors.                           |
+	// | `process_open_fds`                 | GAUGE   | Number of open file descriptors.                                   |
+	// | `process_resident_memory_bytes`    | GAUGE   | Resident memory size in bytes.                                     |
+	// | `process_start_time_seconds`       | GAUGE   | Start time of the process since unix epoch in seconds.             |
+	// | `process_virtual_memory_bytes`     | GAUGE   | Virtual memory size in bytes.                                      |
+	// | `process_virtual_memory_max_bytes` | GAUGE   | Maximum amount of virtual memory available in bytes.               |
 }
