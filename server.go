@@ -452,6 +452,7 @@ func (s *Server) Docs() string {
 			for _, probe := range probes {
 				t := reflect.TypeOf(probe)
 				rows = append(rows, []string{
+					markdown.Code(markdown.Name(probe)),
 					markdown.Code(k.String()),
 					markdown.Code(t.String()),
 					markdown.String(probe),
@@ -463,7 +464,7 @@ func (s *Server) Docs() string {
 			md.Println("")
 			md.Println("List of all registered healthz probes that are being called during startup and runntime.")
 			md.Println("")
-			md.Table([]string{"Name", "Type", "Description"}, rows)
+			md.Table([]string{"Name", "Probe", "Type", "Description"}, rows)
 			md.Println("")
 		}
 	}
@@ -510,8 +511,10 @@ func (s *Server) Docs() string {
 				closer = "ErrorUnsubscriberWithContext"
 			}
 			rows = append(rows, []string{
+				markdown.Code(markdown.Name(value)),
 				markdown.Code(t.String()),
 				markdown.Code(closer),
+				markdown.String(value),
 			})
 		}
 		if len(rows) > 0 {
@@ -519,7 +522,7 @@ func (s *Server) Docs() string {
 			md.Println("")
 			md.Println("List of all registered closers that are being called during graceful shutdown.")
 			md.Println("")
-			md.Table([]string{"Name", "Type"}, rows)
+			md.Table([]string{"Name", "Type", "Closer", "Description"}, rows)
 			md.Println("")
 		}
 	}

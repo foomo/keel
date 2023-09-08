@@ -88,22 +88,22 @@ func ExampleNewHTTPDocs() {
 	//
 	// List of all registered healthz probes that are being called during startup and runntime.
 	//
-	// | Name     | Type                 | Description                            |
-	// | -------- | -------------------- | -------------------------------------- |
-	// | `always` | `*keel.Server`       |                                        |
-	// | `always` | `*service.GoRoutine` | parallel: `1`                          |
-	// | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
-	// | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
+	// | Name             | Probe    | Type                 | Description                            |
+	// | ---------------- | -------- | -------------------- | -------------------------------------- |
+	// |                  | `always` | `*keel.Server`       |                                        |
+	// | `demo-goroutine` | `always` | `*service.GoRoutine` | parallel: `1`                          |
+	// | `demp-http`      | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
+	// | `docs`           | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
 	//
 	// ### Closers
 	//
 	// List of all registered closers that are being called during graceful shutdown.
 	//
-	// | Name                 | Type                     |
-	// | -------------------- | ------------------------ |
-	// | `*service.GoRoutine` | `ErrorCloserWithContext` |
-	// | `*service.HTTP`      | `ErrorCloserWithContext` |
-	// | `*service.HTTP`      | `ErrorCloserWithContext` |
+	// | Name             | Type                 | Closer                   | Description                            |
+	// | ---------------- | -------------------- | ------------------------ | -------------------------------------- |
+	// | `demo-goroutine` | `*service.GoRoutine` | `ErrorCloserWithContext` | parallel: `1`                          |
+	// | `demp-http`      | `*service.HTTP`      | `ErrorCloserWithContext` | `http.HandlerFunc` on `localhost:8080` |
+	// | `docs`           | `*service.HTTP`      | `ErrorCloserWithContext` | `*http.ServeMux` on `localhost:9001`   |
 	//
 	// ### Metrics
 	//
