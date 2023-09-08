@@ -23,7 +23,7 @@ func NewHTTPDocs(l *zap.Logger, name, addr, path string, documenters map[string]
 			w.Header().Add("Content-Type", "text/markdown")
 			md := &markdown.Markdown{}
 			for name, documenter := range documenters {
-				md.Printf("# %s", name)
+				md.Printf("## %s", name)
 				md.Println("")
 				md.Print(documenter.Docs())
 			}

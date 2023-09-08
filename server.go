@@ -178,7 +178,7 @@ func NewServer(opts ...Option) *Server {
 
 	// add probe
 	inst.AddAlwaysHealthzers(inst)
-	inst.AddDocumenter("Server", inst)
+	inst.AddDocumenter("Keel Server", inst)
 
 	// start init services
 	inst.startService(inst.initServices...)
@@ -381,6 +381,7 @@ func (s *Server) Docs() string {
 			}
 			rows = append(rows, []string{
 				markdown.Code(key),
+				markdown.Code(config.TypeOf(key)),
 				"",
 				markdown.Code(fmt.Sprintf("%v", fallback)),
 			})
@@ -388,16 +389,17 @@ func (s *Server) Docs() string {
 		for _, key := range config.RequiredKeys() {
 			rows = append(rows, []string{
 				markdown.Code(key),
+				markdown.Code(config.TypeOf(key)),
 				markdown.Code("true"),
 				"",
 			})
 		}
 		if len(rows) > 0 {
-			md.Println("## Config")
+			md.Println("### Config")
 			md.Println("")
 			md.Println("List of all registered config variabled with their defaults.")
 			md.Println("")
-			md.Table([]string{"Key", "Default", "Required"}, rows)
+			md.Table([]string{"Key", "Type", "Required", "Default"}, rows)
 			md.Println("")
 		}
 	}
@@ -415,7 +417,7 @@ func (s *Server) Docs() string {
 			}
 		}
 		if len(rows) > 0 {
-			md.Println("## Init Services")
+			md.Println("### Init Services")
 			md.Println("")
 			md.Println("List of all registered init services that are being immediately started.")
 			md.Println("")
@@ -435,7 +437,7 @@ func (s *Server) Docs() string {
 			})
 		}
 		if len(rows) > 0 {
-			md.Println("## Services")
+			md.Println("### Services")
 			md.Println("")
 			md.Println("List of all registered services that are being started.")
 			md.Println("")
@@ -457,7 +459,7 @@ func (s *Server) Docs() string {
 			}
 		}
 		if len(rows) > 0 {
-			md.Println("## Health probes")
+			md.Println("### Health probes")
 			md.Println("")
 			md.Println("List of all registered healthz probes that are being called during startup and runntime.")
 			md.Println("")
@@ -513,7 +515,7 @@ func (s *Server) Docs() string {
 			})
 		}
 		if len(rows) > 0 {
-			md.Println("## Closers")
+			md.Println("### Closers")
 			md.Println("")
 			md.Println("List of all registered closers that are being called during graceful shutdown.")
 			md.Println("")
@@ -544,7 +546,7 @@ func (s *Server) Docs() string {
 			})
 		}
 		if len(rows) > 0 {
-			md.Println("## Metrics")
+			md.Println("### Metrics")
 			md.Println("")
 			md.Println("List of all registered metrics than are being exposed.")
 			md.Println("")

@@ -27,11 +27,11 @@ func ExampleNewHTTPDocs() {
 
 	c := svr.Config()
 	// config with fallback
-	_ = config.GetBool(c, "example.bool", false)()
-	_ = config.GetString(c, "example.string", "fallback")()
+	_ = config.GetBool(c, "example.bool", false)
+	_ = config.GetString(c, "example.string", "fallback")
 	// required configs
-	_ = config.MustGetBool(c, "example.required.bool")()
-	_ = config.MustGetString(c, "example.required.string")()
+	_ = config.MustGetBool(c, "example.required.bool")
+	_ = config.MustGetString(c, "example.required.string")
 
 	svr.AddService(service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -53,21 +53,21 @@ func ExampleNewHTTPDocs() {
 	svr.Run()
 
 	// Output:
-	// # Server
+	// ## Keel Server
 	//
-	// ## Config
+	// ### Config
 	//
 	// List of all registered config variabled with their defaults.
 	//
-	// | Key                       | Default | Required   |
-	// | ------------------------- | ------- | ---------- |
-	// | `example.bool`            |         | `false`    |
-	// | `example.required.bool`   | `true`  |            |
-	// | `example.required.string` | `true`  |            |
-	// | `example.string`          |         | `fallback` |
-	// | `service.docs.enabled`    |         | `true`     |
+	// | Key                       | Type     | Required | Default    |
+	// | ------------------------- | -------- | -------- | ---------- |
+	// | `example.bool`            | `bool`   |          | `false`    |
+	// | `example.required.bool`   | `bool`   | `true`   |            |
+	// | `example.required.string` | `string` | `true`   |            |
+	// | `example.string`          | `string` |          | `fallback` |
+	// | `service.docs.enabled`    | `bool`   |          | `true`     |
 	//
-	// ## Init Services
+	// ### Init Services
 	//
 	// List of all registered init services that are being immediately started.
 	//
@@ -75,7 +75,7 @@ func ExampleNewHTTPDocs() {
 	// | ------ | --------------- | ------------------------------------ |
 	// | `docs` | `*service.HTTP` | `*http.ServeMux` on `localhost:9001` |
 	//
-	// ## Services
+	// ### Services
 	//
 	// List of all registered services that are being started.
 	//
@@ -84,7 +84,7 @@ func ExampleNewHTTPDocs() {
 	// | `demo-goroutine` | `*service.GoRoutine` | parallel: `1`                          |
 	// | `demp-http`      | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
 	//
-	// ## Health probes
+	// ### Health probes
 	//
 	// List of all registered healthz probes that are being called during startup and runntime.
 	//
@@ -95,7 +95,7 @@ func ExampleNewHTTPDocs() {
 	// | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
 	// | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
 	//
-	// ## Closers
+	// ### Closers
 	//
 	// List of all registered closers that are being called during graceful shutdown.
 	//
@@ -105,7 +105,7 @@ func ExampleNewHTTPDocs() {
 	// | `*service.HTTP`      | `ErrorCloserWithContext` |
 	// | `*service.HTTP`      | `ErrorCloserWithContext` |
 	//
-	// ## Metrics
+	// ### Metrics
 	//
 	// List of all registered metrics than are being exposed.
 	//
