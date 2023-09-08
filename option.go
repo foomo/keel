@@ -178,3 +178,14 @@ func WithHTTPHealthzService(enabled bool) Option {
 		}
 	}
 }
+
+// WithHTTPDocsService option with default value
+func WithHTTPDocsService(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "service.docs.enabled", enabled)() {
+			svs := service.NewDefaultHTTPDocs(inst.documenter)
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
+		}
+	}
+}

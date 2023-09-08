@@ -1,6 +1,3 @@
-//go:build !docs
-// +build !docs
-
 package keel
 
 import (
@@ -9,14 +6,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
+	"github.com/foomo/keel/markdown"
+	"github.com/foomo/keel/service"
+	"github.com/foomo/keel/telemetry/nonrecording"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
 	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -46,6 +48,7 @@ type Server struct {
 	running         atomic.Bool
 	closers         []interface{}
 	probes          map[healthz.Type][]interface{}
+	documenter      map[string]interfaces.Documenter
 	ctx             context.Context
 	ctxCancel       context.Context
 	ctxCancelFn     context.CancelFunc
@@ -60,6 +63,7 @@ func NewServer(opts ...Option) *Server {
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
 		probes:          map[healthz.Type][]interface{}{},
+		documenter:      map[string]interfaces.Documenter{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -170,6 +174,7 @@ func NewServer(opts ...Option) *Server {
 
 	// add probe
 	inst.AddAlwaysHealthzers(inst)
+	inst.AddDocumenter("Server", inst)
 
 	// start init services
 	inst.startService(inst.initServices...)
@@ -263,6 +268,11 @@ func (s *Server) AddClosers(closers ...interface{}) {
 	}
 }
 
+// AddDocumenter adds a dcoumenter to beadded to the exposed docs
+func (s *Server) AddDocumenter(name string, documenter interfaces.Documenter) {
+	s.documenter[name] = documenter
+}
+
 // AddHealthzer adds a probe to be called on healthz checks
 func (s *Server) AddHealthzer(typ healthz.Type, probe interface{}) {
 	switch probe.(type) {
@@ -350,12 +360,204 @@ func (s *Server) Run() {
 	s.l.Info("keel server stopped")
 }
 
+func (s *Server) Docs() string {
+	md := &markdown.Markdown{}
+
+	{
+		var rows [][]string
+		keys := s.Config().AllKeys()
+		defaults := config.Defaults()
+		for _, key := range keys {
+			var fallback interface{}
+			if v, ok := defaults[key]; ok {
+				fallback = v
+			}
+			rows = append(rows, []string{
+				markdown.Code(key),
+				"",
+				markdown.Code(fmt.Sprintf("%v", fallback)),
+			})
+		}
+		for _, key := range config.RequiredKeys() {
+			rows = append(rows, []string{
+				markdown.Code(key),
+				markdown.Code("true"),
+				"",
+			})
+		}
+		if len(rows) > 0 {
+			md.Println("## Config")
+			md.Println("")
+			md.Println("List of all registered config variabled with their defaults.")
+			md.Println("")
+			md.Table([]string{"Key", "Default", "Required"}, rows)
+			md.Println("")
+		}
+	}
+
+	{
+		var rows [][]string
+		for _, value := range s.initServices {
+			if v, ok := value.(*service.HTTP); ok {
+				t := reflect.TypeOf(v)
+				rows = append(rows, []string{
+					markdown.Code(v.Name()),
+					markdown.Code(t.String()),
+					markdown.String(v),
+				})
+			}
+		}
+		if len(rows) > 0 {
+			md.Println("## Init Services")
+			md.Println("")
+			md.Println("List of all registered init services that are being immediately started.")
+			md.Println("")
+			md.Table([]string{"Name", "Type", "Address"}, rows)
+			md.Println("")
+		}
+	}
+
+	{
+		var rows [][]string
+		for _, value := range s.services {
+			if v, ok := value.(*service.HTTP); ok {
+				t := reflect.TypeOf(v)
+				rows = append(rows, []string{
+					markdown.Code(v.Name()),
+					markdown.Code(t.String()),
+					markdown.String(v),
+				})
+			}
+		}
+		if len(rows) > 0 {
+			md.Println("## Services")
+			md.Println("")
+			md.Println("List of all registered services that are being started.")
+			md.Println("")
+			md.Table([]string{"Name", "Type", "Description"}, rows)
+			md.Println("")
+		}
+	}
+
+	{
+		var rows [][]string
+		for k, probes := range s.probes {
+			for _, probe := range probes {
+				t := reflect.TypeOf(probe)
+				rows = append(rows, []string{
+					markdown.Code(k.String()),
+					markdown.Code(t.String()),
+				})
+			}
+		}
+		if len(rows) > 0 {
+			md.Println("## Health probes")
+			md.Println("")
+			md.Println("List of all registered healthz probes that are being called during startup and runntime.")
+			md.Println("")
+			md.Table([]string{"Name", "Type"}, rows)
+			md.Println("")
+		}
+	}
+
+	{
+		var rows [][]string
+		for _, value := range s.closers {
+			t := reflect.TypeOf(value)
+			var closer string
+			switch value.(type) {
+			case interfaces.Closer:
+				closer = "Closer"
+			case interfaces.ErrorCloser:
+				closer = "ErrorCloser"
+			case interfaces.CloserWithContext:
+				closer = "CloserWithContext"
+			case interfaces.ErrorCloserWithContext:
+				closer = "ErrorCloserWithContext"
+			case interfaces.Shutdowner:
+				closer = "Shutdowner"
+			case interfaces.ErrorShutdowner:
+				closer = "ErrorShutdowner"
+			case interfaces.ShutdownerWithContext:
+				closer = "ShutdownerWithContext"
+			case interfaces.ErrorShutdownerWithContext:
+				closer = "ErrorShutdownerWithContext"
+			case interfaces.Stopper:
+				closer = "Stopper"
+			case interfaces.ErrorStopper:
+				closer = "ErrorStopper"
+			case interfaces.StopperWithContext:
+				closer = "StopperWithContext"
+			case interfaces.ErrorStopperWithContext:
+				closer = "ErrorStopperWithContext"
+			case interfaces.Unsubscriber:
+				closer = "Unsubscriber"
+			case interfaces.ErrorUnsubscriber:
+				closer = "ErrorUnsubscriber"
+			case interfaces.UnsubscriberWithContext:
+				closer = "UnsubscriberWithContext"
+			case interfaces.ErrorUnsubscriberWithContext:
+				closer = "ErrorUnsubscriberWithContext"
+			}
+			rows = append(rows, []string{
+				markdown.Code(t.String()),
+				markdown.Code(closer),
+			})
+		}
+		if len(rows) > 0 {
+			md.Println("## Closers")
+			md.Println("")
+			md.Println("List of all registered closers that are being called during graceful shutdown.")
+			md.Println("")
+			md.Table([]string{"Name", "Type"}, rows)
+			md.Println("")
+		}
+	}
+
+	{
+		var rows [][]string
+		s.meter.AsyncFloat64()
+
+		values := nonrecording.Metrics()
+
+		gatherer, _ := prometheus.DefaultRegisterer.(*prometheus.Registry).Gather()
+		for _, value := range gatherer {
+			values = append(values, nonrecording.Metric{
+				Name: value.GetName(),
+				Type: value.GetType().String(),
+				Help: value.GetHelp(),
+			})
+		}
+		for _, value := range values {
+			rows = append(rows, []string{
+				markdown.Code(value.Name),
+				value.Type,
+				value.Help,
+			})
+		}
+		if len(rows) > 0 {
+			md.Println("## Metrics")
+			md.Println("")
+			md.Println("List of all registered metrics than are being exposed.")
+			md.Println("")
+			md.Table([]string{"Name", "Type", "Description"}, rows)
+			md.Println("")
+		}
+	}
+
+	return md.String()
+}
+
+// ------------------------------------------------------------------------------------------------
+// ~ Private methods
+// ------------------------------------------------------------------------------------------------
+
 // startService starts the given services
 func (s *Server) startService(services ...Service) {
-	for _, service := range services {
-		service := service
+	for _, value := range services {
+		value := value
 		s.g.Go(func() error {
-			if err := service.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
+			if err := value.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Debug("server has closed")
 			} else if err != nil {
 				log.WithError(s.l, err).Error("failed to start service")

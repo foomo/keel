@@ -11,7 +11,9 @@ import (
 
 // config holds the global configuration
 var (
-	config *viper.Viper
+	config       *viper.Viper
+	requiredKeys []string
+	defaults     = map[string]interface{}{}
 )
 
 // Init sets up the configuration
@@ -28,15 +30,13 @@ func Config() *viper.Viper {
 }
 
 func GetBool(c *viper.Viper, key string, fallback bool) func() bool {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() bool {
 		return c.GetBool(key)
 	}
 }
 
-func MustGetBool(c *viper.Viper, key string, fallback bool) func() bool {
-	c = ensure(c)
+func MustGetBool(c *viper.Viper, key string) func() bool {
 	must(c, key)
 	return func() bool {
 		return c.GetBool(key)
@@ -58,15 +58,13 @@ func MustGetInt(c *viper.Viper, key string) func() int {
 }
 
 func GetInt32(c *viper.Viper, key string, fallback int32) func() int32 {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() int32 {
 		return c.GetInt32(key)
 	}
 }
 
 func MustGetInt32(c *viper.Viper, key string) func() int32 {
-	c = ensure(c)
 	must(c, key)
 	return func() int32 {
 		return c.GetInt32(key)
@@ -74,15 +72,13 @@ func MustGetInt32(c *viper.Viper, key string) func() int32 {
 }
 
 func GetInt64(c *viper.Viper, key string, fallback int64) func() int64 {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() int64 {
 		return c.GetInt64(key)
 	}
 }
 
 func MustGetInt64(c *viper.Viper, key string) func() int64 {
-	c = ensure(c)
 	must(c, key)
 	return func() int64 {
 		return c.GetInt64(key)
@@ -90,15 +86,13 @@ func MustGetInt64(c *viper.Viper, key string) func() int64 {
 }
 
 func GetUint(c *viper.Viper, key string, fallback uint) func() uint {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() uint {
 		return c.GetUint(key)
 	}
 }
 
 func MustGetUint(c *viper.Viper, key string) func() uint {
-	c = ensure(c)
 	must(c, key)
 	return func() uint {
 		return c.GetUint(key)
@@ -106,15 +100,13 @@ func MustGetUint(c *viper.Viper, key string) func() uint {
 }
 
 func GetUint32(c *viper.Viper, key string, fallback uint32) func() uint32 {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() uint32 {
 		return c.GetUint32(key)
 	}
 }
 
 func MustGetUint32(c *viper.Viper, key string) func() uint32 {
-	c = ensure(c)
 	must(c, key)
 	return func() uint32 {
 		return c.GetUint32(key)
@@ -122,15 +114,13 @@ func MustGetUint32(c *viper.Viper, key string) func() uint32 {
 }
 
 func GetUint64(c *viper.Viper, key string, fallback uint64) func() uint64 {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() uint64 {
 		return c.GetUint64(key)
 	}
 }
 
 func MustGetUint64(c *viper.Viper, key string) func() uint64 {
-	c = ensure(c)
 	must(c, key)
 	return func() uint64 {
 		return c.GetUint64(key)
@@ -138,15 +128,13 @@ func MustGetUint64(c *viper.Viper, key string) func() uint64 {
 }
 
 func GetFloat64(c *viper.Viper, key string, fallback float64) func() float64 {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() float64 {
 		return c.GetFloat64(key)
 	}
 }
 
 func MustGetFloat64(c *viper.Viper, key string) func() float64 {
-	c = ensure(c)
 	must(c, key)
 	return func() float64 {
 		return c.GetFloat64(key)
@@ -154,15 +142,13 @@ func MustGetFloat64(c *viper.Viper, key string) func() float64 {
 }
 
 func GetString(c *viper.Viper, key, fallback string) func() string {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() string {
 		return c.GetString(key)
 	}
 }
 
 func MustGetString(c *viper.Viper, key string) func() string {
-	c = ensure(c)
 	must(c, key)
 	return func() string {
 		return c.GetString(key)
@@ -170,15 +156,13 @@ func MustGetString(c *viper.Viper, key string) func() string {
 }
 
 func GetTime(c *viper.Viper, key string, fallback time.Time) func() time.Time {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() time.Time {
 		return c.GetTime(key)
 	}
 }
 
 func MustGetTime(c *viper.Viper, key string) func() time.Time {
-	c = ensure(c)
 	must(c, key)
 	return func() time.Time {
 		return c.GetTime(key)
@@ -186,15 +170,13 @@ func MustGetTime(c *viper.Viper, key string) func() time.Time {
 }
 
 func GetDuration(c *viper.Viper, key string, fallback time.Duration) func() time.Duration {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() time.Duration {
 		return c.GetDuration(key)
 	}
 }
 
 func MustGetDuration(c *viper.Viper, key string) func() time.Duration {
-	c = ensure(c)
 	must(c, key)
 	return func() time.Duration {
 		return c.GetDuration(key)
@@ -202,15 +184,13 @@ func MustGetDuration(c *viper.Viper, key string) func() time.Duration {
 }
 
 func GetIntSlice(c *viper.Viper, key string, fallback []int) func() []int {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() []int {
 		return c.GetIntSlice(key)
 	}
 }
 
 func MustGetIntSlice(c *viper.Viper, key string) func() []int {
-	c = ensure(c)
 	must(c, key)
 	return func() []int {
 		return c.GetIntSlice(key)
@@ -218,15 +198,13 @@ func MustGetIntSlice(c *viper.Viper, key string) func() []int {
 }
 
 func GetStringSlice(c *viper.Viper, key string, fallback []string) func() []string {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() []string {
 		return c.GetStringSlice(key)
 	}
 }
 
 func MustGetStringSlice(c *viper.Viper, key string) func() []string {
-	c = ensure(c)
 	must(c, key)
 	return func() []string {
 		return c.GetStringSlice(key)
@@ -234,15 +212,13 @@ func MustGetStringSlice(c *viper.Viper, key string) func() []string {
 }
 
 func GetStringMap(c *viper.Viper, key string, fallback map[string]interface{}) func() map[string]interface{} {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() map[string]interface{} {
 		return c.GetStringMap(key)
 	}
 }
 
 func MustGetStringMap(c *viper.Viper, key string) func() map[string]interface{} {
-	c = ensure(c)
 	must(c, key)
 	return func() map[string]interface{} {
 		return c.GetStringMap(key)
@@ -250,15 +226,13 @@ func MustGetStringMap(c *viper.Viper, key string) func() map[string]interface{} 
 }
 
 func GetStringMapString(c *viper.Viper, key string, fallback map[string]string) func() map[string]string {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() map[string]string {
 		return c.GetStringMapString(key)
 	}
 }
 
 func MustGetStringMapString(c *viper.Viper, key string) func() map[string]string {
-	c = ensure(c)
 	must(c, key)
 	return func() map[string]string {
 		return c.GetStringMapString(key)
@@ -266,15 +240,13 @@ func MustGetStringMapString(c *viper.Viper, key string) func() map[string]string
 }
 
 func GetStringMapStringSlice(c *viper.Viper, key string, fallback map[string][]string) func() map[string][]string {
-	c = ensure(c)
-	c.SetDefault(key, fallback)
+	setDefault(c, key, fallback)
 	return func() map[string][]string {
 		return c.GetStringMapStringSlice(key)
 	}
 }
 
 func MustGetStringMapStringSlice(c *viper.Viper, key string) func() map[string][]string {
-	c = ensure(c)
 	must(c, key)
 	return func() map[string][]string {
 		return c.GetStringMapStringSlice(key)
@@ -316,6 +288,14 @@ func GetStruct(c *viper.Viper, key string, fallback interface{}) (func(v interfa
 	}, nil
 }
 
+func RequiredKeys() []string {
+	return requiredKeys
+}
+
+func Defaults() map[string]interface{} {
+	return defaults
+}
+
 func ensure(c *viper.Viper) *viper.Viper {
 	if c == nil {
 		c = config
@@ -324,6 +304,8 @@ func ensure(c *viper.Viper) *viper.Viper {
 }
 
 func must(c *viper.Viper, key string) {
+	c = ensure(c)
+	requiredKeys = append(requiredKeys, key)
 	if !c.IsSet(key) {
 		panic(fmt.Sprintf("missing required config key: %s", key))
 	}
@@ -338,4 +320,10 @@ func decode(input, output interface{}) error {
 		return err
 	}
 	return decoder.Decode(input)
+}
+
+func setDefault(c *viper.Viper, key string, fallback any) {
+	c = ensure(c)
+	c.SetDefault(key, fallback)
+	defaults[key] = fallback
 }
