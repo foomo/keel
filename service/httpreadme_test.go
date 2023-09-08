@@ -6,22 +6,33 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/env"
+	"github.com/foomo/keel/examples/persistence/mongo/store"
+	"github.com/foomo/keel/log"
+	keelmongo "github.com/foomo/keel/persistence/mongo"
 	"github.com/foomo/keel/service"
 	"go.uber.org/zap"
 )
 
-func ExampleNewHTTPDocs() {
+func ExampleNewHTTPReadme() {
 	// define vars so it does not panic
 	_ = os.Setenv("EXAMPLE_REQUIRED_BOOL", "true")
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
 
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewNop()),
-		keel.WithHTTPDocsService(true),
+		keel.WithHTTPReadmeService(true),
 	)
+
+	// access some env vars
+	_ = env.Get("EXAMPLE_STRING", "demo")
+	_ = env.GetBool("EXAMPLE_BOOL", false)
+	_ = env.MustGet("EXAMPLE_REQUIRED_STRING")
+	_ = env.MustGetBool("EXAMPLE_REQUIRED_BOOL")
 
 	l := svr.Logger()
 
@@ -33,18 +44,40 @@ func ExampleNewHTTPDocs() {
 	_ = config.MustGetBool(c, "example.required.bool")
 	_ = config.MustGetString(c, "example.required.string")
 
+	// create persistor
+	persistor, err := keelmongo.New(svr.Context(), "mongodb://localhost:27017/dummy")
+	log.Must(l, err, "failed to create persistor")
+
+	// ensure to add the persistor to the closers
+	svr.AddClosers(persistor)
+
+	// create repositories
+	_, err = persistor.Collection(
+		"dummy",
+		// define indexes but beware of changes on large dbs
+		keelmongo.CollectionWithIndexes(
+			store.EntityIndex,
+			store.EntityWithVersionsIndex,
+		),
+		// define max time for index creation
+		keelmongo.CollectionWithIndexesMaxTime(time.Minute),
+	)
+	log.Must(l, err, "failed to create collection")
+
+	// add http service
 	svr.AddService(service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})))
 
+	// add go routine service
 	svr.AddService(service.NewGoRoutine(l, "demo-goroutine", func(ctx context.Context, l *zap.Logger) error {
 		return nil
 	}))
 
 	go func() {
-		resp, _ := http.Get("http://localhost:9001/docs") //nolint:noctx
-		defer resp.Body.Close()                           //nolint:govet
+		resp, _ := http.Get("http://localhost:9001/readme") //nolint:noctx
+		defer resp.Body.Close()                             //nolint:govet
 		b, _ := io.ReadAll(resp.Body)
 		fmt.Print(string(b))
 		shutdown()
@@ -53,7 +86,26 @@ func ExampleNewHTTPDocs() {
 	svr.Run()
 
 	// Output:
-	// ## Keel Server
+	// ### Env
+	//
+	// List of all accessed environment variables.
+	//
+	// | Key                                     | Type     | Required | Default |
+	// | --------------------------------------- | -------- | -------- | ------- |
+	// | `EXAMPLE_BOOL`                          | `bool`   |          |         |
+	// | `EXAMPLE_REQUIRED_BOOL`                 | `bool`   |          |         |
+	// | `EXAMPLE_REQUIRED_BOOL`                 | `bool`   | `true`   |         |
+	// | `EXAMPLE_REQUIRED_STRING`               | `string` |          |         |
+	// | `EXAMPLE_REQUIRED_STRING`               | `string` | `true`   |         |
+	// | `EXAMPLE_STRING`                        | `string` |          | `demo`  |
+	// | `LOG_DISABLE_CALLER`                    | `bool`   |          |         |
+	// | `LOG_DISABLE_STACKTRACE`                | `bool`   |          |         |
+	// | `LOG_ENCODING`                          | `string` |          | `json`  |
+	// | `LOG_LEVEL`                             | `string` |          | `info`  |
+	// | `LOG_MODE`                              | `string` |          | `prod`  |
+	// | `OTEL_ENABLED`                          | `bool`   |          |         |
+	// | `OTEL_MONGO_COMMAND_ATTRIBUTE_DISABLED` | `bool`   |          |         |
+	// | `OTEL_MONGO_ENABLED`                    | `bool`   |          |         |
 	//
 	// ### Config
 	//
@@ -65,15 +117,15 @@ func ExampleNewHTTPDocs() {
 	// | `example.required.bool`   | `bool`   | `true`   |            |
 	// | `example.required.string` | `string` | `true`   |            |
 	// | `example.string`          | `string` |          | `fallback` |
-	// | `service.docs.enabled`    | `bool`   |          | `true`     |
+	// | `service.readme.enabled`  | `bool`   |          | `true`     |
 	//
 	// ### Init Services
 	//
 	// List of all registered init services that are being immediately started.
 	//
-	// | Name   | Type            | Address                              |
-	// | ------ | --------------- | ------------------------------------ |
-	// | `docs` | `*service.HTTP` | `*http.ServeMux` on `localhost:9001` |
+	// | Name     | Type            | Address                              |
+	// | -------- | --------------- | ------------------------------------ |
+	// | `readme` | `*service.HTTP` | `*http.ServeMux` on `localhost:9001` |
 	//
 	// ### Services
 	//
@@ -84,6 +136,7 @@ func ExampleNewHTTPDocs() {
 	// | `demo-goroutine` | `*service.GoRoutine` | parallel: `1`                          |
 	// | `demp-http`      | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
 	//
+	//
 	// ### Health probes
 	//
 	// List of all registered healthz probes that are being called during startup and runntime.
@@ -93,17 +146,27 @@ func ExampleNewHTTPDocs() {
 	// |                  | `always` | `*keel.Server`       |                                        |
 	// | `demo-goroutine` | `always` | `*service.GoRoutine` | parallel: `1`                          |
 	// | `demp-http`      | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
-	// | `docs`           | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
+	// | `readme`         | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
+	//
 	//
 	// ### Closers
 	//
 	// List of all registered closers that are being called during graceful shutdown.
 	//
-	// | Name             | Type                 | Closer                   | Description                            |
-	// | ---------------- | -------------------- | ------------------------ | -------------------------------------- |
-	// | `demo-goroutine` | `*service.GoRoutine` | `ErrorCloserWithContext` | parallel: `1`                          |
-	// | `demp-http`      | `*service.HTTP`      | `ErrorCloserWithContext` | `http.HandlerFunc` on `localhost:8080` |
-	// | `docs`           | `*service.HTTP`      | `ErrorCloserWithContext` | `*http.ServeMux` on `localhost:9001`   |
+	// | Name             | Type                   | Closer                   | Description                            |
+	// | ---------------- | ---------------------- | ------------------------ | -------------------------------------- |
+	// |                  | `*keelmongo.Persistor` | `ErrorCloserWithContext` |                                        |
+	// | `demo-goroutine` | `*service.GoRoutine`   | `ErrorCloserWithContext` | parallel: `1`                          |
+	// | `demp-http`      | `*service.HTTP`        | `ErrorCloserWithContext` | `http.HandlerFunc` on `localhost:8080` |
+	// | `readme`         | `*service.HTTP`        | `ErrorCloserWithContext` | `*http.ServeMux` on `localhost:9001`   |
+	//
+	// ### Mongo
+	//
+	// List of all used mongo collections.
+	//
+	// | Database | Collection | Indices                  |
+	// | -------- | ---------- | ------------------------ |
+	// | `dummy`  | `dummy`    | `id_1`, `id_1_version_1` |
 	//
 	// ### Metrics
 	//
@@ -137,7 +200,7 @@ func ExampleNewHTTPDocs() {
 	// | `go_memstats_stack_inuse_bytes`    | GAUGE   | Number of bytes in use by the stack allocator.                     |
 	// | `go_memstats_stack_sys_bytes`      | GAUGE   | Number of bytes obtained from system for stack allocator.          |
 	// | `go_memstats_sys_bytes`            | GAUGE   | Number of bytes obtained from system.                              |
-	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |
+	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |//
 	// | `process_cpu_seconds_total`        | COUNTER | Total user and system CPU time spent in seconds.                   |
 	// | `process_max_fds`                  | GAUGE   | Maximum number of open file descriptors.                           |
 	// | `process_open_fds`                 | GAUGE   | Number of open file descriptors.                                   |

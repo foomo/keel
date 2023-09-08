@@ -9,23 +9,21 @@ import (
 )
 
 const (
-	DefaultHTTPDocsName = "docs"
-	DefaultHTTPDocsAddr = "localhost:9001"
-	DefaultHTTPDocsPath = "/docs"
+	DefaultHTTPReadmeName = "readme"
+	DefaultHTTPReadmeAddr = "localhost:9001"
+	DefaultHTTPReadmePath = "/readme"
 )
 
-func NewHTTPDocs(l *zap.Logger, name, addr, path string, documenters map[string]interfaces.Documenter) *HTTP {
+func NewHTTPReadme(l *zap.Logger, name, addr, path string, readmers *[]interfaces.Readmer) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			w.WriteHeader(http.StatusOK)
 			w.Header().Add("Content-Type", "text/markdown")
+			w.WriteHeader(http.StatusOK)
 			md := &markdown.Markdown{}
-			for name, documenter := range documenters {
-				md.Printf("## %s", name)
-				md.Println("")
-				md.Print(documenter.Docs())
+			for _, readmer := range *readmers {
+				md.Print(readmer.Readme())
 			}
 			_, _ = w.Write([]byte(md.String()))
 		default:
@@ -35,12 +33,12 @@ func NewHTTPDocs(l *zap.Logger, name, addr, path string, documenters map[string]
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPDocs(l *zap.Logger, documenter map[string]interfaces.Documenter) *HTTP {
-	return NewHTTPDocs(
+func NewDefaultHTTPReadme(l *zap.Logger, readmers *[]interfaces.Readmer) *HTTP {
+	return NewHTTPReadme(
 		l,
-		DefaultHTTPDocsName,
-		DefaultHTTPDocsAddr,
-		DefaultHTTPDocsPath,
-		documenter,
+		DefaultHTTPReadmeName,
+		DefaultHTTPReadmeAddr,
+		DefaultHTTPReadmePath,
+		readmers,
 	)
 }

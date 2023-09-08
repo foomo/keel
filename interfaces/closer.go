@@ -4,16 +4,6 @@ import (
 	"context"
 )
 
-type closer struct {
-	handle func(context.Context) error
-}
-
-func NewCloserFn(handle func(context.Context) error) closer {
-	return closer{
-		handle: handle,
-	}
-}
-
 // Closer interface
 type Closer interface {
 	Close()

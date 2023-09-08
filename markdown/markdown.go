@@ -13,6 +13,7 @@ type Markdown struct {
 func (s *Markdown) Println(a ...any) {
 	s.value += fmt.Sprintln(a...)
 }
+
 func (s *Markdown) Printf(format string, a ...any) {
 	s.Println(fmt.Sprintf(format, a...))
 }
