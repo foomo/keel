@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-go@v4
         with:
-          go-version-file: 'stable'
+          go-version: 'stable'
 
       - uses: gotesttools/gotestfmt-action@v2
         with:
