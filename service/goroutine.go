@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -14,13 +15,14 @@ import (
 // GoRoutine struct
 type (
 	GoRoutine struct {
-		running  atomic.Bool
-		handler  GoRoutineFn
-		cancel   context.CancelCauseFunc
-		parallel int
-		name     string
-		wg       errgroup.Group
-		l        *zap.Logger
+		running    atomic.Bool
+		handler    GoRoutineFn
+		cancel     context.CancelCauseFunc
+		cancelLock sync.Mutex
+		parallel   int
+		name       string
+		wg         errgroup.Group
+		l          *zap.Logger
 	}
 	GoRoutineOption func(*GoRoutine)
 	GoRoutineFn     func(ctx context.Context, l *zap.Logger) error
@@ -76,7 +78,9 @@ func (s *GoRoutine) String() string {
 func (s *GoRoutine) Start(ctx context.Context) error {
 	s.l.Info("starting keel service")
 	ctx, cancel := context.WithCancelCause(ctx)
+	s.cancelLock.Lock()
 	s.cancel = cancel
+	s.cancelLock.Unlock()
 	for i := 0; i < s.parallel; i++ {
 		i := i
 		l := log.WithAttributes(s.l, log.KeelServiceInstKey.Int(i))
@@ -84,11 +88,17 @@ func (s *GoRoutine) Start(ctx context.Context) error {
 			return s.handler(ctx, l)
 		})
 	}
+	s.running.Store(true)
+	defer func() {
+		s.running.Store(false)
+	}()
 	return s.wg.Wait()
 }
 
 func (s *GoRoutine) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
+	s.cancelLock.Lock()
 	s.cancel(ErrServiceShutdown)
+	s.cancelLock.Unlock()
 	return s.wg.Wait()
 }

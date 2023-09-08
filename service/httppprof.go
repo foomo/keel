@@ -5,7 +5,6 @@ package service
 import (
 	"net/http"
 
-	"github.com/foomo/keel/log"
 	"go.uber.org/zap"
 )
 
@@ -29,9 +28,9 @@ func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPPProf() *HTTP {
+func NewDefaultHTTPPProf(l *zap.Logger) *HTTP {
 	return NewHTTPPProf(
-		log.Logger(),
+		l,
 		DefaultHTTPPProfName,
 		DefaultHTTPPProfAddr,
 		DefaultHTTPPProfPath,

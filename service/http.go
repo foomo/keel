@@ -56,7 +56,7 @@ func (s *HTTP) Healthz() error {
 }
 
 func (s *HTTP) String() string {
-	return fmt.Sprintf("address: `%s`", s.server.Addr)
+	return fmt.Sprintf("`%T` on `%s`", s.server.Handler, s.server.Addr)
 }
 
 func (s *HTTP) Start(ctx context.Context) error {

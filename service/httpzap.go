@@ -94,9 +94,9 @@ func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPZap() *HTTP {
+func NewDefaultHTTPZap(l *zap.Logger) *HTTP {
 	return NewHTTPZap(
-		log.Logger(),
+		l,
 		DefaultHTTPZapName,
 		DefaultHTTPZapAddr,
 		DefaultHTTPZapPath,

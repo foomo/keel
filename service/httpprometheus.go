@@ -6,8 +6,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-
-	"github.com/foomo/keel/log"
 )
 
 const (
@@ -27,9 +25,9 @@ func NewHTTPPrometheus(l *zap.Logger, name, addr, path string) *HTTP {
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPPrometheus() *HTTP {
+func NewDefaultHTTPPrometheus(l *zap.Logger) *HTTP {
 	return NewHTTPPrometheus(
-		log.Logger(),
+		l,
 		DefaultHTTPPrometheusName,
 		DefaultHTTPPrometheusAddr,
 		DefaultHTTPPrometheusPath,

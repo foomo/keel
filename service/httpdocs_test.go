@@ -1,28 +1,29 @@
 package service_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/service"
 	"go.uber.org/zap"
 )
 
 func ExampleNewHTTPDocs() {
-	shutdown(3 * time.Second)
-
 	// define vars so it does not panic
 	_ = os.Setenv("EXAMPLE_REQUIRED_BOOL", "true")
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
 
 	svr := keel.NewServer(
-		keel.WithLogger(zap.NewExample()),
+		keel.WithLogger(zap.NewNop()),
 		keel.WithHTTPDocsService(true),
 	)
+
+	l := svr.Logger()
 
 	c := svr.Config()
 	// config with fallback
@@ -32,12 +33,22 @@ func ExampleNewHTTPDocs() {
 	_ = config.MustGetBool(c, "example.required.bool")()
 	_ = config.MustGetString(c, "example.required.string")()
 
-	{
+	svr.AddService(service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})))
+
+	svr.AddService(service.NewGoRoutine(l, "demo-goroutine", func(ctx context.Context, l *zap.Logger) error {
+		return nil
+	}))
+
+	go func() {
 		resp, _ := http.Get("http://localhost:9001/docs") //nolint:noctx
 		defer resp.Body.Close()                           //nolint:govet
 		b, _ := io.ReadAll(resp.Body)
 		fmt.Print(string(b))
-	}
+		shutdown()
+	}()
 
 	svr.Run()
 
@@ -60,18 +71,39 @@ func ExampleNewHTTPDocs() {
 	//
 	// List of all registered init services that are being immediately started.
 	//
-	// | Name   | Type            | Address                   |
-	// | ------ | --------------- | ------------------------- |
-	// | `docs` | `*service.HTTP` | address: `localhost:9001` |
+	// | Name   | Type            | Address                              |
+	// | ------ | --------------- | ------------------------------------ |
+	// | `docs` | `*service.HTTP` | `*http.ServeMux` on `localhost:9001` |
+	//
+	// ## Services
+	//
+	// List of all registered services that are being started.
+	//
+	// | Name             | Type                 | Description                            |
+	// | ---------------- | -------------------- | -------------------------------------- |
+	// | `demo-goroutine` | `*service.GoRoutine` | parallel: `1`                          |
+	// | `demp-http`      | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
 	//
 	// ## Health probes
 	//
 	// List of all registered healthz probes that are being called during startup and runntime.
 	//
-	// | Name     | Type            |
-	// | -------- | --------------- |
-	// | `always` | `*keel.Server`  |
-	// | `always` | `*service.HTTP` |
+	// | Name     | Type                 | Description                            |
+	// | -------- | -------------------- | -------------------------------------- |
+	// | `always` | `*keel.Server`       |                                        |
+	// | `always` | `*service.GoRoutine` | parallel: `1`                          |
+	// | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
+	// | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
+	//
+	// ## Closers
+	//
+	// List of all registered closers that are being called during graceful shutdown.
+	//
+	// | Name                 | Type                     |
+	// | -------------------- | ------------------------ |
+	// | `*service.GoRoutine` | `ErrorCloserWithContext` |
+	// | `*service.HTTP`      | `ErrorCloserWithContext` |
+	// | `*service.HTTP`      | `ErrorCloserWithContext` |
 	//
 	// ## Metrics
 	//
@@ -106,8 +138,4 @@ func ExampleNewHTTPDocs() {
 	// | `go_memstats_stack_sys_bytes`      | GAUGE   | Number of bytes obtained from system for stack allocator.          |
 	// | `go_memstats_sys_bytes`            | GAUGE   | Number of bytes obtained from system.                              |
 	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |
-	//
-	// {"level":"info","msg":"starting keel server"}
-	// {"level":"debug","msg":"keel graceful shutdown"}
-	// {"level":"info","msg":"keel server stopped"}
 }

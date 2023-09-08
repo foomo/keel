@@ -6,8 +6,6 @@ import (
 	"github.com/foomo/keel/interfaces"
 	"github.com/foomo/keel/markdown"
 	"go.uber.org/zap"
-
-	"github.com/foomo/keel/log"
 )
 
 const (
@@ -19,7 +17,6 @@ const (
 func NewHTTPDocs(l *zap.Logger, name, addr, path string, documenters map[string]interfaces.Documenter) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		l.Info("ping  ")
 		switch r.Method {
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
@@ -38,9 +35,9 @@ func NewHTTPDocs(l *zap.Logger, name, addr, path string, documenters map[string]
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPDocs(documenter map[string]interfaces.Documenter) *HTTP {
+func NewDefaultHTTPDocs(l *zap.Logger, documenter map[string]interfaces.Documenter) *HTTP {
 	return NewHTTPDocs(
-		log.Logger(),
+		l,
 		DefaultHTTPDocsName,
 		DefaultHTTPDocsAddr,
 		DefaultHTTPDocsPath,

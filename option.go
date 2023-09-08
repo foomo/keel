@@ -73,7 +73,7 @@ func WithShutdownTimeout(shutdownTimeout time.Duration) Option {
 func WithHTTPZapService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.zap.enabled", enabled)() {
-			svs := service.NewDefaultHTTPZap()
+			svs := service.NewDefaultHTTPZap(inst.Logger())
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
@@ -84,7 +84,7 @@ func WithHTTPZapService(enabled bool) Option {
 func WithHTTPViperService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.viper.enabled", enabled)() {
-			svs := service.NewDefaultHTTPViper()
+			svs := service.NewDefaultHTTPViper(inst.Logger())
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
@@ -150,7 +150,7 @@ func WithPrometheusMeter(enabled bool) Option {
 func WithHTTPPrometheusService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.prometheus.enabled", enabled)() {
-			svs := service.NewDefaultHTTPPrometheus()
+			svs := service.NewDefaultHTTPPrometheus(inst.Logger())
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
@@ -161,7 +161,7 @@ func WithHTTPPrometheusService(enabled bool) Option {
 func WithHTTPPProfService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.pprof.enabled", enabled)() {
-			svs := service.NewDefaultHTTPPProf()
+			svs := service.NewDefaultHTTPPProf(inst.Logger())
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
@@ -172,7 +172,7 @@ func WithHTTPPProfService(enabled bool) Option {
 func WithHTTPHealthzService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.healthz.enabled", enabled)() {
-			svs := service.NewDefaultHTTPProbes(inst.probes)
+			svs := service.NewDefaultHTTPProbes(inst.Logger(), inst.probes)
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
@@ -183,7 +183,7 @@ func WithHTTPHealthzService(enabled bool) Option {
 func WithHTTPDocsService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.docs.enabled", enabled)() {
-			svs := service.NewDefaultHTTPDocs(inst.documenter)
+			svs := service.NewDefaultHTTPDocs(inst.Logger(), inst.documenter)
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}

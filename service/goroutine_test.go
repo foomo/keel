@@ -11,7 +11,7 @@ import (
 )
 
 func ExampleNewGoRoutine() {
-	shutdown(3 * time.Second)
+	shutdownAfter(3 * time.Second)
 
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),

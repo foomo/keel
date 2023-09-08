@@ -6,9 +6,15 @@ import (
 )
 
 // shutdown example after the given time
-func shutdown(duration time.Duration) {
+func shutdownAfter(duration time.Duration) {
 	go func() {
 		time.Sleep(duration)
-		_ = syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+		shutdown()
 	}()
+}
+
+func shutdown() {
+	if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
+		panic(err)
+	}
 }

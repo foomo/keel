@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
-	"github.com/foomo/keel/log"
 )
 
 const (
@@ -47,9 +46,9 @@ func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP 
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPViper() *HTTP {
+func NewDefaultHTTPViper(l *zap.Logger) *HTTP {
 	return NewHTTPViper(
-		log.Logger(),
+		l,
 		config.Config(),
 		DefaultHTTPViperName,
 		DefaultHTTPViperAddr,

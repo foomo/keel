@@ -139,9 +139,9 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPProbes(probes map[healthz.Type][]interface{}) *HTTP {
+func NewDefaultHTTPProbes(l *zap.Logger, probes map[healthz.Type][]interface{}) *HTTP {
 	return NewHealthz(
-		log.Logger(),
+		l,
 		DefaultHTTPHealthzName,
 		DefaultHTTPHealthzAddr,
 		DefaultHTTPHealthzPath,

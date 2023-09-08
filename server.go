@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -47,6 +48,7 @@ type Server struct {
 	shutdownTimeout time.Duration
 	running         atomic.Bool
 	closers         []interface{}
+	closersLock     sync.Mutex
 	probes          map[healthz.Type][]interface{}
 	documenter      map[string]interfaces.Documenter
 	ctx             context.Context
@@ -87,6 +89,8 @@ func NewServer(opts ...Option) *Server {
 			defer timeoutCancel()
 
 			// append internal closers
+			inst.closersLock.Lock()
+			defer inst.closersLock.Unlock()
 			closers := append(inst.closers, inst.traceProvider, inst.meterProvider) //nolint:gocritic
 
 			for _, closer := range closers {
@@ -233,6 +237,8 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
+	s.closersLock.Lock()
+	defer s.closersLock.Unlock()
 	for _, value := range s.closers {
 		if value == closer {
 			return
@@ -360,6 +366,7 @@ func (s *Server) Run() {
 	s.l.Info("keel server stopped")
 }
 
+// Docs returns the self-documenting string
 func (s *Server) Docs() string {
 	md := &markdown.Markdown{}
 
@@ -420,14 +427,12 @@ func (s *Server) Docs() string {
 	{
 		var rows [][]string
 		for _, value := range s.services {
-			if v, ok := value.(*service.HTTP); ok {
-				t := reflect.TypeOf(v)
-				rows = append(rows, []string{
-					markdown.Code(v.Name()),
-					markdown.Code(t.String()),
-					markdown.String(v),
-				})
-			}
+			t := reflect.TypeOf(value)
+			rows = append(rows, []string{
+				markdown.Code(value.Name()),
+				markdown.Code(t.String()),
+				markdown.String(value),
+			})
 		}
 		if len(rows) > 0 {
 			md.Println("## Services")
@@ -447,6 +452,7 @@ func (s *Server) Docs() string {
 				rows = append(rows, []string{
 					markdown.Code(k.String()),
 					markdown.Code(t.String()),
+					markdown.String(probe),
 				})
 			}
 		}
@@ -455,13 +461,15 @@ func (s *Server) Docs() string {
 			md.Println("")
 			md.Println("List of all registered healthz probes that are being called during startup and runntime.")
 			md.Println("")
-			md.Table([]string{"Name", "Type"}, rows)
+			md.Table([]string{"Name", "Type", "Description"}, rows)
 			md.Println("")
 		}
 	}
 
 	{
 		var rows [][]string
+		s.closersLock.Lock()
+		defer s.closersLock.Unlock()
 		for _, value := range s.closers {
 			t := reflect.TypeOf(value)
 			var closer string
