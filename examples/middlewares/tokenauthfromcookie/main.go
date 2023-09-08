@@ -5,6 +5,7 @@ import (
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/net/http/middleware"
+	"github.com/foomo/keel/service"
 )
 
 func main() {
@@ -26,7 +27,7 @@ func main() {
 	tokenProvider := middleware.CookieTokenProvider("keel-token")
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.TokenAuth(
 				token,
 				middleware.TokenAuthWithTokenProvider(tokenProvider),

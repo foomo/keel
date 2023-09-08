@@ -8,6 +8,7 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/middleware"
 	"github.com/foomo/keel/net/http/roundtripware"
+	"github.com/foomo/keel/service"
 	httputils "github.com/foomo/keel/utils/net/http"
 )
 
@@ -52,7 +53,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			// add middleware
 			middleware.RequestID(),
 			// add middleware

@@ -25,6 +25,7 @@ import (
   "net/http"
 
   "github.com/foomo/keel"
+  "github.com/foomo/keel/service"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
   svs := newService()
 
   svr.AddService(
-    keel.NewServiceHTTP(l, "demo", ":8080", svs),
+    service.NewHTTP(l, "demo", "localhost:8080", svs),
   )
 
   svr.Run()

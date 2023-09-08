@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foomo/keel/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
@@ -74,7 +75,7 @@ func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(
-		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTP(s.l, "test", ":55000", s.mux),
 	)
 
 	s.runServer()
@@ -86,8 +87,8 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 
 func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.svr.AddServices(
-		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "/log"),
-		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTPZap(s.l, "zap", ":9100", "/log"),
+		service.NewHTTP(s.l, "test", ":55000", s.mux),
 	)
 
 	s.runServer()
@@ -141,7 +142,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 
 func (s *KeelTestSuite) TestGraceful() {
 	s.svr.AddServices(
-		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTP(s.l, "test", ":55000", s.mux),
 	)
 
 	s.runServer()

@@ -1,4 +1,4 @@
-package keel
+package service
 
 import (
 	"encoding/json"
@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	DefaultServiceHTTPZapName = "zap"
-	DefaultServiceHTTPZapAddr = "localhost:9100"
-	DefaultServiceHTTPZapPath = "/log"
+	DefaultHTTPZapName = "zap"
+	DefaultHTTPZapAddr = "localhost:9100"
+	DefaultHTTPZapPath = "/log"
 )
 
-func NewServiceHTTPZap(l *zap.Logger, name, addr, path string) *ServiceHTTP {
+func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		type errorResponse struct {
@@ -91,14 +91,14 @@ func NewServiceHTTPZap(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 			})
 		}
 	})
-	return NewServiceHTTP(l, name, addr, handler)
+	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultServiceHTTPZap() *ServiceHTTP {
-	return NewServiceHTTPZap(
+func NewDefaultHTTPZap() *HTTP {
+	return NewHTTPZap(
 		log.Logger(),
-		DefaultServiceHTTPZapName,
-		DefaultServiceHTTPZapAddr,
-		DefaultServiceHTTPZapPath,
+		DefaultHTTPZapName,
+		DefaultHTTPZapAddr,
+		DefaultHTTPZapPath,
 	)
 }

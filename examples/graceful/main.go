@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/foomo/keel/service"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel"
@@ -32,7 +33,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		service.NewHTTP(l, "demo", "localhost:8080", svs),
 	)
 
 	svr.Run()

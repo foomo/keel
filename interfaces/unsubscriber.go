@@ -1,4 +1,4 @@
-package keel
+package interfaces
 
 import "context"
 

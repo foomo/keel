@@ -1,3 +1,6 @@
+//go:build !docs
+// +build !docs
+
 package keel
 
 import (
@@ -10,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/foomo/keel/healthz"
+	"github.com/foomo/keel/interfaces"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -40,7 +45,7 @@ type Server struct {
 	shutdownTimeout time.Duration
 	running         atomic.Bool
 	closers         []interface{}
-	probes          map[HealthzType][]interface{}
+	probes          map[healthz.Type][]interface{}
 	ctx             context.Context
 	ctxCancel       context.Context
 	ctxCancelFn     context.CancelFunc
@@ -54,7 +59,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
-		probes:          map[HealthzType][]interface{}{},
+		probes:          map[healthz.Type][]interface{}{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -83,51 +88,51 @@ func NewServer(opts ...Option) *Server {
 			for _, closer := range closers {
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
 				switch c := closer.(type) {
-				case Closer:
+				case interfaces.Closer:
 					c.Close()
-				case ErrorCloser:
+				case interfaces.ErrorCloser:
 					if err := c.Close(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorCloser")
 					}
-				case CloserWithContext:
+				case interfaces.CloserWithContext:
 					c.Close(timeoutCtx)
-				case ErrorCloserWithContext:
+				case interfaces.ErrorCloserWithContext:
 					if err := c.Close(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorCloserWithContext")
 					}
-				case Shutdowner:
+				case interfaces.Shutdowner:
 					c.Shutdown()
-				case ErrorShutdowner:
+				case interfaces.ErrorShutdowner:
 					if err := c.Shutdown(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdowner")
 					}
-				case ShutdownerWithContext:
+				case interfaces.ShutdownerWithContext:
 					c.Shutdown(timeoutCtx)
-				case ErrorShutdownerWithContext:
+				case interfaces.ErrorShutdownerWithContext:
 					if err := c.Shutdown(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
 					}
-				case Stopper:
+				case interfaces.Stopper:
 					c.Stop()
-				case ErrorStopper:
+				case interfaces.ErrorStopper:
 					if err := c.Stop(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorStopper")
 					}
-				case StopperWithContext:
+				case interfaces.StopperWithContext:
 					c.Stop(timeoutCtx)
-				case ErrorStopperWithContext:
+				case interfaces.ErrorStopperWithContext:
 					if err := c.Stop(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorStopperWithContext")
 					}
-				case Unsubscriber:
+				case interfaces.Unsubscriber:
 					c.Unsubscribe()
-				case ErrorUnsubscriber:
+				case interfaces.ErrorUnsubscriber:
 					if err := c.Unsubscribe(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriber")
 					}
-				case UnsubscriberWithContext:
+				case interfaces.UnsubscriberWithContext:
 					c.Unsubscribe(timeoutCtx)
-				case ErrorUnsubscriberWithContext:
+				case interfaces.ErrorUnsubscriberWithContext:
 					if err := c.Unsubscribe(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
 					}
@@ -229,22 +234,22 @@ func (s *Server) AddCloser(closer interface{}) {
 		}
 	}
 	switch closer.(type) {
-	case Closer,
-		ErrorCloser,
-		CloserWithContext,
-		ErrorCloserWithContext,
-		Shutdowner,
-		ErrorShutdowner,
-		ShutdownerWithContext,
-		ErrorShutdownerWithContext,
-		Stopper,
-		ErrorStopper,
-		StopperWithContext,
-		ErrorStopperWithContext,
-		Unsubscriber,
-		ErrorUnsubscriber,
-		UnsubscriberWithContext,
-		ErrorUnsubscriberWithContext:
+	case interfaces.Closer,
+		interfaces.ErrorCloser,
+		interfaces.CloserWithContext,
+		interfaces.ErrorCloserWithContext,
+		interfaces.Shutdowner,
+		interfaces.ErrorShutdowner,
+		interfaces.ShutdownerWithContext,
+		interfaces.ErrorShutdownerWithContext,
+		interfaces.Stopper,
+		interfaces.ErrorStopper,
+		interfaces.StopperWithContext,
+		interfaces.ErrorStopperWithContext,
+		interfaces.Unsubscriber,
+		interfaces.ErrorUnsubscriber,
+		interfaces.UnsubscriberWithContext,
+		interfaces.ErrorUnsubscriberWithContext:
 		s.closers = append(s.closers, closer)
 	default:
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
@@ -259,14 +264,14 @@ func (s *Server) AddClosers(closers ...interface{}) {
 }
 
 // AddHealthzer adds a probe to be called on healthz checks
-func (s *Server) AddHealthzer(typ HealthzType, probe interface{}) {
+func (s *Server) AddHealthzer(typ healthz.Type, probe interface{}) {
 	switch probe.(type) {
-	case BoolHealthzer,
-		BoolHealthzerWithContext,
-		ErrorHealthzer,
-		ErrorHealthzWithContext,
-		ErrorPinger,
-		ErrorPingerWithContext:
+	case healthz.BoolHealthzer,
+		healthz.BoolHealthzerWithContext,
+		healthz.ErrorHealthzer,
+		healthz.ErrorHealthzWithContext,
+		interfaces.ErrorPinger,
+		interfaces.ErrorPingerWithContext:
 		s.probes[typ] = append(s.probes[typ], probe)
 	default:
 		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
@@ -274,7 +279,7 @@ func (s *Server) AddHealthzer(typ HealthzType, probe interface{}) {
 }
 
 // AddHealthzers adds the given probes to be called on healthz checks
-func (s *Server) AddHealthzers(typ HealthzType, probes ...interface{}) {
+func (s *Server) AddHealthzers(typ healthz.Type, probes ...interface{}) {
 	for _, probe := range probes {
 		s.AddHealthzer(typ, probe)
 	}
@@ -282,22 +287,22 @@ func (s *Server) AddHealthzers(typ HealthzType, probes ...interface{}) {
 
 // AddAlwaysHealthzers adds the probes to be called on any healthz checks
 func (s *Server) AddAlwaysHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeAlways, probes...)
+	s.AddHealthzers(healthz.TypeAlways, probes...)
 }
 
 // AddStartupHealthzers adds the startup probes to be called on healthz checks
 func (s *Server) AddStartupHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeStartup, probes...)
+	s.AddHealthzers(healthz.TypeStartup, probes...)
 }
 
 // AddLivenessHealthzers adds the liveness probes to be called on healthz checks
 func (s *Server) AddLivenessHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeLiveness, probes...)
+	s.AddHealthzers(healthz.TypeLiveness, probes...)
 }
 
 // AddReadinessHealthzers adds the readiness probes to be called on healthz checks
 func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeReadiness, probes...)
+	s.AddHealthzers(healthz.TypeReadiness, probes...)
 }
 
 // IsCanceled returns true if the internal errgroup has been canceled
