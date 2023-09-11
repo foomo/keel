@@ -155,8 +155,8 @@ func ExampleNewHTTPReadme() {
 	//
 	// | Name                               | Type    | Description                                                        |
 	// | ---------------------------------- | ------- | ------------------------------------------------------------------ |
-	// | foo_bar_total                      | COUNTER | Foo bar metrics                                                    |
-	// | foo_baz_total                      | COUNTER | Foo baz metrics                                                    |
+	// | `foo_bar_total`                    | COUNTER | Foo bar metrics                                                    |
+	// | `foo_baz_total`                    | COUNTER | Foo baz metrics                                                    |
 	// | `go_gc_duration_seconds`           | SUMMARY | A summary of the pause duration of garbage collection cycles.      |
 	// | `go_goroutines`                    | GAUGE   | Number of goroutines that currently exist.                         |
 	// | `go_info`                          | GAUGE   | Information about the Go environment.                              |

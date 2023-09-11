@@ -12,7 +12,7 @@ func Readme() string {
 	if gatherer, err := prometheus.DefaultGatherer.Gather(); err == nil {
 		for _, value := range gatherer {
 			rows = append(rows, []string{
-				value.GetName(),
+				markdown.Code(value.GetName()),
 				value.GetType().String(),
 				value.GetHelp(),
 			})
