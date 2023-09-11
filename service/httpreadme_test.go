@@ -100,7 +100,7 @@ func ExampleNewHTTPReadme() {
 	// | -------- | --------------- | ------------------------------------ |
 	// | `readme` | `*service.HTTP` | `*http.ServeMux` on `localhost:9001` |
 	//
-	// ### Services
+	// ### Runtime Services
 	//
 	// List of all registered services that are being started.
 	//
@@ -108,7 +108,6 @@ func ExampleNewHTTPReadme() {
 	// | ---------------- | -------------------- | -------------------------------------- |
 	// | `demo-goroutine` | `*service.GoRoutine` | parallel: `1`                          |
 	// | `demp-http`      | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
-	//
 	//
 	// ### Health probes
 	//
@@ -120,7 +119,6 @@ func ExampleNewHTTPReadme() {
 	// | `demo-goroutine` | `always` | `*service.GoRoutine` | parallel: `1`                          |
 	// | `demp-http`      | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
 	// | `readme`         | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
-	//
 	//
 	// ### Closers
 	//

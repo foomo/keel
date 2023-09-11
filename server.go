@@ -439,7 +439,6 @@ func (s *Server) readmeCloser() string {
 		md.Println("List of all registered closers that are being called during graceful shutdown.")
 		md.Println("")
 		md.Table([]string{"Name", "Type", "Closer", "Description"}, rows)
-		md.Println("")
 	}
 
 	return md.String()
@@ -466,7 +465,6 @@ func (s *Server) readmeHealthz() string {
 		md.Println("List of all registered healthz probes that are being called during startup and runntime.")
 		md.Println("")
 		md.Table([]string{"Name", "Probe", "Type", "Description"}, rows)
-		md.Println("")
 	}
 
 	return md.String()
@@ -493,9 +491,10 @@ func (s *Server) readmeServices() string {
 			md.Println("List of all registered init services that are being immediately started.")
 			md.Println("")
 			md.Table([]string{"Name", "Type", "Address"}, rows)
-			md.Println("")
 		}
 	}
+
+	md.Println("")
 
 	{
 		var rows [][]string
@@ -508,12 +507,11 @@ func (s *Server) readmeServices() string {
 			})
 		}
 		if len(rows) > 0 {
-			md.Println("### Services")
+			md.Println("### Runtime Services")
 			md.Println("")
 			md.Println("List of all registered services that are being started.")
 			md.Println("")
 			md.Table([]string{"Name", "Type", "Description"}, rows)
-			md.Println("")
 		}
 	}
 
