@@ -133,7 +133,7 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 			indices[db.Name()] = map[string][]string{}
 		}
 		for _, index := range o.Indexes {
-			if index.Options.Name != nil {
+			if index.Options != nil && index.Options.Name != nil {
 				indices[db.Name()][name] = append(indices[db.Name()][name], *index.Options.Name)
 			}
 		}
