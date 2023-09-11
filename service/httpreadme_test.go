@@ -2,8 +2,6 @@ package service_test
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"net/http"
 	"os"
 
@@ -68,10 +66,8 @@ func ExampleNewHTTPReadme() {
 	}))
 
 	go func() {
-		resp, _ := http.Get("http://localhost:9001/readme") //nolint:noctx
-		defer resp.Body.Close()                             //nolint:govet
-		b, _ := io.ReadAll(resp.Body)
-		fmt.Print(string(b))
+		waitFor("localhost:9001")
+		l.Info(httpGet("http://localhost:9001/readme"))
 		shutdown()
 	}()
 
