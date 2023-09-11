@@ -66,22 +66,19 @@ func ExampleNewHTTPReadme() {
 	//
 	// List of all accessed environment variables.
 	//
-	// | Key                                     | Type     | Required | Default |
-	// | --------------------------------------- | -------- | -------- | ------- |
-	// | `EXAMPLE_BOOL`                          | `bool`   |          |         |
-	// | `EXAMPLE_REQUIRED_BOOL`                 | `bool`   |          |         |
-	// | `EXAMPLE_REQUIRED_BOOL`                 | `bool`   | `true`   |         |
-	// | `EXAMPLE_REQUIRED_STRING`               | `string` |          |         |
-	// | `EXAMPLE_REQUIRED_STRING`               | `string` | `true`   |         |
-	// | `EXAMPLE_STRING`                        | `string` |          | `demo`  |
-	// | `LOG_DISABLE_CALLER`                    | `bool`   |          |         |
-	// | `LOG_DISABLE_STACKTRACE`                | `bool`   |          |         |
-	// | `LOG_ENCODING`                          | `string` |          | `json`  |
-	// | `LOG_LEVEL`                             | `string` |          | `info`  |
-	// | `LOG_MODE`                              | `string` |          | `prod`  |
-	// | `OTEL_ENABLED`                          | `bool`   |          |         |
-	// | `OTEL_MONGO_COMMAND_ATTRIBUTE_DISABLED` | `bool`   |          |         |
-	// | `OTEL_MONGO_ENABLED`                    | `bool`   |          |         |
+	// | Key                       | Type     | Required | Default |
+	// | ------------------------- | -------- | -------- | ------- |
+	// | `EXAMPLE_BOOL`            | `bool`   |          |         |
+	// | `EXAMPLE_REQUIRED_BOOL`   | `bool`   |          |         |
+	// | `EXAMPLE_REQUIRED_BOOL`   | `bool`   | `true`   |         |
+	// | `EXAMPLE_REQUIRED_STRING` | `string` |          |         |
+	// | `EXAMPLE_REQUIRED_STRING` | `string` | `true`   |         |
+	// | `EXAMPLE_STRING`          | `string` |          | `demo`  |
+	// | `LOG_DISABLE_CALLER`      | `bool`   |          |         |
+	// | `LOG_DISABLE_STACKTRACE`  | `bool`   |          |         |
+	// | `LOG_ENCODING`            | `string` |          | `json`  |
+	// | `LOG_LEVEL`               | `string` |          | `info`  |
+	// | `LOG_MODE`                | `string` |          | `prod`  |
 	//
 	// ### Config
 	//
@@ -129,20 +126,11 @@ func ExampleNewHTTPReadme() {
 	//
 	// List of all registered closers that are being called during graceful shutdown.
 	//
-	// | Name             | Type                   | Closer                   | Description                            |
-	// | ---------------- | ---------------------- | ------------------------ | -------------------------------------- |
-	// |                  | `*keelmongo.Persistor` | `ErrorCloserWithContext` |                                        |
-	// | `demo-goroutine` | `*service.GoRoutine`   | `ErrorCloserWithContext` | parallel: `1`                          |
-	// | `demp-http`      | `*service.HTTP`        | `ErrorCloserWithContext` | `http.HandlerFunc` on `localhost:8080` |
-	// | `readme`         | `*service.HTTP`        | `ErrorCloserWithContext` | `*http.ServeMux` on `localhost:9001`   |
-	//
-	// ### Mongo
-	//
-	// List of all used mongo collections.
-	//
-	// | Database | Collection | Indices                  |
-	// | -------- | ---------- | ------------------------ |
-	// | `dummy`  | `dummy`    | `id_1`, `id_1_version_1` |
+	// | Name             | Type                 | Closer                   | Description                            |
+	// | ---------------- | -------------------- | ------------------------ | -------------------------------------- |
+	// | `demo-goroutine` | `*service.GoRoutine` | `ErrorCloserWithContext` | parallel: `1`                          |
+	// | `demp-http`      | `*service.HTTP`      | `ErrorCloserWithContext` | `http.HandlerFunc` on `localhost:8080` |
+	// | `readme`         | `*service.HTTP`      | `ErrorCloserWithContext` | `*http.ServeMux` on `localhost:9001`   |
 	//
 	// ### Metrics
 	//
@@ -176,7 +164,7 @@ func ExampleNewHTTPReadme() {
 	// | `go_memstats_stack_inuse_bytes`    | GAUGE   | Number of bytes in use by the stack allocator.                     |
 	// | `go_memstats_stack_sys_bytes`      | GAUGE   | Number of bytes obtained from system for stack allocator.          |
 	// | `go_memstats_sys_bytes`            | GAUGE   | Number of bytes obtained from system.                              |
-	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |//
+	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |
 	// | `process_cpu_seconds_total`        | COUNTER | Total user and system CPU time spent in seconds.                   |
 	// | `process_max_fds`                  | GAUGE   | Maximum number of open file descriptors.                           |
 	// | `process_open_fds`                 | GAUGE   | Number of open file descriptors.                                   |
