@@ -11,6 +11,9 @@ import (
 	"github.com/foomo/keel/config"
 	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/service"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 )
 
@@ -21,6 +24,7 @@ func ExampleNewHTTPReadme() {
 
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewNop()),
+		keel.WithPrometheusMeter(true),
 		keel.WithHTTPReadmeService(true),
 	)
 
@@ -39,6 +43,18 @@ func ExampleNewHTTPReadme() {
 	// required configs
 	_ = config.MustGetBool(c, "example.required.bool")
 	_ = config.MustGetString(c, "example.required.string")
+
+	m := svr.Meter()
+
+	// add metrics
+	fooBarCounter := promauto.NewCounter(prometheus.CounterOpts{
+		Name: "foo_bar_total",
+		Help: "Foo bar metrics",
+	})
+	fooBazCounter, _ := m.SyncInt64().Counter("foo_baz_total", instrument.WithDescription("Foo baz metrics"))
+
+	fooBarCounter.Add(1)
+	fooBazCounter.Add(svr.Context(), 1)
 
 	// add http service
 	svr.AddService(service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +152,8 @@ func ExampleNewHTTPReadme() {
 	//
 	// | Name                               | Type    | Description                                                        |
 	// | ---------------------------------- | ------- | ------------------------------------------------------------------ |
+	// | foo_bar_total                      | COUNTER | Foo bar metrics                                                    |
+	// | foo_baz_total                      | COUNTER | Foo baz metrics                                                    |
 	// | `go_gc_duration_seconds`           | SUMMARY | A summary of the pause duration of garbage collection cycles.      |
 	// | `go_goroutines`                    | GAUGE   | Number of goroutines that currently exist.                         |
 	// | `go_info`                          | GAUGE   | Information about the Go environment.                              |

@@ -2,31 +2,23 @@ package metrics
 
 import (
 	"github.com/foomo/keel/markdown"
-	"github.com/foomo/keel/telemetry/nonrecording"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 func Readme() string {
 	md := markdown.Markdown{}
-	values := nonrecording.Metrics()
+	var rows [][]string
 
-	gatherer, _ := prometheus.DefaultRegisterer.(*prometheus.Registry).Gather()
-	for _, value := range gatherer {
-		values = append(values, nonrecording.Metric{
-			Name: value.GetName(),
-			Type: value.GetType().String(),
-			Help: value.GetHelp(),
-		})
+	if gatherer, err := prometheus.DefaultGatherer.Gather(); err == nil {
+		for _, value := range gatherer {
+			rows = append(rows, []string{
+				value.GetName(),
+				value.GetType().String(),
+				value.GetHelp(),
+			})
+		}
 	}
 
-	rows := make([][]string, 0, len(values))
-	for _, value := range values {
-		rows = append(rows, []string{
-			markdown.Code(value.Name),
-			value.Type,
-			value.Help,
-		})
-	}
 	if len(rows) > 0 {
 		md.Println("### Metrics")
 		md.Println("")
