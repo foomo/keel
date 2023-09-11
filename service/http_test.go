@@ -2,7 +2,9 @@ package service_test
 
 import (
 	"io"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/service"
@@ -24,6 +26,9 @@ func ExampleNewHTTP() {
 	)
 
 	go func() {
+		if _, err := net.DialTimeout("tcp", "localhost:8080", 10*time.Second); err != nil {
+			panic(err.Error())
+		}
 		resp, _ := http.Get("http://localhost:8080") //nolint:noctx
 		defer resp.Body.Close()                      //nolint:govet
 		b, _ := io.ReadAll(resp.Body)
