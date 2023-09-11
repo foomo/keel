@@ -108,6 +108,7 @@ func ExampleNewHTTPReadme() {
 	// | `example.required.bool`   | `bool`   | `true`   |            |
 	// | `example.required.string` | `string` | `true`   |            |
 	// | `example.string`          | `string` |          | `fallback` |
+	// | `otel.enabled`            | `bool`   |          | `true`     |
 	// | `service.readme.enabled`  | `bool`   |          | `true`     |
 	//
 	// ### Init Services
