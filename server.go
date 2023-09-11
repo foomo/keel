@@ -463,7 +463,7 @@ func (s *Server) readmeHealthz() string {
 	if len(rows) > 0 {
 		md.Println("### Health probes")
 		md.Println("")
-		md.Println("List of all registered healthz probes that are being called during startup and runntime.")
+		md.Println("List of all registered healthz probes that are being called during startup and runtime.")
 		md.Println("")
 		md.Table([]string{"Name", "Probe", "Type", "Description"}, rows)
 	}

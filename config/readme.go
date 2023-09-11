@@ -52,7 +52,7 @@ func Readme() string {
 	}
 
 	if len(configRows) > 0 {
-		md.Println("List of all registered config variabled with their defaults.")
+		md.Println("List of all registered config variables with their defaults.")
 		md.Println("")
 		md.Table([]string{"Key", "Type", "Required", "Default"}, configRows)
 		md.Println("")

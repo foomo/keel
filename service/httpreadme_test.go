@@ -82,7 +82,7 @@ func ExampleNewHTTPReadme() {
 	//
 	// ### Config
 	//
-	// List of all registered config variabled with their defaults.
+	// List of all registered config variables with their defaults.
 	//
 	// | Key                       | Type     | Required | Default    |
 	// | ------------------------- | -------- | -------- | ---------- |
@@ -111,7 +111,7 @@ func ExampleNewHTTPReadme() {
 	//
 	// ### Health probes
 	//
-	// List of all registered healthz probes that are being called during startup and runntime.
+	// List of all registered healthz probes that are being called during startup and runtime.
 	//
 	// | Name             | Probe    | Type                 | Description                            |
 	// | ---------------- | -------- | -------------------- | -------------------------------------- |
