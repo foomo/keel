@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -21,7 +22,7 @@ func ExampleNewHTTPReadme() {
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
 
 	svr := keel.NewServer(
-		keel.WithLogger(zap.NewExample()),
+		keel.WithLogger(zap.NewNop()),
 		keel.WithPrometheusMeter(true),
 		keel.WithHTTPReadmeService(true),
 	)
@@ -67,7 +68,7 @@ func ExampleNewHTTPReadme() {
 
 	go func() {
 		waitFor("localhost:9001")
-		l.Info(httpGet("http://localhost:9001/readme"))
+		fmt.Print(httpGet("http://localhost:9001/readme"))
 		shutdown()
 	}()
 
