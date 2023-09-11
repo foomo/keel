@@ -114,11 +114,6 @@ func CollectionWithIndexesCommitQuorumVotingMembers(v context.Context) Collectio
 // ~ Constructor
 // ------------------------------------------------------------------------------------------------
 
-var (
-	dbs     = map[string][]string{}
-	indices = map[string]map[string][]string{}
-)
-
 func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*Collection, error) {
 	o := DefaultCollectionOptions()
 	for _, opt := range opts {

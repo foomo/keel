@@ -20,12 +20,14 @@ func ExampleNewGoRoutine() {
 	svr.AddService(
 		service.NewGoRoutine(svr.Logger(), "demo", func(ctx context.Context, l *zap.Logger) error {
 			for {
+				// handle graceful shutdowns
 				if err := ctx.Err(); errors.Is(context.Cause(ctx), service.ErrServiceShutdown) {
 					l.Info("context has been canceled du to graceful shutdow")
 					return nil
 				} else if err != nil {
 					return errors.Wrap(err, "unexpected context error")
 				}
+
 				l.Info("ping")
 				time.Sleep(time.Second)
 			}

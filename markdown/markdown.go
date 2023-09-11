@@ -6,6 +6,7 @@ import (
 	markdowntable "github.com/fbiville/markdown-table-formatter/pkg/markdown"
 )
 
+// Markdown output helper
 type Markdown struct {
 	value string
 }

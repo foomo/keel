@@ -6,14 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
 	"github.com/foomo/keel/env"
-	"github.com/foomo/keel/examples/persistence/mongo/store"
-	"github.com/foomo/keel/log"
-	keelmongo "github.com/foomo/keel/persistence/mongo"
 	"github.com/foomo/keel/service"
 	"go.uber.org/zap"
 )
@@ -43,26 +39,6 @@ func ExampleNewHTTPReadme() {
 	// required configs
 	_ = config.MustGetBool(c, "example.required.bool")
 	_ = config.MustGetString(c, "example.required.string")
-
-	// create persistor
-	persistor, err := keelmongo.New(svr.Context(), "mongodb://localhost:27017/dummy")
-	log.Must(l, err, "failed to create persistor")
-
-	// ensure to add the persistor to the closers
-	svr.AddClosers(persistor)
-
-	// create repositories
-	_, err = persistor.Collection(
-		"dummy",
-		// define indexes but beware of changes on large dbs
-		keelmongo.CollectionWithIndexes(
-			store.EntityIndex,
-			store.EntityWithVersionsIndex,
-		),
-		// define max time for index creation
-		keelmongo.CollectionWithIndexesMaxTime(time.Minute),
-	)
-	log.Must(l, err, "failed to create collection")
 
 	// add http service
 	svr.AddService(service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -17,7 +17,6 @@ import (
 	"github.com/foomo/keel/interfaces"
 	"github.com/foomo/keel/markdown"
 	"github.com/foomo/keel/metrics"
-	keelmongo "github.com/foomo/keel/persistence/mongo"
 	"github.com/foomo/keel/service"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -179,7 +178,12 @@ func NewServer(opts ...Option) *Server {
 
 	// add probe
 	inst.AddAlwaysHealthzers(inst)
-	inst.AddReadmer(inst)
+	inst.AddReadmers(
+		interfaces.ReadmeFunc(env.Readme),
+		interfaces.ReadmeFunc(config.Readme),
+		inst,
+		interfaces.ReadmeFunc(metrics.Readme),
+	)
 
 	// start init services
 	inst.startService(inst.initServices...)
@@ -258,15 +262,13 @@ func (s *Server) AddClosers(closers ...interface{}) {
 
 // AddReadmer adds a readmer to be added to the exposed readme
 func (s *Server) AddReadmer(readmer interfaces.Readmer) {
-	if !slices.Contains(s.readmers, readmer) {
-		s.readmers = append(s.readmers, readmer)
-	}
+	s.readmers = append(s.readmers, readmer)
 }
 
 // AddReadmers adds readmers to be added to the exposed readme
 func (s *Server) AddReadmers(readmers ...interfaces.Readmer) {
 	for _, readmer := range readmers {
-		s.AddCloser(readmer)
+		s.AddReadmer(readmer)
 	}
 }
 
@@ -355,13 +357,9 @@ func (s *Server) Run() {
 func (s *Server) Readme() string {
 	md := &markdown.Markdown{}
 
-	md.Print(env.Readme())
-	md.Print(config.Readme())
 	md.Println(s.readmeServices())
 	md.Println(s.readmeHealthz())
 	md.Print(s.readmeCloser())
-	md.Print(keelmongo.Readme())
-	md.Print(metrics.Readme())
 
 	return md.String()
 }

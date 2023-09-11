@@ -28,7 +28,7 @@ type (
 	GoRoutineFn     func(ctx context.Context, l *zap.Logger) error
 )
 
-func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn) *GoRoutine {
+func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn, opts ...GoRoutineOption) *GoRoutine {
 	if l == nil {
 		l = log.Logger()
 	}
@@ -38,12 +38,18 @@ func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn) *GoRoutine {
 		log.KeelServiceNameKey.String(name),
 	)
 
-	return &GoRoutine{
+	inst := &GoRoutine{
 		handler:  handler,
 		name:     name,
 		parallel: 1,
 		l:        l,
 	}
+
+	for _, opt := range opts {
+		opt(inst)
+	}
+
+	return inst
 }
 
 // ------------------------------------------------------------------------------------------------
