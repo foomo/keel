@@ -82,19 +82,21 @@ func ExampleNewHTTPReadme() {
 	//
 	// List of all accessed environment variables.
 	//
-	// | Key                       | Type     | Required | Default |
-	// | ------------------------- | -------- | -------- | ------- |
-	// | `EXAMPLE_BOOL`            | `bool`   |          |         |
-	// | `EXAMPLE_REQUIRED_BOOL`   | `bool`   |          |         |
-	// | `EXAMPLE_REQUIRED_BOOL`   | `bool`   | `true`   |         |
-	// | `EXAMPLE_REQUIRED_STRING` | `string` |          |         |
-	// | `EXAMPLE_REQUIRED_STRING` | `string` | `true`   |         |
-	// | `EXAMPLE_STRING`          | `string` |          | `demo`  |
-	// | `LOG_DISABLE_CALLER`      | `bool`   |          |         |
-	// | `LOG_DISABLE_STACKTRACE`  | `bool`   |          |         |
-	// | `LOG_ENCODING`            | `string` |          | `json`  |
-	// | `LOG_LEVEL`               | `string` |          | `info`  |
-	// | `LOG_MODE`                | `string` |          | `prod`  |
+	// | Key                       | Type     | Required | Default   |
+	// | ------------------------- | -------- | -------- | --------- |
+	// | `EXAMPLE_BOOL`            | `bool`   |          |           |
+	// | `EXAMPLE_REQUIRED_BOOL`   | `bool`   |          |           |
+	// | `EXAMPLE_REQUIRED_BOOL`   | `bool`   | `true`   |           |
+	// | `EXAMPLE_REQUIRED_STRING` | `string` |          |           |
+	// | `EXAMPLE_REQUIRED_STRING` | `string` | `true`   |           |
+	// | `EXAMPLE_STRING`          | `string` |          | `demo`    |
+	// | `LOG_DISABLE_CALLER`      | `bool`   |          |           |
+	// | `LOG_DISABLE_STACKTRACE`  | `bool`   |          |           |
+	// | `LOG_ENCODING`            | `string` |          | `json`    |
+	// | `LOG_LEVEL`               | `string` |          | `info`    |
+	// | `LOG_MODE`                | `string` |          | `prod`    |
+	// | `OTEL_ENABLED`            | `bool`   |          |           |
+	// | `OTEL_SERVICE_NAME`       | `string` |          | `service` |
 	//
 	// ### Config
 	//
