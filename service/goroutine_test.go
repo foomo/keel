@@ -11,8 +11,6 @@ import (
 )
 
 func ExampleNewGoRoutine() {
-	shutdownAfter(3 * time.Second)
-
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),
 	)
@@ -30,6 +28,7 @@ func ExampleNewGoRoutine() {
 
 				l.Info("ping")
 				time.Sleep(time.Second)
+				shutdown()
 			}
 		}),
 	)
@@ -39,7 +38,6 @@ func ExampleNewGoRoutine() {
 	// Output:
 	// {"level":"info","msg":"starting keel server"}
 	// {"level":"info","msg":"starting keel service","keel_service_type":"goroutine","keel_service_name":"demo"}
-	// {"level":"info","msg":"ping","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
 	// {"level":"info","msg":"ping","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
 	// {"level":"info","msg":"ping","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
 	// {"level":"debug","msg":"keel graceful shutdown"}
