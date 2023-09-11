@@ -386,8 +386,8 @@ func (s *Server) startService(services ...Service) {
 
 func (s *Server) readmeCloser() string {
 	md := &markdown.Markdown{}
-	rows := make([][]string, 0, len(s.closers))
 	s.closersLock.Lock()
+	rows := make([][]string, 0, len(s.closers))
 	defer s.closersLock.Unlock()
 	for _, value := range s.closers {
 		t := reflect.TypeOf(value)
