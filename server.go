@@ -439,6 +439,7 @@ func (s *Server) readmeCloser() string {
 		md.Println("List of all registered closers that are being called during graceful shutdown.")
 		md.Println("")
 		md.Table([]string{"Name", "Type", "Closer", "Description"}, rows)
+		md.Println("")
 	}
 
 	return md.String()
