@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/foomo/keel"
@@ -11,6 +12,8 @@ import (
 )
 
 func ExampleNewGoRoutine() {
+	var once sync.Once
+
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),
 	)
@@ -28,7 +31,7 @@ func ExampleNewGoRoutine() {
 
 				l.Info("ping")
 				time.Sleep(time.Second)
-				shutdown()
+				once.Do(shutdown)
 			}
 		}),
 	)
