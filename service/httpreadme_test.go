@@ -21,7 +21,7 @@ func ExampleNewHTTPReadme() {
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
 
 	svr := keel.NewServer(
-		keel.WithLogger(zap.NewNop()),
+		keel.WithLogger(zap.NewExample()),
 		keel.WithPrometheusMeter(true),
 		keel.WithHTTPReadmeService(true),
 	)
