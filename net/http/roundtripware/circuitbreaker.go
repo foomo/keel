@@ -220,7 +220,8 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				done(errSuccess == nil)
 			}
 
-			return resp, nil
+			// return the response and error received from the next call
+			return resp, err
 		}
 	}
 }
