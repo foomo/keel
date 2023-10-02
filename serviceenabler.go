@@ -2,6 +2,7 @@ package keel
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -12,24 +13,37 @@ import (
 type ServiceFunc func() Service
 
 type ServiceEnabler struct {
-	l         *zap.Logger
-	ctx       context.Context
-	name      string
-	service   Service
-	serviceFn ServiceFunc
-	enabled   bool
-	enabledFn func() bool
-	closed    bool
+	l               *zap.Logger
+	ctx             context.Context
+	name            string
+	service         Service
+	serviceFn       ServiceFunc
+	syncEnabled     bool
+	syncEnabledLock sync.RWMutex
+	enabledFn       func() bool
+	closed          bool
 }
 
 func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFunc, enabledFn func() bool) *ServiceEnabler {
 	return &ServiceEnabler{
-		l:         log.WithServiceName(l, name),
-		name:      name,
-		serviceFn: serviceFn,
-		enabled:   enabledFn(),
-		enabledFn: enabledFn,
+		l:           log.WithServiceName(l, name),
+		name:        name,
+		serviceFn:   serviceFn,
+		syncEnabled: enabledFn(),
+		enabledFn:   enabledFn,
 	}
+}
+
+func (w *ServiceEnabler) enabled() bool {
+	w.syncEnabledLock.RLock()
+	defer w.syncEnabledLock.RUnlock()
+	return w.syncEnabled
+}
+
+func (w *ServiceEnabler) setEnabled(v bool) {
+	w.syncEnabledLock.Lock()
+	defer w.syncEnabledLock.Unlock()
+	w.syncEnabled = v
 }
 
 func (w *ServiceEnabler) Name() string {
@@ -37,14 +51,14 @@ func (w *ServiceEnabler) Name() string {
 }
 
 func (w *ServiceEnabler) enable(ctx context.Context) error {
-	w.enabled = true
+	w.setEnabled(true)
 	w.service = w.serviceFn()
 	w.l.Info("starting dynamic service")
 	return w.service.Start(ctx)
 }
 
 func (w *ServiceEnabler) disable(ctx context.Context) error {
-	w.enabled = false
+	w.setEnabled(false)
 	w.l.Info("stopping dynamic service")
 	return w.service.Close(ctx)
 }
@@ -56,7 +70,7 @@ func (w *ServiceEnabler) watch() {
 				break
 			}
 			time.Sleep(time.Second)
-			if value := w.enabledFn(); value != w.enabled {
+			if value := w.enabledFn(); value != w.enabled() {
 				if value {
 					go func() {
 						if err := w.enable(w.ctx); err != nil {
@@ -76,7 +90,7 @@ func (w *ServiceEnabler) watch() {
 func (w *ServiceEnabler) Start(ctx context.Context) error {
 	w.watch()
 	w.ctx = ctx
-	if w.enabled {
+	if w.enabled() {
 		if err := w.enable(w.ctx); err != nil {
 			return err
 		}
@@ -89,7 +103,7 @@ func (w *ServiceEnabler) Start(ctx context.Context) error {
 func (w *ServiceEnabler) Close(ctx context.Context) error {
 	l := log.WithServiceName(w.l, w.Name())
 	w.closed = true
-	if w.enabled {
+	if w.enabled() {
 		if err := w.disable(w.ctx); err != nil {
 			return err
 		}
