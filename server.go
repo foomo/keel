@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -39,7 +40,8 @@ type Server struct {
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	running         atomic.Bool
-	closers         []interface{}
+	syncClosers     []interface{}
+	syncClosersLock sync.RWMutex
 	probes          map[HealthzType][]interface{}
 	ctx             context.Context
 	ctxCancel       context.Context
@@ -78,7 +80,7 @@ func NewServer(opts ...Option) *Server {
 			defer timeoutCancel()
 
 			// append internal closers
-			closers := append(inst.closers, inst.traceProvider, inst.meterProvider) //nolint:gocritic
+			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
 			for _, closer := range closers {
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
@@ -172,6 +174,18 @@ func NewServer(opts ...Option) *Server {
 	return inst
 }
 
+func (s *Server) closers() []interface{} {
+	s.syncClosersLock.RLock()
+	defer s.syncClosersLock.RUnlock()
+	return s.syncClosers
+}
+
+func (s *Server) setClosers(v []interface{}) {
+	s.syncClosersLock.Lock()
+	defer s.syncClosersLock.Unlock()
+	s.syncClosers = v
+}
+
 // Logger returns server logger
 func (s *Server) Logger() *zap.Logger {
 	return s.l
@@ -223,7 +237,7 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	for _, value := range s.closers {
+	for _, value := range s.closers() {
 		if value == closer {
 			return
 		}
@@ -245,7 +259,7 @@ func (s *Server) AddCloser(closer interface{}) {
 		ErrorUnsubscriber,
 		UnsubscriberWithContext,
 		ErrorUnsubscriberWithContext:
-		s.closers = append(s.closers, closer)
+		s.setClosers(append(s.closers(), closer))
 	default:
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
