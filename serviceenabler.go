@@ -34,6 +34,10 @@ func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFunc, enable
 	}
 }
 
+func (w *ServiceEnabler) Name() string {
+	return w.name
+}
+
 func (w *ServiceEnabler) enabled() bool {
 	w.syncEnabledLock.RLock()
 	defer w.syncEnabledLock.RUnlock()
@@ -44,10 +48,6 @@ func (w *ServiceEnabler) setEnabled(v bool) {
 	w.syncEnabledLock.Lock()
 	defer w.syncEnabledLock.Unlock()
 	w.syncEnabled = v
-}
-
-func (w *ServiceEnabler) Name() string {
-	return w.name
 }
 
 func (w *ServiceEnabler) enable(ctx context.Context) error {
