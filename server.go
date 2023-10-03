@@ -42,7 +42,8 @@ type Server struct {
 	running         atomic.Bool
 	syncClosers     []interface{}
 	syncClosersLock sync.RWMutex
-	probes          map[HealthzType][]interface{}
+	syncProbes      map[HealthzType][]interface{}
+	syncProbesLock  sync.RWMutex
 	ctx             context.Context
 	ctxCancel       context.Context
 	ctxCancelFn     context.CancelFunc
@@ -56,7 +57,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
-		probes:          map[HealthzType][]interface{}{},
+		syncProbes:      map[HealthzType][]interface{}{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -174,18 +175,6 @@ func NewServer(opts ...Option) *Server {
 	return inst
 }
 
-func (s *Server) closers() []interface{} {
-	s.syncClosersLock.RLock()
-	defer s.syncClosersLock.RUnlock()
-	return s.syncClosers
-}
-
-func (s *Server) setClosers(v []interface{}) {
-	s.syncClosersLock.Lock()
-	defer s.syncClosersLock.Unlock()
-	s.syncClosers = v
-}
-
 // Logger returns server logger
 func (s *Server) Logger() *zap.Logger {
 	return s.l
@@ -259,7 +248,7 @@ func (s *Server) AddCloser(closer interface{}) {
 		ErrorUnsubscriber,
 		UnsubscriberWithContext,
 		ErrorUnsubscriberWithContext:
-		s.setClosers(append(s.closers(), closer))
+		s.addClosers(closer)
 	default:
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
@@ -281,7 +270,7 @@ func (s *Server) AddHealthzer(typ HealthzType, probe interface{}) {
 		ErrorHealthzWithContext,
 		ErrorPinger,
 		ErrorPingerWithContext:
-		s.probes[typ] = append(s.probes[typ], probe)
+		s.addProbes(typ, probe)
 	default:
 		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
@@ -357,6 +346,30 @@ func (s *Server) Run() {
 	}
 
 	s.l.Info("keel server stopped")
+}
+
+func (s *Server) closers() []interface{} {
+	s.syncClosersLock.RLock()
+	defer s.syncClosersLock.RUnlock()
+	return s.syncClosers
+}
+
+func (s *Server) addClosers(v ...interface{}) {
+	s.syncClosersLock.Lock()
+	defer s.syncClosersLock.Unlock()
+	s.syncClosers = append(s.syncClosers, v...)
+}
+
+func (s *Server) probes() map[HealthzType][]interface{} {
+	s.syncProbesLock.RLock()
+	defer s.syncProbesLock.RUnlock()
+	return s.syncProbes
+}
+
+func (s *Server) addProbes(typ HealthzType, v ...interface{}) {
+	s.syncProbesLock.Lock()
+	defer s.syncProbesLock.Unlock()
+	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
 }
 
 // startService starts the given services
