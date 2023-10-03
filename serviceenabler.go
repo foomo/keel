@@ -21,7 +21,8 @@ type ServiceEnabler struct {
 	syncEnabled     bool
 	syncEnabledLock sync.RWMutex
 	enabledFn       func() bool
-	closed          bool
+	syncClosed      bool
+	syncClosedLock  sync.RWMutex
 }
 
 func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFunc, enabledFn func() bool) *ServiceEnabler {
@@ -36,6 +37,44 @@ func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFunc, enable
 
 func (w *ServiceEnabler) Name() string {
 	return w.name
+}
+
+func (w *ServiceEnabler) Start(ctx context.Context) error {
+	w.watch()
+	w.ctx = ctx
+	if w.enabled() {
+		if err := w.enable(w.ctx); err != nil {
+			return err
+		}
+	} else {
+		w.l.Info("skipping disabled dynamic service")
+	}
+	return nil
+}
+
+func (w *ServiceEnabler) Close(ctx context.Context) error {
+	l := log.WithServiceName(w.l, w.Name())
+	w.setClosed(true)
+	if w.enabled() {
+		if err := w.disable(w.ctx); err != nil {
+			return err
+		}
+	} else {
+		l.Info("skipping disabled dynamic service")
+	}
+	return nil
+}
+
+func (w *ServiceEnabler) closed() bool {
+	w.syncClosedLock.RLock()
+	defer w.syncClosedLock.RUnlock()
+	return w.syncClosed
+}
+
+func (w *ServiceEnabler) setClosed(v bool) {
+	w.syncClosedLock.Lock()
+	defer w.syncClosedLock.Unlock()
+	w.syncClosed = v
 }
 
 func (w *ServiceEnabler) enabled() bool {
@@ -66,7 +105,7 @@ func (w *ServiceEnabler) disable(ctx context.Context) error {
 func (w *ServiceEnabler) watch() {
 	go func() {
 		for {
-			if w.closed {
+			if w.closed() {
 				break
 			}
 			time.Sleep(time.Second)
@@ -85,30 +124,4 @@ func (w *ServiceEnabler) watch() {
 			}
 		}
 	}()
-}
-
-func (w *ServiceEnabler) Start(ctx context.Context) error {
-	w.watch()
-	w.ctx = ctx
-	if w.enabled() {
-		if err := w.enable(w.ctx); err != nil {
-			return err
-		}
-	} else {
-		w.l.Info("skipping disabled dynamic service")
-	}
-	return nil
-}
-
-func (w *ServiceEnabler) Close(ctx context.Context) error {
-	l := log.WithServiceName(w.l, w.Name())
-	w.closed = true
-	if w.enabled() {
-		if err := w.disable(w.ctx); err != nil {
-			return err
-		}
-	} else {
-		l.Info("skipping disabled dynamic service")
-	}
-	return nil
 }
