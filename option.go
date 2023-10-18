@@ -172,7 +172,7 @@ func WithHTTPPProfService(enabled bool) Option {
 func WithHTTPHealthzService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.healthz.enabled", enabled)() {
-			svs := service.NewDefaultHTTPProbes(inst.Logger(), inst.probes)
+			svs := service.NewDefaultHTTPProbes(inst.Logger(), inst.probes())
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}

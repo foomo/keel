@@ -38,34 +38,36 @@ import (
 
 // Server struct
 type Server struct {
-	services        []Service
-	initServices    []Service
-	meter           metric.Meter
-	meterProvider   metric.MeterProvider
-	tracer          trace.Tracer
-	traceProvider   trace.TracerProvider
-	shutdownSignals []os.Signal
-	shutdownTimeout time.Duration
-	running         atomic.Bool
-	closers         []interface{}
-	closersLock     sync.Mutex
-	readmers        []interfaces.Readmer
-	probes          map[healthz.Type][]interface{}
-	ctx             context.Context
-	ctxCancel       context.Context
-	ctxCancelFn     context.CancelFunc
-	g               *errgroup.Group
-	gCtx            context.Context
-	l               *zap.Logger
-	c               *viper.Viper
+	services         []Service
+	initServices     []Service
+	meter            metric.Meter
+	meterProvider    metric.MeterProvider
+	tracer           trace.Tracer
+	traceProvider    trace.TracerProvider
+	shutdownSignals  []os.Signal
+	shutdownTimeout  time.Duration
+	running          atomic.Bool
+	syncClosers      []interface{}
+	syncClosersLock  sync.RWMutex
+	syncReadmers     []interfaces.Readmer
+	syncReadmersLock sync.RWMutex
+	syncProbes       map[healthz.Type][]interface{}
+	syncProbesLock   sync.RWMutex
+	ctx              context.Context
+	ctxCancel        context.Context
+	ctxCancelFn      context.CancelFunc
+	g                *errgroup.Group
+	gCtx             context.Context
+	l                *zap.Logger
+	c                *viper.Viper
 }
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
-		readmers:        []interfaces.Readmer{},
-		probes:          map[healthz.Type][]interface{}{},
+		syncReadmers:    []interfaces.Readmer{},
+		syncProbes:      map[healthz.Type][]interface{}{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -89,9 +91,7 @@ func NewServer(opts ...Option) *Server {
 			defer timeoutCancel()
 
 			// append internal closers
-			inst.closersLock.Lock()
-			defer inst.closersLock.Unlock()
-			closers := append(inst.closers, inst.traceProvider, inst.meterProvider) //nolint:gocritic
+			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
 			for _, closer := range closers {
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
@@ -239,15 +239,13 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	s.closersLock.Lock()
-	defer s.closersLock.Unlock()
-	for _, value := range s.closers {
+	for _, value := range s.closers() {
 		if value == closer {
 			return
 		}
 	}
 	if IsCloser(closer) {
-		s.closers = append(s.closers, closer)
+		s.addClosers(closer)
 	} else {
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
@@ -262,7 +260,12 @@ func (s *Server) AddClosers(closers ...interface{}) {
 
 // AddReadmer adds a readmer to be added to the exposed readme
 func (s *Server) AddReadmer(readmer interfaces.Readmer) {
-	s.readmers = append(s.readmers, readmer)
+	for _, value := range s.readmers() {
+		if value == readmer {
+			return
+		}
+	}
+	s.addReadmers(readmer)
 }
 
 // AddReadmers adds readmers to be added to the exposed readme
@@ -275,7 +278,7 @@ func (s *Server) AddReadmers(readmers ...interfaces.Readmer) {
 // AddHealthzer adds a probe to be called on healthz checks
 func (s *Server) AddHealthzer(typ healthz.Type, probe interface{}) {
 	if IsHealthz(probe) {
-		s.probes[typ] = append(s.probes[typ], probe)
+		s.addProbes(typ, probe)
 	} else {
 		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
@@ -353,6 +356,42 @@ func (s *Server) Run() {
 	s.l.Info("keel server stopped")
 }
 
+func (s *Server) closers() []interface{} {
+	s.syncClosersLock.RLock()
+	defer s.syncClosersLock.RUnlock()
+	return s.syncClosers
+}
+
+func (s *Server) addClosers(v ...interface{}) {
+	s.syncClosersLock.Lock()
+	defer s.syncClosersLock.Unlock()
+	s.syncClosers = append(s.syncClosers, v...)
+}
+
+func (s *Server) readmers() []interfaces.Readmer {
+	s.syncReadmersLock.RLock()
+	defer s.syncReadmersLock.RUnlock()
+	return s.syncReadmers
+}
+
+func (s *Server) addReadmers(v ...interfaces.Readmer) {
+	s.syncReadmersLock.Lock()
+	defer s.syncReadmersLock.Unlock()
+	s.syncReadmers = append(s.syncReadmers, v...)
+}
+
+func (s *Server) probes() map[healthz.Type][]interface{} {
+	s.syncProbesLock.RLock()
+	defer s.syncProbesLock.RUnlock()
+	return s.syncProbes
+}
+
+func (s *Server) addProbes(typ healthz.Type, v ...interface{}) {
+	s.syncProbesLock.Lock()
+	defer s.syncProbesLock.Unlock()
+	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
+}
+
 // Readme returns the self-documenting string
 func (s *Server) Readme() string {
 	md := &markdown.Markdown{}
@@ -386,10 +425,9 @@ func (s *Server) startService(services ...Service) {
 
 func (s *Server) readmeCloser() string {
 	md := &markdown.Markdown{}
-	s.closersLock.Lock()
-	rows := make([][]string, 0, len(s.closers))
-	defer s.closersLock.Unlock()
-	for _, value := range s.closers {
+	closers := s.closers()
+	rows := make([][]string, 0, len(closers))
+	for _, value := range closers {
 		t := reflect.TypeOf(value)
 		var closer string
 		switch value.(type) {
@@ -449,7 +487,7 @@ func (s *Server) readmeHealthz() string {
 	var rows [][]string
 	md := &markdown.Markdown{}
 
-	for k, probes := range s.probes {
+	for k, probes := range s.probes() {
 		for _, probe := range probes {
 			t := reflect.TypeOf(probe)
 			rows = append(rows, []string{
