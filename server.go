@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -39,8 +40,10 @@ type Server struct {
 	shutdownSignals []os.Signal
 	shutdownTimeout time.Duration
 	running         atomic.Bool
-	closers         []interface{}
-	probes          map[HealthzType][]interface{}
+	syncClosers     []interface{}
+	syncClosersLock sync.RWMutex
+	syncProbes      map[HealthzType][]interface{}
+	syncProbesLock  sync.RWMutex
 	ctx             context.Context
 	ctxCancel       context.Context
 	ctxCancelFn     context.CancelFunc
@@ -54,7 +57,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
-		probes:          map[HealthzType][]interface{}{},
+		syncProbes:      map[HealthzType][]interface{}{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -78,7 +81,7 @@ func NewServer(opts ...Option) *Server {
 			defer timeoutCancel()
 
 			// append internal closers
-			closers := append(inst.closers, inst.traceProvider, inst.meterProvider) //nolint:gocritic
+			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
 			for _, closer := range closers {
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
@@ -223,7 +226,7 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	for _, value := range s.closers {
+	for _, value := range s.closers() {
 		if value == closer {
 			return
 		}
@@ -245,7 +248,7 @@ func (s *Server) AddCloser(closer interface{}) {
 		ErrorUnsubscriber,
 		UnsubscriberWithContext,
 		ErrorUnsubscriberWithContext:
-		s.closers = append(s.closers, closer)
+		s.addClosers(closer)
 	default:
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
@@ -267,7 +270,7 @@ func (s *Server) AddHealthzer(typ HealthzType, probe interface{}) {
 		ErrorHealthzWithContext,
 		ErrorPinger,
 		ErrorPingerWithContext:
-		s.probes[typ] = append(s.probes[typ], probe)
+		s.addProbes(typ, probe)
 	default:
 		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
@@ -343,6 +346,30 @@ func (s *Server) Run() {
 	}
 
 	s.l.Info("keel server stopped")
+}
+
+func (s *Server) closers() []interface{} {
+	s.syncClosersLock.RLock()
+	defer s.syncClosersLock.RUnlock()
+	return s.syncClosers
+}
+
+func (s *Server) addClosers(v ...interface{}) {
+	s.syncClosersLock.Lock()
+	defer s.syncClosersLock.Unlock()
+	s.syncClosers = append(s.syncClosers, v...)
+}
+
+func (s *Server) probes() map[HealthzType][]interface{} {
+	s.syncProbesLock.RLock()
+	defer s.syncProbesLock.RUnlock()
+	return s.syncProbes
+}
+
+func (s *Server) addProbes(typ HealthzType, v ...interface{}) {
+	s.syncProbesLock.Lock()
+	defer s.syncProbesLock.Unlock()
+	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
 }
 
 // startService starts the given services
