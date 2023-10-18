@@ -260,11 +260,6 @@ func (s *Server) AddClosers(closers ...interface{}) {
 
 // AddReadmer adds a readmer to be added to the exposed readme
 func (s *Server) AddReadmer(readmer interfaces.Readmer) {
-	for _, value := range s.readmers() {
-		if value == readmer {
-			return
-		}
-	}
 	s.addReadmers(readmer)
 }
 
