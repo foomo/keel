@@ -183,7 +183,7 @@ func WithHTTPHealthzService(enabled bool) Option {
 func WithHTTPReadmeService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.readme.enabled", enabled)() {
-			svs := service.NewDefaultHTTPReadme(inst.Logger(), &inst.readmers)
+			svs := service.NewDefaultHTTPReadme(inst.Logger(), inst.readmers)
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
