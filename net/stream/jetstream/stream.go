@@ -2,6 +2,7 @@ package jetstream
 
 import (
 	"encoding/json"
+	"slices"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -280,6 +281,20 @@ func (s *Stream) Publisher(subject string, opts ...PublisherOption) *Publisher {
 			opt(pub)
 		}
 	}
+
+	{ // append to recoreded publishers
+		value := publisher{
+			Stream:    s.name,
+			Namespace: s.namespace,
+			Subject:   subject,
+		}
+		if !slices.ContainsFunc(publishers, func(p publisher) bool {
+			return p.Stream == value.Stream && p.Namespace == value.Namespace && p.Subject == value.Subject
+		}) {
+			publishers = append(publishers, value)
+		}
+	}
+
 	return pub
 }
 
@@ -295,6 +310,20 @@ func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscribe
 			opt(sub)
 		}
 	}
+
+	{ // append to recoreded publishers
+		value := subscriber{
+			Stream:    s.name,
+			Namespace: s.namespace,
+			Subject:   subject,
+		}
+		if !slices.ContainsFunc(subscribers, func(p subscriber) bool {
+			return p.Stream == value.Stream && p.Namespace == value.Namespace && p.Subject == value.Subject
+		}) {
+			subscribers = append(subscribers, value)
+		}
+	}
+
 	return sub
 }
 

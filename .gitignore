@@ -1,5 +1,6 @@
 .*
 *.log
+*.out
 !.github/
 !.husky/
 !.editorconfig
@@ -7,6 +8,4 @@
 !.golangci.yml
 !.goreleaser.yml
 !.husky.yaml
-/coverage.out
-/coverage.html
 /tmp/

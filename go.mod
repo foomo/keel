@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/davecgh/go-spew v1.1.1
+	github.com/fbiville/markdown-table-formatter v0.3.0
 	github.com/foomo/gotsrpc/v2 v2.7.2
 	github.com/go-logr/logr v1.2.4
 	github.com/golang-jwt/jwt v3.2.2+incompatible

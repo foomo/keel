@@ -6,11 +6,18 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/foomo/keel/healthz"
+	"github.com/foomo/keel/interfaces"
+	"github.com/foomo/keel/markdown"
+	"github.com/foomo/keel/metrics"
+	"github.com/foomo/keel/service"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -31,33 +38,36 @@ import (
 
 // Server struct
 type Server struct {
-	services        []Service
-	initServices    []Service
-	meter           metric.Meter
-	meterProvider   metric.MeterProvider
-	tracer          trace.Tracer
-	traceProvider   trace.TracerProvider
-	shutdownSignals []os.Signal
-	shutdownTimeout time.Duration
-	running         atomic.Bool
-	syncClosers     []interface{}
-	syncClosersLock sync.RWMutex
-	syncProbes      map[HealthzType][]interface{}
-	syncProbesLock  sync.RWMutex
-	ctx             context.Context
-	ctxCancel       context.Context
-	ctxCancelFn     context.CancelFunc
-	g               *errgroup.Group
-	gCtx            context.Context
-	l               *zap.Logger
-	c               *viper.Viper
+	services         []Service
+	initServices     []Service
+	meter            metric.Meter
+	meterProvider    metric.MeterProvider
+	tracer           trace.Tracer
+	traceProvider    trace.TracerProvider
+	shutdownSignals  []os.Signal
+	shutdownTimeout  time.Duration
+	running          atomic.Bool
+	syncClosers      []interface{}
+	syncClosersLock  sync.RWMutex
+	syncReadmers     []interfaces.Readmer
+	syncReadmersLock sync.RWMutex
+	syncProbes       map[healthz.Type][]interface{}
+	syncProbesLock   sync.RWMutex
+	ctx              context.Context
+	ctxCancel        context.Context
+	ctxCancelFn      context.CancelFunc
+	g                *errgroup.Group
+	gCtx             context.Context
+	l                *zap.Logger
+	c                *viper.Viper
 }
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
-		syncProbes:      map[HealthzType][]interface{}{},
+		syncReadmers:    []interfaces.Readmer{},
+		syncProbes:      map[healthz.Type][]interface{}{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -86,51 +96,51 @@ func NewServer(opts ...Option) *Server {
 			for _, closer := range closers {
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
 				switch c := closer.(type) {
-				case Closer:
+				case interfaces.Closer:
 					c.Close()
-				case ErrorCloser:
+				case interfaces.ErrorCloser:
 					if err := c.Close(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorCloser")
 					}
-				case CloserWithContext:
+				case interfaces.CloserWithContext:
 					c.Close(timeoutCtx)
-				case ErrorCloserWithContext:
+				case interfaces.ErrorCloserWithContext:
 					if err := c.Close(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorCloserWithContext")
 					}
-				case Shutdowner:
+				case interfaces.Shutdowner:
 					c.Shutdown()
-				case ErrorShutdowner:
+				case interfaces.ErrorShutdowner:
 					if err := c.Shutdown(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdowner")
 					}
-				case ShutdownerWithContext:
+				case interfaces.ShutdownerWithContext:
 					c.Shutdown(timeoutCtx)
-				case ErrorShutdownerWithContext:
+				case interfaces.ErrorShutdownerWithContext:
 					if err := c.Shutdown(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
 					}
-				case Stopper:
+				case interfaces.Stopper:
 					c.Stop()
-				case ErrorStopper:
+				case interfaces.ErrorStopper:
 					if err := c.Stop(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorStopper")
 					}
-				case StopperWithContext:
+				case interfaces.StopperWithContext:
 					c.Stop(timeoutCtx)
-				case ErrorStopperWithContext:
+				case interfaces.ErrorStopperWithContext:
 					if err := c.Stop(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorStopperWithContext")
 					}
-				case Unsubscriber:
+				case interfaces.Unsubscriber:
 					c.Unsubscribe()
-				case ErrorUnsubscriber:
+				case interfaces.ErrorUnsubscriber:
 					if err := c.Unsubscribe(); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriber")
 					}
-				case UnsubscriberWithContext:
+				case interfaces.UnsubscriberWithContext:
 					c.Unsubscribe(timeoutCtx)
-				case ErrorUnsubscriberWithContext:
+				case interfaces.ErrorUnsubscriberWithContext:
 					if err := c.Unsubscribe(timeoutCtx); err != nil {
 						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
 					}
@@ -168,6 +178,12 @@ func NewServer(opts ...Option) *Server {
 
 	// add probe
 	inst.AddAlwaysHealthzers(inst)
+	inst.AddReadmers(
+		interfaces.ReadmeFunc(env.Readme),
+		interfaces.ReadmeFunc(config.Readme),
+		inst,
+		interfaces.ReadmeFunc(metrics.Readme),
+	)
 
 	// start init services
 	inst.startService(inst.initServices...)
@@ -207,20 +223,17 @@ func (s *Server) CancelContext() context.Context {
 
 // AddService add a single service
 func (s *Server) AddService(service Service) {
-	for _, value := range s.services {
-		if value == service {
-			return
-		}
+	if !slices.Contains(s.services, service) {
+		s.services = append(s.services, service)
+		s.AddAlwaysHealthzers(service)
+		s.AddCloser(service)
 	}
-	s.services = append(s.services, service)
-	s.AddAlwaysHealthzers(service)
-	s.AddCloser(service)
 }
 
 // AddServices adds multiple service
 func (s *Server) AddServices(services ...Service) {
-	for _, service := range services {
-		s.AddService(service)
+	for _, value := range services {
+		s.AddService(value)
 	}
 }
 
@@ -231,25 +244,9 @@ func (s *Server) AddCloser(closer interface{}) {
 			return
 		}
 	}
-	switch closer.(type) {
-	case Closer,
-		ErrorCloser,
-		CloserWithContext,
-		ErrorCloserWithContext,
-		Shutdowner,
-		ErrorShutdowner,
-		ShutdownerWithContext,
-		ErrorShutdownerWithContext,
-		Stopper,
-		ErrorStopper,
-		StopperWithContext,
-		ErrorStopperWithContext,
-		Unsubscriber,
-		ErrorUnsubscriber,
-		UnsubscriberWithContext,
-		ErrorUnsubscriberWithContext:
+	if IsCloser(closer) {
 		s.addClosers(closer)
-	default:
+	} else {
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
 	}
 }
@@ -261,23 +258,29 @@ func (s *Server) AddClosers(closers ...interface{}) {
 	}
 }
 
+// AddReadmer adds a readmer to be added to the exposed readme
+func (s *Server) AddReadmer(readmer interfaces.Readmer) {
+	s.addReadmers(readmer)
+}
+
+// AddReadmers adds readmers to be added to the exposed readme
+func (s *Server) AddReadmers(readmers ...interfaces.Readmer) {
+	for _, readmer := range readmers {
+		s.AddReadmer(readmer)
+	}
+}
+
 // AddHealthzer adds a probe to be called on healthz checks
-func (s *Server) AddHealthzer(typ HealthzType, probe interface{}) {
-	switch probe.(type) {
-	case BoolHealthzer,
-		BoolHealthzerWithContext,
-		ErrorHealthzer,
-		ErrorHealthzWithContext,
-		ErrorPinger,
-		ErrorPingerWithContext:
+func (s *Server) AddHealthzer(typ healthz.Type, probe interface{}) {
+	if IsHealthz(probe) {
 		s.addProbes(typ, probe)
-	default:
+	} else {
 		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
 	}
 }
 
 // AddHealthzers adds the given probes to be called on healthz checks
-func (s *Server) AddHealthzers(typ HealthzType, probes ...interface{}) {
+func (s *Server) AddHealthzers(typ healthz.Type, probes ...interface{}) {
 	for _, probe := range probes {
 		s.AddHealthzer(typ, probe)
 	}
@@ -285,22 +288,22 @@ func (s *Server) AddHealthzers(typ HealthzType, probes ...interface{}) {
 
 // AddAlwaysHealthzers adds the probes to be called on any healthz checks
 func (s *Server) AddAlwaysHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeAlways, probes...)
+	s.AddHealthzers(healthz.TypeAlways, probes...)
 }
 
 // AddStartupHealthzers adds the startup probes to be called on healthz checks
 func (s *Server) AddStartupHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeStartup, probes...)
+	s.AddHealthzers(healthz.TypeStartup, probes...)
 }
 
 // AddLivenessHealthzers adds the liveness probes to be called on healthz checks
 func (s *Server) AddLivenessHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeLiveness, probes...)
+	s.AddHealthzers(healthz.TypeLiveness, probes...)
 }
 
 // AddReadinessHealthzers adds the readiness probes to be called on healthz checks
 func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
-	s.AddHealthzers(HealthzTypeReadiness, probes...)
+	s.AddHealthzers(healthz.TypeReadiness, probes...)
 }
 
 // IsCanceled returns true if the internal errgroup has been canceled
@@ -360,24 +363,51 @@ func (s *Server) addClosers(v ...interface{}) {
 	s.syncClosers = append(s.syncClosers, v...)
 }
 
-func (s *Server) probes() map[HealthzType][]interface{} {
+func (s *Server) readmers() []interfaces.Readmer {
+	s.syncReadmersLock.RLock()
+	defer s.syncReadmersLock.RUnlock()
+	return s.syncReadmers
+}
+
+func (s *Server) addReadmers(v ...interfaces.Readmer) {
+	s.syncReadmersLock.Lock()
+	defer s.syncReadmersLock.Unlock()
+	s.syncReadmers = append(s.syncReadmers, v...)
+}
+
+func (s *Server) probes() map[healthz.Type][]interface{} {
 	s.syncProbesLock.RLock()
 	defer s.syncProbesLock.RUnlock()
 	return s.syncProbes
 }
 
-func (s *Server) addProbes(typ HealthzType, v ...interface{}) {
+func (s *Server) addProbes(typ healthz.Type, v ...interface{}) {
 	s.syncProbesLock.Lock()
 	defer s.syncProbesLock.Unlock()
 	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
 }
 
+// Readme returns the self-documenting string
+func (s *Server) Readme() string {
+	md := &markdown.Markdown{}
+
+	md.Println(s.readmeServices())
+	md.Println(s.readmeHealthz())
+	md.Print(s.readmeCloser())
+
+	return md.String()
+}
+
+// ------------------------------------------------------------------------------------------------
+// ~ Private methods
+// ------------------------------------------------------------------------------------------------
+
 // startService starts the given services
 func (s *Server) startService(services ...Service) {
-	for _, service := range services {
-		service := service
+	for _, value := range services {
+		value := value
 		s.g.Go(func() error {
-			if err := service.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
+			if err := value.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Debug("server has closed")
 			} else if err != nil {
 				log.WithError(s.l, err).Error("failed to start service")
@@ -386,4 +416,138 @@ func (s *Server) startService(services ...Service) {
 			return nil
 		})
 	}
+}
+
+func (s *Server) readmeCloser() string {
+	md := &markdown.Markdown{}
+	closers := s.closers()
+	rows := make([][]string, 0, len(closers))
+	for _, value := range closers {
+		t := reflect.TypeOf(value)
+		var closer string
+		switch value.(type) {
+		case interfaces.Closer:
+			closer = "Closer"
+		case interfaces.ErrorCloser:
+			closer = "ErrorCloser"
+		case interfaces.CloserWithContext:
+			closer = "CloserWithContext"
+		case interfaces.ErrorCloserWithContext:
+			closer = "ErrorCloserWithContext"
+		case interfaces.Shutdowner:
+			closer = "Shutdowner"
+		case interfaces.ErrorShutdowner:
+			closer = "ErrorShutdowner"
+		case interfaces.ShutdownerWithContext:
+			closer = "ShutdownerWithContext"
+		case interfaces.ErrorShutdownerWithContext:
+			closer = "ErrorShutdownerWithContext"
+		case interfaces.Stopper:
+			closer = "Stopper"
+		case interfaces.ErrorStopper:
+			closer = "ErrorStopper"
+		case interfaces.StopperWithContext:
+			closer = "StopperWithContext"
+		case interfaces.ErrorStopperWithContext:
+			closer = "ErrorStopperWithContext"
+		case interfaces.Unsubscriber:
+			closer = "Unsubscriber"
+		case interfaces.ErrorUnsubscriber:
+			closer = "ErrorUnsubscriber"
+		case interfaces.UnsubscriberWithContext:
+			closer = "UnsubscriberWithContext"
+		case interfaces.ErrorUnsubscriberWithContext:
+			closer = "ErrorUnsubscriberWithContext"
+		}
+		rows = append(rows, []string{
+			markdown.Code(markdown.Name(value)),
+			markdown.Code(t.String()),
+			markdown.Code(closer),
+			markdown.String(value),
+		})
+	}
+	if len(rows) > 0 {
+		md.Println("### Closers")
+		md.Println("")
+		md.Println("List of all registered closers that are being called during graceful shutdown.")
+		md.Println("")
+		md.Table([]string{"Name", "Type", "Closer", "Description"}, rows)
+		md.Println("")
+	}
+
+	return md.String()
+}
+
+func (s *Server) readmeHealthz() string {
+	var rows [][]string
+	md := &markdown.Markdown{}
+
+	for k, probes := range s.probes() {
+		for _, probe := range probes {
+			t := reflect.TypeOf(probe)
+			rows = append(rows, []string{
+				markdown.Code(markdown.Name(probe)),
+				markdown.Code(k.String()),
+				markdown.Code(t.String()),
+				markdown.String(probe),
+			})
+		}
+	}
+	if len(rows) > 0 {
+		md.Println("### Health probes")
+		md.Println("")
+		md.Println("List of all registered healthz probes that are being called during startup and runtime.")
+		md.Println("")
+		md.Table([]string{"Name", "Probe", "Type", "Description"}, rows)
+	}
+
+	return md.String()
+}
+
+func (s *Server) readmeServices() string {
+	md := &markdown.Markdown{}
+
+	{
+		var rows [][]string
+		for _, value := range s.initServices {
+			if v, ok := value.(*service.HTTP); ok {
+				t := reflect.TypeOf(v)
+				rows = append(rows, []string{
+					markdown.Code(v.Name()),
+					markdown.Code(t.String()),
+					markdown.String(v),
+				})
+			}
+		}
+		if len(rows) > 0 {
+			md.Println("### Init Services")
+			md.Println("")
+			md.Println("List of all registered init services that are being immediately started.")
+			md.Println("")
+			md.Table([]string{"Name", "Type", "Address"}, rows)
+		}
+	}
+
+	md.Println("")
+
+	{
+		var rows [][]string
+		for _, value := range s.services {
+			t := reflect.TypeOf(value)
+			rows = append(rows, []string{
+				markdown.Code(value.Name()),
+				markdown.Code(t.String()),
+				markdown.String(value),
+			})
+		}
+		if len(rows) > 0 {
+			md.Println("### Runtime Services")
+			md.Println("")
+			md.Println("List of all registered services that are being started.")
+			md.Println("")
+			md.Table([]string{"Name", "Type", "Description"}, rows)
+		}
+	}
+
+	return md.String()
 }

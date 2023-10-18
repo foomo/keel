@@ -1,8 +1,9 @@
 # keel
 
+[![Build Status](https://github.com/foomo/keel/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/foomo/keel/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/foomo/keel)](https://goreportcard.com/report/github.com/foomo/keel)
-[![godoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
-[![GitHub Super-Linter](https://github.com/foomo/keel/workflows/CI/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Coverage Status](https://coveralls.io/repos/github/foomo/keel/badge.svg?branch=main&)](https://coveralls.io/github/foomo/keel?branch=main)
+[![GoDoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
 
 > Opinionated way to run services.
 
@@ -25,6 +26,7 @@ import (
   "net/http"
 
   "github.com/foomo/keel"
+  "github.com/foomo/keel/service"
 )
 
 func main() {
@@ -39,7 +41,7 @@ func main() {
   svs := newService()
 
   svr.AddService(
-    keel.NewServiceHTTP(l, "demo", ":8080", svs),
+    service.NewHTTP(l, "demo", "localhost:8080", svs),
   )
 
   svr.Run()

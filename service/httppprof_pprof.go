@@ -1,7 +1,7 @@
 //go:build pprof
 // +build pprof
 
-package keel
+package service
 
 import (
 	"net/http"
@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	DefaultServiceHTTPPProfName = "pprof"
-	DefaultServiceHTTPPProfAddr = "localhost:6060"
-	DefaultServiceHTTPPProfPath = "/debug/pprof"
+	DefaultHTTPPProfName = "pprof"
+	DefaultHTTPPProfAddr = "localhost:6060"
+	DefaultHTTPPProfPath = "/debug/pprof"
 )
 
-func NewServiceHTTPPProf(l *zap.Logger, name, addr, path string) *ServiceHTTP {
+func NewHTTPPProf(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path+"/", pprof.Index)
 	handler.HandleFunc(path+"/cmdline", pprof.Cmdline)
@@ -27,11 +27,11 @@ func NewServiceHTTPPProf(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 	return NewServiceHTTP(l, name, addr, handler)
 }
 
-func NewDefaultServiceHTTPPProf() *ServiceHTTP {
-	return NewServiceHTTPPProf(
+func NewDefaultHTTPPProf() *ServiceHTTP {
+	return NewHTTPPProf(
 		log.Logger(),
-		DefaultServiceHTTPPProfName,
-		DefaultServiceHTTPPProfAddr,
-		DefaultServiceHTTPPProfPath,
+		DefaultHTTPPProfName,
+		DefaultHTTPPProfAddr,
+		DefaultHTTPPProfPath,
 	)
 }

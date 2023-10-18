@@ -6,6 +6,7 @@ import (
 	"github.com/foomo/keel"
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/middleware"
+	"github.com/foomo/keel/service"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.CORS(
 				middleware.CORSWithAllowOrigins("example.com"),
 				middleware.CORSWithAllowMethods(http.MethodGet, http.MethodPost),

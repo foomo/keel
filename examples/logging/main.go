@@ -7,6 +7,7 @@ import (
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
+	"github.com/foomo/keel/service"
 )
 
 type CustomError struct {
@@ -46,7 +47,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		service.NewHTTP(l, "demo", "localhost:8080", svs),
 	)
 
 	svr.Run()

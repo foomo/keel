@@ -15,6 +15,8 @@ func FPeerService(name string) zap.Field {
 }
 
 const (
+	ServiceTypeKey = "service_type"
+
 	// ServiceNameKey represents the NameKey of the service.
 	ServiceNameKey = "service_name"
 
@@ -34,6 +36,10 @@ const (
 	// ServiceVersionKey represents the version of the service API.
 	ServiceVersionKey = "service_version"
 )
+
+func FServiceType(name string) zap.Field {
+	return zap.String(ServiceTypeKey, name)
+}
 
 func FServiceName(name string) zap.Field {
 	return zap.String(ServiceNameKey, name)

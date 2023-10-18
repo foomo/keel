@@ -5,6 +5,7 @@ import (
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/service"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	})
 
 	svr.AddServices(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080",
+		service.NewHTTP(l, "demo", "localhost:8080",
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				c.Set("service.enabled", !enabled())
 				w.WriteHeader(http.StatusOK)
@@ -32,7 +33,7 @@ func main() {
 		),
 		keel.NewServiceEnabler(l, "service-enabler",
 			func() keel.Service {
-				return keel.NewServiceHTTP(l, "service", "localhost:8081", svs)
+				return service.NewHTTP(l, "service", "localhost:8081", svs)
 			},
 			enabled,
 		),

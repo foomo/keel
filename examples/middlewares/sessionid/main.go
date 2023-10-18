@@ -8,6 +8,7 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/cookie"
 	"github.com/foomo/keel/net/http/middleware"
+	"github.com/foomo/keel/service"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.SessionID(
 				// automatically set cookie if not exists
 				middleware.SessionIDWithSetCookie(true),

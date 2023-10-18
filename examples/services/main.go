@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/foomo/keel"
@@ -29,24 +28,11 @@ func main() {
 		keel.WithHTTPPProfService(false),
 	)
 
-	l := svr.Logger()
-
 	// alternatively you can add them manually
 	// svr.AddServices(keel.NewDefaultServiceHTTPZap())
 	// svr.AddServices(keel.NewDefaultServiceHTTPViper())
 	// svr.AddServices(keel.NewDefaultServiceHTTPPProf())
 	// svr.AddServices(keel.NewDefaultServiceHTTPPrometheus())
-
-	// create demo service
-	svs := http.NewServeMux()
-	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	})
-
-	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", ":8080", svs),
-	)
 
 	svr.Run()
 }

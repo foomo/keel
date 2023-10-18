@@ -1,5 +1,6 @@
 run:
-  timeout: 5m
+  skip-dirs:
+    - tmp
 
 linters-settings:
   # https://golangci-lint.run/usage/linters/#revive
@@ -61,7 +62,7 @@ linters:
     - gosec # (gas): Inspects source code for security problems [fast: false, auto-fix: false]
     - grouper # An analyzer to analyze expression groups. [fast: true, auto-fix: false]
     - importas # Enforces consistent import aliases [fast: false, auto-fix: false]
-    - maintidx # maintidx measures the maintainability index of each function. [fast: true, auto-fix: false]
+    #- maintidx # maintidx measures the maintainability index of each function. [fast: true, auto-fix: false]
     - makezero # Finds slice declarations with non-zero initial length [fast: false, auto-fix: false]
     - misspell # Finds commonly misspelled English words in comments [fast: true, auto-fix: true]
     - nakedret # Finds naked returns in functions greater than a specified function length [fast: true, auto-fix: false]

@@ -1,4 +1,4 @@
-package keel
+package healthz
 
 import "context"
 
@@ -13,6 +13,10 @@ func NewHealthzerFn(handle func(context.Context) error) healther {
 }
 
 func (h healther) Healthz(ctx context.Context) error {
+	return h.handle(ctx)
+}
+
+func (h healther) Close(ctx context.Context) error {
 	return h.handle(ctx)
 }
 

@@ -9,9 +9,7 @@ hooks:
 lint-staged:
   '*.go':
     - goimports -l -w
-    - gofmt -l -w
 
 lint-commit:
-  email: '^(.+@bestbytes.com)$'
   types: '^(feat|fix|build|chore|docs|perf|refactor|revert|style|test|wip)$'
   header: '^(?P<type>\w+)(\((?P<scope>[\w/.-]+)\))?(?P<breaking>!)?:( +)?(?P<header>.+)'

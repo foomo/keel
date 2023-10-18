@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/foomo/keel/service"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
@@ -85,7 +86,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8081", svs),
+		service.NewHTTP(l, "demo", "localhost:8081", svs),
 	)
 
 	svr.Run()

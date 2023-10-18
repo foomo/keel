@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/foomo/keel/service"
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -89,7 +90,7 @@ func main() {
 	svr.AddClosers(subscription, stream)
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		service.NewHTTP(l, "demo", "localhost:8080", svs),
 	)
 
 	svr.Run()
