@@ -17,17 +17,17 @@ const (
 	DefaultHTTPPProfPath = "/debug/pprof"
 )
 
-func NewHTTPPProf(l *zap.Logger, name, addr, path string) *ServiceHTTP {
+func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path+"/", pprof.Index)
 	handler.HandleFunc(path+"/cmdline", pprof.Cmdline)
 	handler.HandleFunc(path+"/profile", pprof.Profile)
 	handler.HandleFunc(path+"/symbol", pprof.Symbol)
 	handler.HandleFunc(path+"/trace", pprof.Trace)
-	return NewServiceHTTP(l, name, addr, handler)
+	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPPProf() *ServiceHTTP {
+func NewDefaultHTTPPProf() *HTTP {
 	return NewHTTPPProf(
 		log.Logger(),
 		DefaultHTTPPProfName,
