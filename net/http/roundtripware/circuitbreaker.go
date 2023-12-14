@@ -99,7 +99,7 @@ func CircuitBreakerWithMetric(
 }
 
 func CircuitBreakerWithIsSuccessful(
-	isSuccessful func(err error, req *http.Request, resp *http.Response) (e error),
+	isSuccessful func(err error, req *http.Request, resp *http.Response) error,
 	copyReqBody bool,
 	copyRespBody bool,
 ) CircuitBreakerOption {
@@ -133,7 +133,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 	circuitBreaker := gobreaker.NewTwoStepCircuitBreaker(cbrSettings)
 
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(r *http.Request) (resp *http.Response, err error) {
+		return func(r *http.Request) (resp *http.Response, err error) { //nolint:nonamedreturns
 			if r == nil {
 				return nil, errors.New("request is nil")
 			}
