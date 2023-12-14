@@ -2,6 +2,7 @@ package keelmongo
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	keelerrors "github.com/foomo/keel/errors"
@@ -120,10 +121,21 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 	}
 
 	col := db.Collection(name, o.CollectionOptions)
+	if !slices.Contains(dbs[db.Name()], name) {
+		dbs[db.Name()] = append(dbs[db.Name()], name)
+	}
 
 	if len(o.Indexes) > 0 {
 		if _, err := col.Indexes().CreateMany(o.IndexesContext, o.Indexes, o.CreateIndexesOptions); err != nil {
 			return nil, err
+		}
+		if _, ok := indices[db.Name()]; !ok {
+			indices[db.Name()] = map[string][]string{}
+		}
+		for _, index := range o.Indexes {
+			if index.Options != nil && index.Options.Name != nil {
+				indices[db.Name()][name] = append(indices[db.Name()][name], *index.Options.Name)
+			}
 		}
 	}
 

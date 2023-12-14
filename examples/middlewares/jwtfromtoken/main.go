@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"net/http"
 
+	"github.com/foomo/keel/service"
 	jwt2 "github.com/golang-jwt/jwt"
 
 	"github.com/foomo/keel"
@@ -66,7 +67,7 @@ func main() {
 	})
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.Skip(
 				middleware.JWT(
 					jwtInst,

@@ -1,21 +1,20 @@
 //go:build !pprof
 
-package keel
+package service
 
 import (
 	"net/http"
 
-	"github.com/foomo/keel/log"
 	"go.uber.org/zap"
 )
 
 const (
-	DefaultServiceHTTPPProfName = "pprof"
-	DefaultServiceHTTPPProfAddr = "localhost:6060"
-	DefaultServiceHTTPPProfPath = "/debug/pprof"
+	DefaultHTTPPProfName = "pprof"
+	DefaultHTTPPProfAddr = "localhost:6060"
+	DefaultHTTPPProfPath = "/debug/pprof"
 )
 
-func NewServiceHTTPPProf(l *zap.Logger, name, addr, path string) *ServiceHTTP {
+func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
 	route := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotImplemented)
 		_, _ = w.Write([]byte("To enable pprof, you need to build your binary with the `-tags=pprof` flag"))
@@ -26,14 +25,14 @@ func NewServiceHTTPPProf(l *zap.Logger, name, addr, path string) *ServiceHTTP {
 	handler.HandleFunc(path+"/profile", route)
 	handler.HandleFunc(path+"/symbol", route)
 	handler.HandleFunc(path+"/trace", route)
-	return NewServiceHTTP(l, name, addr, handler)
+	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultServiceHTTPPProf() *ServiceHTTP {
-	return NewServiceHTTPPProf(
-		log.Logger(),
-		DefaultServiceHTTPPProfName,
-		DefaultServiceHTTPPProfAddr,
-		DefaultServiceHTTPPProfPath,
+func NewDefaultHTTPPProf(l *zap.Logger) *HTTP {
+	return NewHTTPPProf(
+		l,
+		DefaultHTTPPProfName,
+		DefaultHTTPPProfAddr,
+		DefaultHTTPPProfPath,
 	)
 }

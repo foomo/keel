@@ -27,14 +27,7 @@ doc:
 .PHONY: test
 ## Run tests
 test:
-	@go test -v ./...
-
-.PHONY: test.cover
-## Run tests with coverage
-test.cover:
-	@go test -v -coverprofile=coverage.out ./...
-	@go tool cover -func=coverage.out
-	@go tool cover -html=coverage.out
+	@go test -coverprofile=coverage.out -race -json ./... | gotestfmt
 
 .PHONY: lint
 ## Run linter

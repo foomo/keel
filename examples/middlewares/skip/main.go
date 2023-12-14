@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/foomo/keel/service"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel"
@@ -28,7 +29,7 @@ func main() {
 
 	svr.AddServices(
 		// with URI blacklist
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.Skip(
 				func(l *zap.Logger, name string, next http.Handler) http.Handler {
 					return http.NotFoundHandler()
@@ -38,7 +39,7 @@ func main() {
 		),
 
 		// with URI whitelist
-		keel.NewServiceHTTP(l, "demo", ":8081", svs,
+		service.NewHTTP(l, "demo", "localhost:8081", svs,
 			middleware.Skip(
 				func(l *zap.Logger, name string, next http.Handler) http.Handler {
 					return http.NotFoundHandler()

@@ -8,6 +8,8 @@ import (
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/examples/healthz/handler"
+	"github.com/foomo/keel/healthz"
+	"github.com/foomo/keel/service"
 )
 
 // See k8s for probe documentation
@@ -46,7 +48,7 @@ func main() {
 	svr.AddReadinessHealthzers(rh)
 
 	// add inline probe e.g. in case you start go routines
-	svr.AddAlwaysHealthzers(keel.NewHealthzerFn(func(ctx context.Context) error {
+	svr.AddAlwaysHealthzers(healthz.NewHealthzerFn(func(ctx context.Context) error {
 		l.Info("healther fn")
 		return nil
 	}))
@@ -69,7 +71,7 @@ func main() {
 
 	// add services
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs),
+		service.NewHTTP(l, "demo", "localhost:8080", svs),
 	)
 
 	// start serer

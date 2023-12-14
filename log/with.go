@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -16,6 +17,17 @@ import (
 func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
 	if l == nil {
 		l = Logger()
+	}
+	return l.With(fields...)
+}
+
+func WithAttributes(l *zap.Logger, attrs ...attribute.KeyValue) *zap.Logger {
+	if l == nil {
+		l = Logger()
+	}
+	fields := make([]zap.Field, len(attrs))
+	for i, attr := range attrs {
+		fields[i] = zap.Any(strings.ReplaceAll(string(attr.Key), ".", "_"), attr.Value.AsInterface())
 	}
 	return l.With(fields...)
 }

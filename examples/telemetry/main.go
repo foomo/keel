@@ -4,6 +4,9 @@ import (
 	"math/rand"
 	"net/http"
 
+	"github.com/foomo/keel/service"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/instrument"
 
@@ -58,6 +61,14 @@ func main() {
 		})
 	}
 
+	promauto.NewCounter(prometheus.CounterOpts{
+		Namespace:   "foo",
+		Subsystem:   "",
+		Name:        "bar",
+		Help:        "blubb",
+		ConstLabels: nil,
+	})
+
 	{ // up down
 		upDown, err := meter.SyncInt64().UpDownCounter(
 			"a.updown",
@@ -92,7 +103,7 @@ func main() {
 	}
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.Telemetry(),
 			middleware.Recover(),
 		),

@@ -6,6 +6,7 @@ import (
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/net/http/middleware"
+	"github.com/foomo/keel/service"
 	httputils "github.com/foomo/keel/utils/net/http"
 )
 
@@ -29,7 +30,7 @@ func main() {
 	log.Must(l, err, "failed to hash password")
 
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", svs,
+		service.NewHTTP(l, "demo", "localhost:8080", svs,
 			middleware.BasicAuth(
 				username,
 				passwordHash,

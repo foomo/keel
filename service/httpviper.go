@@ -1,4 +1,4 @@
-package keel
+package service
 
 import (
 	"encoding/json"
@@ -8,16 +8,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
-	"github.com/foomo/keel/log"
 )
 
 const (
-	DefaultServiceHTTPViperName = "viper"
-	DefaultServiceHTTPViperAddr = "localhost:9300"
-	DefaultServiceHTTPViperPath = "/config"
+	DefaultHTTPViperName = "viper"
+	DefaultHTTPViperAddr = "localhost:9300"
+	DefaultHTTPViperPath = "/config"
 )
 
-func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *ServiceHTTP {
+func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		type payload struct {
@@ -44,15 +43,15 @@ func NewServiceHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string)
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
-	return NewServiceHTTP(l, name, addr, handler)
+	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultServiceHTTPViper() *ServiceHTTP {
-	return NewServiceHTTPViper(
-		log.Logger(),
+func NewDefaultHTTPViper(l *zap.Logger) *HTTP {
+	return NewHTTPViper(
+		l,
 		config.Config(),
-		DefaultServiceHTTPViperName,
-		DefaultServiceHTTPViperAddr,
-		DefaultServiceHTTPViperPath,
+		DefaultHTTPViperName,
+		DefaultHTTPViperAddr,
+		DefaultHTTPViperPath,
 	)
 }

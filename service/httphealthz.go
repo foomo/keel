@@ -1,19 +1,21 @@
-package keel
+package service
 
 import (
 	"context"
 	"errors"
 	"net/http"
 
+	"github.com/foomo/keel/healthz"
+	"github.com/foomo/keel/interfaces"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
 )
 
 const (
-	DefaultServiceHTTPHealthzName = "healthz"
-	DefaultServiceHTTPHealthzAddr = ":9400"
-	DefaultServiceHTTPHealthzPath = "/healthz"
+	DefaultHTTPHealthzName = "healthz"
+	DefaultHTTPHealthzAddr = ":9400"
+	DefaultHTTPHealthzPath = "/healthz"
 )
 
 var (
@@ -24,7 +26,7 @@ var (
 	ErrStartupProbeFailed    = errors.New("startup probe failed")
 )
 
-func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[HealthzType][]interface{}) *ServiceHTTP {
+func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type][]interface{}) *HTTP {
 	handler := http.NewServeMux()
 
 	unavailable := func(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
@@ -36,17 +38,17 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 
 	call := func(ctx context.Context, probe interface{}) (bool, error) {
 		switch h := probe.(type) {
-		case BoolHealthzer:
+		case healthz.BoolHealthzer:
 			return h.Healthz(), nil
-		case BoolHealthzerWithContext:
+		case healthz.BoolHealthzerWithContext:
 			return h.Healthz(ctx), nil
-		case ErrorHealthzer:
+		case healthz.ErrorHealthzer:
 			return true, h.Healthz()
-		case ErrorHealthzWithContext:
+		case healthz.ErrorHealthzWithContext:
 			return true, h.Healthz(ctx)
-		case ErrorPinger:
+		case interfaces.ErrorPinger:
 			return true, h.Ping()
-		case ErrorPingerWithContext:
+		case interfaces.ErrorPingerWithContext:
 			return true, h.Ping(ctx)
 		default:
 			return false, ErrUnhandledHealthzProbe
@@ -55,7 +57,7 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		for typ, values := range probes {
-			if typ == HealthzTypeStartup {
+			if typ == healthz.TypeStartup {
 				continue
 			}
 			for _, p := range values {
@@ -72,12 +74,12 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	handler.HandleFunc(path+"/"+HealthzTypeLiveness.String(), func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc(path+"/"+healthz.TypeLiveness.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[HealthzTypeAlways]; ok {
+		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
-		if p, ok := probes[HealthzTypeLiveness]; ok {
+		if p, ok := probes[healthz.TypeLiveness]; ok {
 			ps = append(ps, p...)
 		}
 		for _, p := range ps {
@@ -93,12 +95,12 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	handler.HandleFunc(path+"/"+HealthzTypeReadiness.String(), func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc(path+"/"+healthz.TypeReadiness.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[HealthzTypeAlways]; ok {
+		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
-		if p, ok := probes[HealthzTypeReadiness]; ok {
+		if p, ok := probes[healthz.TypeReadiness]; ok {
 			ps = append(ps, p...)
 		}
 		for _, p := range ps {
@@ -114,12 +116,12 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	handler.HandleFunc(path+"/"+HealthzTypeStartup.String(), func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc(path+"/"+healthz.TypeStartup.String(), func(w http.ResponseWriter, r *http.Request) {
 		var ps []interface{}
-		if p, ok := probes[HealthzTypeAlways]; ok {
+		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
-		if p, ok := probes[HealthzTypeStartup]; ok {
+		if p, ok := probes[healthz.TypeStartup]; ok {
 			ps = append(ps, p...)
 		}
 		for _, p := range ps {
@@ -134,15 +136,15 @@ func NewServiceHTTPHealthz(l *zap.Logger, name, addr, path string, probes map[He
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
-	return NewServiceHTTP(l, name, addr, handler)
+	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultServiceHTTPProbes(probes map[HealthzType][]interface{}) *ServiceHTTP {
-	return NewServiceHTTPHealthz(
-		log.Logger(),
-		DefaultServiceHTTPHealthzName,
-		DefaultServiceHTTPHealthzAddr,
-		DefaultServiceHTTPHealthzPath,
+func NewDefaultHTTPProbes(l *zap.Logger, probes map[healthz.Type][]interface{}) *HTTP {
+	return NewHealthz(
+		l,
+		DefaultHTTPHealthzName,
+		DefaultHTTPHealthzAddr,
+		DefaultHTTPHealthzPath,
 		probes,
 	)
 }

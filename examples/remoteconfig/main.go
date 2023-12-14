@@ -6,6 +6,7 @@ import (
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/service"
 )
 
 func main() {
@@ -42,7 +43,7 @@ func main() {
 
 	// curl localhost:8080
 	svr.AddService(
-		keel.NewServiceHTTP(l, "demo", "localhost:8080", http.HandlerFunc(
+		service.NewHTTP(l, "demo", "localhost:8080", http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("current foo:", fooFn()) //nolint:forbidigo
 			}),
