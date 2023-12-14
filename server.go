@@ -65,7 +65,7 @@ type Server struct {
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		shutdownTimeout: 30 * time.Second,
-		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
+		shutdownSignals: []os.Signal{syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
 		syncProbes:      map[healthz.Type][]interface{}{},
 		ctx:             context.Background(),
