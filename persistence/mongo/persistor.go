@@ -24,10 +24,12 @@ type (
 	Options struct {
 		OtelEnabled     bool
 		OtelOptions     []otelmongo.Option
-		ClientOptions   *options.ClientOptions
-		DatabaseOptions *options.DatabaseOptions
+		ClientOptions   []ClientOption
+		DatabaseOptions []DatabaseOption
 	}
-	Option func(o *Options)
+	Option         func(o *Options)
+	ClientOption   func(*options.ClientOptions)
+	DatabaseOption func(*options.DatabaseOptions)
 )
 
 func WithOtelEnabled(v bool) Option {
@@ -42,15 +44,15 @@ func WithOtelOptions(v ...otelmongo.Option) Option {
 	}
 }
 
-func WithClientOptions(v *options.ClientOptions) Option {
+func WithClientOptions(v ...ClientOption) Option {
 	return func(o *Options) {
-		o.ClientOptions = options.MergeClientOptions(o.ClientOptions, v)
+		o.ClientOptions = append(o.ClientOptions, v...)
 	}
 }
 
-func WithDatabaseOptions(v *options.DatabaseOptions) Option {
+func WithDatabaseOptions(v ...DatabaseOption) Option {
 	return func(o *Options) {
-		o.DatabaseOptions = options.MergeDatabaseOptions(o.DatabaseOptions, v)
+		o.DatabaseOptions = append(o.DatabaseOptions, v...)
 	}
 }
 
@@ -60,9 +62,12 @@ func DefaultOptions() Options {
 		OtelOptions: []otelmongo.Option{
 			otelmongo.WithCommandAttributeDisabled(env.GetBool("OTEL_MONGO_COMMAND_ATTRIBUTE_DISABLED", false)),
 		},
-		ClientOptions: options.Client().
-			SetReadConcern(readconcern.Majority()).
-			SetWriteConcern(writeconcern.New(writeconcern.WMajority())),
+		ClientOptions: []ClientOption{
+			func(clientOptions *options.ClientOptions) {
+				clientOptions.SetReadConcern(readconcern.Majority())
+				clientOptions.SetWriteConcern(writeconcern.Majority())
+			},
+		},
 		DatabaseOptions: nil,
 	}
 }
@@ -79,23 +84,32 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 		return nil, errors.Errorf("missing database name in uri: %s", uri)
 	}
 
-	// apply uri
-	o.ClientOptions.ApplyURI(uri)
-
 	// apply options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
+	// apply client options
+	clientOptions := options.Client().ApplyURI(uri)
+	for _, opt := range o.ClientOptions {
+		opt(clientOptions)
+	}
+
+	// apply database options
+	databaseOptions := options.Database()
+	for _, opt := range o.DatabaseOptions {
+		opt(databaseOptions)
+	}
+
 	// setup otel
 	if o.OtelEnabled {
-		o.ClientOptions.SetMonitor(
+		clientOptions.SetMonitor(
 			otelmongo.NewMonitor(o.OtelOptions...),
 		)
 	}
 
 	// create connection
-	client, err := mongo.Connect(ctx, o.ClientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect")
 	}
@@ -107,7 +121,7 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 
 	return &Persistor{
 		client: client,
-		db:     client.Database(cs.Database),
+		db:     client.Database(cs.Database, databaseOptions),
 	}, nil
 }
 
