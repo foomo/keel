@@ -37,7 +37,9 @@ func main() {
 		// enable telemetry (enabled by default)
 		keelmongo.WithOtelEnabled(true),
 		keelmongo.WithClientOptions(
-			options.Client().SetRegistry(rb),
+			func(clientOptions *options.ClientOptions) {
+				clientOptions.SetRegistry(rb)
+			},
 		),
 	)
 	// use log must helper to exit on error
