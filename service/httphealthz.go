@@ -7,12 +7,11 @@ import (
 
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
-	"go.uber.org/zap"
-
 	"github.com/foomo/keel/log"
+	"go.uber.org/zap"
 )
 
-const (
+var (
 	DefaultHTTPHealthzName = "healthz"
 	DefaultHTTPHealthzAddr = ":9400"
 	DefaultHTTPHealthzPath = "/healthz"
@@ -31,7 +30,9 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 
 	unavailable := func(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
 		if err != nil {
-			log.WithHTTPRequest(l, r).Info("http healthz server", log.FError(err), log.FHTTPStatusCode(http.StatusServiceUnavailable))
+			l = log.WithError(l, err)
+			l = log.WithHTTPRequest(l, r)
+			l.Debug("healthz probe failed")
 			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		}
 	}

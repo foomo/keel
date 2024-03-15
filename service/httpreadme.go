@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
+var (
 	DefaultHTTPReadmeName = "readme"
 	DefaultHTTPReadmeAddr = "localhost:9001"
 	DefaultHTTPReadmePath = "/readme"
