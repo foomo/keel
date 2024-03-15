@@ -69,8 +69,8 @@ type Server struct {
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
-		gracefulTimeout: 10 * 3 * time.Second,
-		shutdownTimeout: 30 * time.Second,
+		gracefulTimeout: time.Duration(env.GetInt("KEEL_GRACEFUL_TIMEOUT", 10*3)) * time.Second,
+		shutdownTimeout: time.Duration(env.GetInt("KEEL_SHUTDOWN_TIMEOUT", 30)) * time.Second,
 		shutdownSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
 		syncProbes:      map[healthz.Type][]interface{}{},
