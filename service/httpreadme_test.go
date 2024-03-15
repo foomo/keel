@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
@@ -16,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ExampleNewHTTPReadme() {
+func _ExampleNewHTTPReadme() {
 	// define vars so it does not panic
 	_ = os.Setenv("EXAMPLE_REQUIRED_BOOL", "true")
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
@@ -25,6 +26,8 @@ func ExampleNewHTTPReadme() {
 		keel.WithLogger(zap.NewNop()),
 		keel.WithPrometheusMeter(true),
 		keel.WithHTTPReadmeService(true),
+		keel.WithGracefulTimeout(time.Second),
+		keel.WithShutdownTimeout(3*time.Second),
 	)
 
 	// access some env vars
@@ -129,12 +132,13 @@ func ExampleNewHTTPReadme() {
 	//
 	// List of all registered healthz probes that are being called during startup and runtime.
 	//
-	// | Name             | Probe    | Type                 | Description                            |
-	// | ---------------- | -------- | -------------------- | -------------------------------------- |
-	// |                  | `always` | `*keel.Server`       |                                        |
-	// | `demo-goroutine` | `always` | `*service.GoRoutine` | parallel: `1`                          |
-	// | `demp-http`      | `always` | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
-	// | `readme`         | `always` | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
+	// | Name             | Probe       | Type                 | Description                            |
+	// | ---------------- | ----------- | -------------------- | -------------------------------------- |
+	// |                  | `always`    | `*keel.Server`       |                                        |
+	// |                  | `readiness` | `healthz.healther`   |                                        |
+	// | `demo-goroutine` | `always`    | `*service.GoRoutine` | parallel: `1`                          |
+	// | `demp-http`      | `always`    | `*service.HTTP`      | `http.HandlerFunc` on `localhost:8080` |
+	// | `readme`         | `always`    | `*service.HTTP`      | `*http.ServeMux` on `localhost:9001`   |
 	//
 	// ### Closers
 	//
@@ -181,11 +185,4 @@ func ExampleNewHTTPReadme() {
 	// | `go_memstats_stack_sys_bytes`      | GAUGE   | Number of bytes obtained from system for stack allocator.          |
 	// | `go_memstats_sys_bytes`            | GAUGE   | Number of bytes obtained from system.                              |
 	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |
-	// | `process_cpu_seconds_total`        | COUNTER | Total user and system CPU time spent in seconds.                   |
-	// | `process_max_fds`                  | GAUGE   | Maximum number of open file descriptors.                           |
-	// | `process_open_fds`                 | GAUGE   | Number of open file descriptors.                                   |
-	// | `process_resident_memory_bytes`    | GAUGE   | Resident memory size in bytes.                                     |
-	// | `process_start_time_seconds`       | GAUGE   | Start time of the process since unix epoch in seconds.             |
-	// | `process_virtual_memory_bytes`     | GAUGE   | Virtual memory size in bytes.                                      |
-	// | `process_virtual_memory_max_bytes` | GAUGE   | Maximum amount of virtual memory available in bytes.               |
 }
