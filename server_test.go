@@ -60,7 +60,12 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s.svr = keel.NewServer(keel.WithContext(ctx), keel.WithLogger(s.l))
+	s.svr = keel.NewServer(
+		keel.WithContext(ctx),
+		keel.WithLogger(s.l),
+		keel.WithGracefulTimeout(400*time.Millisecond),
+		keel.WithShutdownTimeout(800*time.Millisecond),
+	)
 	s.cancel = cancel
 }
 
@@ -75,7 +80,7 @@ func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(
-		service.NewHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTP(s.l, "test", "localhost:55000", s.mux),
 	)
 
 	s.runServer()
@@ -87,8 +92,8 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 
 func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.svr.AddServices(
-		service.NewHTTPZap(s.l, "zap", ":9100", "/log"),
-		service.NewHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTPZap(s.l, "zap", "localhost:9100", "/log"),
+		service.NewHTTP(s.l, "test", "localhost:55000", s.mux),
 	)
 
 	s.runServer()
@@ -142,7 +147,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 
 func (s *KeelTestSuite) TestGraceful() {
 	s.svr.AddServices(
-		service.NewHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTP(s.l, "test", "localhost:55000", s.mux),
 	)
 
 	s.runServer()

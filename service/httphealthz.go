@@ -30,9 +30,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 
 	unavailable := func(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
 		if err != nil {
-			l = log.WithError(l, err)
-			l = log.WithHTTPRequest(l, r)
-			l.Debug("healthz probe failed")
+			log.WithError(l, err).With(log.FHTTPTarget(r.RequestURI)).Debug("healthz probe failed")
 			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		}
 	}

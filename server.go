@@ -57,8 +57,10 @@ type Server struct {
 	syncProbes       map[healthz.Type][]interface{}
 	syncProbesLock   sync.RWMutex
 	ctx              context.Context
-	ctxCancel        context.Context
-	ctxCancelFn      context.CancelFunc
+	cancelCtx        context.Context
+	cancelFunc       context.CancelFunc
+	shutdownCtx      context.Context
+	shutdownFunc     context.CancelFunc
 	g                *errgroup.Group
 	gCtx             context.Context
 	l                *zap.Logger
@@ -69,7 +71,7 @@ func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		gracefulTimeout: 10 * 3 * time.Second,
 		shutdownTimeout: 30 * time.Second,
-		shutdownSignals: []os.Signal{syscall.SIGTERM},
+		shutdownSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
 		syncProbes:      map[healthz.Type][]interface{}{},
 		ctx:             context.Background(),
@@ -89,21 +91,24 @@ func NewServer(opts ...Option) *Server {
 			return nil
 		}))
 
-		inst.ctxCancel, inst.ctxCancelFn = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
-		inst.g, inst.gCtx = errgroup.WithContext(inst.ctxCancel)
+		inst.cancelCtx, inst.cancelFunc = context.WithCancel(inst.ctx)
+		inst.g, inst.gCtx = errgroup.WithContext(inst.cancelCtx)
+		inst.shutdownCtx, inst.shutdownFunc = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
 
 		// gracefully shutdown
 		inst.g.Go(func() error {
-			<-inst.gCtx.Done()
-			defer inst.ctxCancelFn()
+			<-inst.shutdownCtx.Done()
 			inst.l.Info("keel graceful shutdown")
 
-			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctxCancel, inst.shutdownTimeout)
+			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.shutdownTimeout)
 			defer timeoutCancel()
 
 			inst.shutdown.Store(true)
 
-			inst.l.Info("keel pausing graceful shutdown", log.FDuration(inst.gracefulTimeout))
+			inst.l.Info("keel graceful shutdown timeout",
+				zap.Duration("graceful_timeout", inst.gracefulTimeout),
+				zap.Duration("shutdown_timeout", inst.shutdownTimeout),
+			)
 			{
 				timer := time.NewTimer(inst.gracefulTimeout)
 				select {
@@ -112,67 +117,57 @@ func NewServer(opts ...Option) *Server {
 				case <-timer.C:
 				}
 			}
-			inst.l.Info("keel resuming graceful shutdown")
+			inst.l.Info("keel graceful shutdown timeout complete")
 
 			// append internal closers
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
-			inst.l.Debug("keel iterating closers")
+			inst.l.Info("keel graceful shutdown closers")
 			for _, closer := range closers {
+				var err error
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
 				switch c := closer.(type) {
 				case interfaces.Closer:
 					c.Close()
 				case interfaces.ErrorCloser:
-					if err := c.Close(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorCloser")
-					}
+					err = c.Close()
 				case interfaces.CloserWithContext:
 					c.Close(timeoutCtx)
 				case interfaces.ErrorCloserWithContext:
-					if err := c.Close(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorCloserWithContext")
-					}
+					err = c.Close(timeoutCtx)
 				case interfaces.Shutdowner:
 					c.Shutdown()
 				case interfaces.ErrorShutdowner:
-					if err := c.Shutdown(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdowner")
-					}
+					err = c.Shutdown()
 				case interfaces.ShutdownerWithContext:
 					c.Shutdown(timeoutCtx)
 				case interfaces.ErrorShutdownerWithContext:
-					if err := c.Shutdown(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
-					}
+					err = c.Shutdown(timeoutCtx)
 				case interfaces.Stopper:
 					c.Stop()
 				case interfaces.ErrorStopper:
-					if err := c.Stop(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorStopper")
-					}
+					err = c.Stop()
 				case interfaces.StopperWithContext:
 					c.Stop(timeoutCtx)
 				case interfaces.ErrorStopperWithContext:
-					if err := c.Stop(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorStopperWithContext")
-					}
+					err = c.Stop(timeoutCtx)
 				case interfaces.Unsubscriber:
 					c.Unsubscribe()
 				case interfaces.ErrorUnsubscriber:
-					if err := c.Unsubscribe(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriber")
-					}
+					err = c.Unsubscribe()
 				case interfaces.UnsubscriberWithContext:
 					c.Unsubscribe(timeoutCtx)
 				case interfaces.ErrorUnsubscriberWithContext:
-					if err := c.Unsubscribe(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
-					}
+					err = c.Unsubscribe(timeoutCtx)
+				}
+				if err != nil {
+					log.WithError(l, err).Warn("keel graceful shutdown closer failed")
+				} else {
+					l.Debug("keel graceful shutdown closer closed")
 				}
 			}
 
-			inst.l.Debug("keel done closing")
+			inst.l.Info("keel graceful shutdown complete")
 
 			return nil
 		})
@@ -246,7 +241,22 @@ func (s *Server) Context() context.Context {
 
 // CancelContext returns server's cancel context
 func (s *Server) CancelContext() context.Context {
-	return s.ctxCancel
+	return s.cancelCtx
+}
+
+// CancelFunc returns server's cancel function
+func (s *Server) CancelFunc() context.CancelFunc {
+	return s.cancelFunc
+}
+
+// ShutdownContext returns server's shutdown cancel context
+func (s *Server) ShutdownContext() context.Context {
+	return s.shutdownCtx
+}
+
+// ShutdownCancel returns server's shutdown cancel function
+func (s *Server) ShutdownCancel() context.CancelFunc {
+	return s.shutdownFunc
 }
 
 // AddService add a single service
@@ -335,9 +345,9 @@ func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
 }
 
 // IsCanceled returns true if the internal errgroup has been canceled
-// func (s *Server) IsCanceled() bool {
-// 	return errors.Is(s.gCtx.Err(), context.Canceled)
-// }
+func (s *Server) IsCanceled() bool {
+	return s.cancelCtx.Err() != nil
+}
 
 // Healthz returns true if the server is running
 func (s *Server) Healthz() error {
@@ -349,12 +359,12 @@ func (s *Server) Healthz() error {
 
 // Run runs the server
 func (s *Server) Run() {
-	// if s.IsCanceled() {
-	// 	s.l.Info("keel server canceled")
-	// 	return
-	// }
+	if s.IsCanceled() {
+		s.l.Info("keel server canceled")
+		return
+	}
 
-	// defer s.ctxCancelFn()
+	defer s.cancelFunc()
 	s.l.Info("starting keel server")
 
 	// start services

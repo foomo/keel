@@ -65,7 +65,7 @@ func main() {
 	select {
 	case <-time.After(10 * time.Second):
 		l.Info("initialization done")
-	case <-svr.CancelContext().Done():
+	case <-svr.ShutdownContext().Done():
 		l.Info("initialization canceled")
 	}
 
