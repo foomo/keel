@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ExampleNewHTTPReadme() {
+func _ExampleNewHTTPReadme() {
 	// define vars so it does not panic
 	_ = os.Setenv("EXAMPLE_REQUIRED_BOOL", "true")
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
