@@ -4,14 +4,6 @@ import (
 	"context"
 )
 
-type CloseHandler struct {
-	Value func(ctx context.Context) error
-}
-
-func (r CloseHandler) Close(ctx context.Context) error {
-	return r.Value(ctx)
-}
-
 // Closer interface
 type Closer interface {
 	Close()
@@ -30,10 +22,4 @@ type CloserWithContext interface {
 // ErrorCloserWithContext interface
 type ErrorCloserWithContext interface {
 	Close(ctx context.Context) error
-}
-
-func CloseFunc(v func(ctx context.Context) error) CloseHandler {
-	return CloseHandler{
-		Value: v,
-	}
 }
