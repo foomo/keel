@@ -2,6 +2,7 @@ package keel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,13 +14,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
+	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
 	"github.com/foomo/keel/metrics"
 	"github.com/foomo/keel/service"
+	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -29,22 +33,21 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/foomo/keel/config"
-	"github.com/foomo/keel/env"
-	"github.com/foomo/keel/log"
-	"github.com/foomo/keel/telemetry"
 )
 
 // Server struct
 type Server struct {
-	services         []Service
-	initServices     []Service
-	meter            metric.Meter
-	meterProvider    metric.MeterProvider
-	tracer           trace.Tracer
-	traceProvider    trace.TracerProvider
-	shutdownSignals  []os.Signal
+	services        []Service
+	initServices    []Service
+	meter           metric.Meter
+	meterProvider   metric.MeterProvider
+	tracer          trace.Tracer
+	traceProvider   trace.TracerProvider
+	shutdown        atomic.Bool
+	shutdownSignals []os.Signal
+	// gracefulTimeout should equal the readinessProbe's periodSeconds * failureThreshold
+	gracefulTimeout time.Duration
+	// shutdownTimeout should equal the readinessProbe's terminationGracePeriodSeconds
 	shutdownTimeout  time.Duration
 	running          atomic.Bool
 	syncClosers      []interface{}
@@ -64,6 +67,7 @@ type Server struct {
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
+		gracefulTimeout: 10 * 3 * time.Second,
 		shutdownTimeout: 30 * time.Second,
 		shutdownSignals: []os.Signal{syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
@@ -78,21 +82,42 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	{ // setup error group
+		inst.AddReadinessHealthzers(healthz.NewHealthzerFn(func(ctx context.Context) error {
+			if inst.shutdown.Load() {
+				return ErrServerShutdown
+			}
+			return nil
+		}))
+
 		inst.ctxCancel, inst.ctxCancelFn = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
 		inst.g, inst.gCtx = errgroup.WithContext(inst.ctxCancel)
 
 		// gracefully shutdown
 		inst.g.Go(func() error {
 			<-inst.gCtx.Done()
-			inst.l.Debug("keel graceful shutdown")
 			defer inst.ctxCancelFn()
+			inst.l.Info("keel graceful shutdown")
 
-			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.shutdownTimeout)
+			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctxCancel, inst.shutdownTimeout)
 			defer timeoutCancel()
+
+			inst.shutdown.Store(true)
+
+			inst.l.Info("keel pausing graceful shutdown", log.FDuration(inst.gracefulTimeout))
+			{
+				timer := time.NewTimer(inst.gracefulTimeout)
+				select {
+				case <-timeoutCtx.Done():
+					timer.Stop()
+				case <-timer.C:
+				}
+			}
+			inst.l.Info("keel resuming graceful shutdown")
 
 			// append internal closers
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
+			inst.l.Debug("keel iterating closers")
 			for _, closer := range closers {
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
 				switch c := closer.(type) {
@@ -146,7 +171,10 @@ func NewServer(opts ...Option) *Server {
 					}
 				}
 			}
-			return inst.gCtx.Err()
+
+			inst.l.Debug("keel done closing")
+
+			return nil
 		})
 	}
 
@@ -307,9 +335,9 @@ func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
 }
 
 // IsCanceled returns true if the internal errgroup has been canceled
-func (s *Server) IsCanceled() bool {
-	return errors.Is(s.gCtx.Err(), context.Canceled)
-}
+// func (s *Server) IsCanceled() bool {
+// 	return errors.Is(s.gCtx.Err(), context.Canceled)
+// }
 
 // Healthz returns true if the server is running
 func (s *Server) Healthz() error {
@@ -321,12 +349,12 @@ func (s *Server) Healthz() error {
 
 // Run runs the server
 func (s *Server) Run() {
-	if s.IsCanceled() {
-		s.l.Info("keel server canceled")
-		return
-	}
+	// if s.IsCanceled() {
+	// 	s.l.Info("keel server canceled")
+	// 	return
+	// }
 
-	defer s.ctxCancelFn()
+	// defer s.ctxCancelFn()
 	s.l.Info("starting keel server")
 
 	// start services

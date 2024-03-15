@@ -15,12 +15,12 @@ import (
 // See k8s for probe documentation
 // https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#types-of-probe
 func main() {
+	service.DefaultHTTPHealthzAddr = "localhost:9400"
+
 	// you can override the below config by settings env vars
 	_ = os.Setenv("SERVICE_HEALTHZ_ENABLED", "true")
 
 	svr := keel.NewServer(
-		keel.WithHTTPZapService(true),
-		keel.WithHTTPViperService(true),
 		// allows you to use probes for health checks in cluster:
 		//	GET :9400/healthz
 		//  GET :9400/healthz/readiness
