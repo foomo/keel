@@ -161,7 +161,7 @@ func NewServer(opts ...Option) *Server {
 					err = c.Unsubscribe(timeoutCtx)
 				}
 				if err != nil {
-					log.WithError(l, err).Warn("keel graceful shutdown closer failed")
+					l.Warn("keel graceful shutdown closer failed", zap.Error(err))
 				} else {
 					l.Debug("keel graceful shutdown closer closed")
 				}
