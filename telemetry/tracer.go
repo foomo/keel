@@ -11,6 +11,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/foomo/keel/env"
 )
@@ -24,7 +25,7 @@ func TraceProvider() trace.TracerProvider {
 }
 
 func NewNoopTraceProvider() (trace.TracerProvider, error) {
-	tracerProvider := trace.NewNoopTracerProvider()
+	tracerProvider := noop.NewTracerProvider()
 	otel.SetTracerProvider(tracerProvider)
 	return tracerProvider, nil
 }

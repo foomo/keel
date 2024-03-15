@@ -10,10 +10,11 @@ import (
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/config"
 	"github.com/foomo/keel/env"
+	"github.com/foomo/keel/net/http/middleware"
 	"github.com/foomo/keel/service"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -53,16 +54,20 @@ func _ExampleNewHTTPReadme() {
 		Name: "foo_bar_total",
 		Help: "Foo bar metrics",
 	})
-	fooBazCounter, _ := m.SyncInt64().Counter("foo_baz_total", instrument.WithDescription("Foo baz metrics"))
+	fooBazCounter, _ := m.Int64Counter("foo_baz_total", metric.WithDescription("Foo baz metrics"))
 
 	fooBarCounter.Add(1)
 	fooBazCounter.Add(svr.Context(), 1)
 
 	// add http service
-	svr.AddService(service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	})))
+	svr.AddService(
+		service.NewHTTP(l, "demp-http", "localhost:8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("OK"))
+		}),
+			middleware.Telemetry(),
+		),
+	)
 
 	// add go routine service
 	svr.AddService(service.NewGoRoutine(l, "demo-goroutine", func(ctx context.Context, l *zap.Logger) error {
@@ -71,7 +76,8 @@ func _ExampleNewHTTPReadme() {
 
 	go func() {
 		waitFor("localhost:9001")
-		fmt.Print(httpGet("http://localhost:9001/readme"))
+		httpGet("http://localhost:8080/")
+		fmt.Println(httpGet("http://localhost:9001/readme"))
 		shutdown()
 	}()
 
@@ -90,6 +96,8 @@ func _ExampleNewHTTPReadme() {
 	// | `EXAMPLE_REQUIRED_STRING` | `string` |          |           |
 	// | `EXAMPLE_REQUIRED_STRING` | `string` | `true`   |           |
 	// | `EXAMPLE_STRING`          | `string` |          | `demo`    |
+	// | `KEEL_GRACEFUL_TIMEOUT`   | `int`    |          |           |
+	// | `KEEL_SHUTDOWN_TIMEOUT`   | `int`    |          |           |
 	// | `LOG_DISABLE_CALLER`      | `bool`   |          |           |
 	// | `LOG_DISABLE_STACKTRACE`  | `bool`   |          |           |
 	// | `LOG_ENCODING`            | `string` |          | `json`    |
@@ -154,35 +162,40 @@ func _ExampleNewHTTPReadme() {
 	//
 	// List of all registered metrics than are being exposed.
 	//
-	// | Name                               | Type    | Description                                                        |
-	// | ---------------------------------- | ------- | ------------------------------------------------------------------ |
-	// | `foo_bar_total`                    | COUNTER | Foo bar metrics                                                    |
-	// | `foo_baz_total`                    | COUNTER | Foo baz metrics                                                    |
-	// | `go_gc_duration_seconds`           | SUMMARY | A summary of the pause duration of garbage collection cycles.      |
-	// | `go_goroutines`                    | GAUGE   | Number of goroutines that currently exist.                         |
-	// | `go_info`                          | GAUGE   | Information about the Go environment.                              |
-	// | `go_memstats_alloc_bytes_total`    | COUNTER | Total number of bytes allocated, even if freed.                    |
-	// | `go_memstats_alloc_bytes`          | GAUGE   | Number of bytes allocated and still in use.                        |
-	// | `go_memstats_buck_hash_sys_bytes`  | GAUGE   | Number of bytes used by the profiling bucket hash table.           |
-	// | `go_memstats_frees_total`          | COUNTER | Total number of frees.                                             |
-	// | `go_memstats_gc_sys_bytes`         | GAUGE   | Number of bytes used for garbage collection system metadata.       |
-	// | `go_memstats_heap_alloc_bytes`     | GAUGE   | Number of heap bytes allocated and still in use.                   |
-	// | `go_memstats_heap_idle_bytes`      | GAUGE   | Number of heap bytes waiting to be used.                           |
-	// | `go_memstats_heap_inuse_bytes`     | GAUGE   | Number of heap bytes that are in use.                              |
-	// | `go_memstats_heap_objects`         | GAUGE   | Number of allocated objects.                                       |
-	// | `go_memstats_heap_released_bytes`  | GAUGE   | Number of heap bytes released to OS.                               |
-	// | `go_memstats_heap_sys_bytes`       | GAUGE   | Number of heap bytes obtained from system.                         |
-	// | `go_memstats_last_gc_time_seconds` | GAUGE   | Number of seconds since 1970 of last garbage collection.           |
-	// | `go_memstats_lookups_total`        | COUNTER | Total number of pointer lookups.                                   |
-	// | `go_memstats_mallocs_total`        | COUNTER | Total number of mallocs.                                           |
-	// | `go_memstats_mcache_inuse_bytes`   | GAUGE   | Number of bytes in use by mcache structures.                       |
-	// | `go_memstats_mcache_sys_bytes`     | GAUGE   | Number of bytes used for mcache structures obtained from system.   |
-	// | `go_memstats_mspan_inuse_bytes`    | GAUGE   | Number of bytes in use by mspan structures.                        |
-	// | `go_memstats_mspan_sys_bytes`      | GAUGE   | Number of bytes used for mspan structures obtained from system.    |
-	// | `go_memstats_next_gc_bytes`        | GAUGE   | Number of heap bytes when next garbage collection will take place. |
-	// | `go_memstats_other_sys_bytes`      | GAUGE   | Number of bytes used for other system allocations.                 |
-	// | `go_memstats_stack_inuse_bytes`    | GAUGE   | Number of bytes in use by the stack allocator.                     |
-	// | `go_memstats_stack_sys_bytes`      | GAUGE   | Number of bytes obtained from system for stack allocator.          |
-	// | `go_memstats_sys_bytes`            | GAUGE   | Number of bytes obtained from system.                              |
-	// | `go_threads`                       | GAUGE   | Number of OS threads created.                                      |
+	// | Name                                    | Type      | Description                                                        |
+	// | --------------------------------------- | --------- | ------------------------------------------------------------------ |
+	// | `foo_bar_total`                         | COUNTER   | Foo bar metrics                                                    |
+	// | `foo_baz_total`                         | COUNTER   | Foo baz metrics                                                    |
+	// | `go_gc_duration_seconds`                | SUMMARY   | A summary of the pause duration of garbage collection cycles.      |
+	// | `go_goroutines`                         | GAUGE     | Number of goroutines that currently exist.                         |
+	// | `go_info`                               | GAUGE     | Information about the Go environment.                              |
+	// | `go_memstats_alloc_bytes_total`         | COUNTER   | Total number of bytes allocated, even if freed.                    |
+	// | `go_memstats_alloc_bytes`               | GAUGE     | Number of bytes allocated and still in use.                        |
+	// | `go_memstats_buck_hash_sys_bytes`       | GAUGE     | Number of bytes used by the profiling bucket hash table.           |
+	// | `go_memstats_frees_total`               | COUNTER   | Total number of frees.                                             |
+	// | `go_memstats_gc_sys_bytes`              | GAUGE     | Number of bytes used for garbage collection system metadata.       |
+	// | `go_memstats_heap_alloc_bytes`          | GAUGE     | Number of heap bytes allocated and still in use.                   |
+	// | `go_memstats_heap_idle_bytes`           | GAUGE     | Number of heap bytes waiting to be used.                           |
+	// | `go_memstats_heap_inuse_bytes`          | GAUGE     | Number of heap bytes that are in use.                              |
+	// | `go_memstats_heap_objects`              | GAUGE     | Number of allocated objects.                                       |
+	// | `go_memstats_heap_released_bytes`       | GAUGE     | Number of heap bytes released to OS.                               |
+	// | `go_memstats_heap_sys_bytes`            | GAUGE     | Number of heap bytes obtained from system.                         |
+	// | `go_memstats_last_gc_time_seconds`      | GAUGE     | Number of seconds since 1970 of last garbage collection.           |
+	// | `go_memstats_lookups_total`             | COUNTER   | Total number of pointer lookups.                                   |
+	// | `go_memstats_mallocs_total`             | COUNTER   | Total number of mallocs.                                           |
+	// | `go_memstats_mcache_inuse_bytes`        | GAUGE     | Number of bytes in use by mcache structures.                       |
+	// | `go_memstats_mcache_sys_bytes`          | GAUGE     | Number of bytes used for mcache structures obtained from system.   |
+	// | `go_memstats_mspan_inuse_bytes`         | GAUGE     | Number of bytes in use by mspan structures.                        |
+	// | `go_memstats_mspan_sys_bytes`           | GAUGE     | Number of bytes used for mspan structures obtained from system.    |
+	// | `go_memstats_next_gc_bytes`             | GAUGE     | Number of heap bytes when next garbage collection will take place. |
+	// | `go_memstats_other_sys_bytes`           | GAUGE     | Number of bytes used for other system allocations.                 |
+	// | `go_memstats_stack_inuse_bytes`         | GAUGE     | Number of bytes in use by the stack allocator.                     |
+	// | `go_memstats_stack_sys_bytes`           | GAUGE     | Number of bytes obtained from system for stack allocator.          |
+	// | `go_memstats_sys_bytes`                 | GAUGE     | Number of bytes obtained from system.                              |
+	// | `go_threads`                            | GAUGE     | Number of OS threads created.                                      |
+	// | `http_server_duration_milliseconds`     | HISTOGRAM | Measures the duration of inbound HTTP requests.                    |
+	// | `http_server_request_size_bytes_total`  | COUNTER   | Measures the size of HTTP request messages.                        |
+	// | `http_server_response_size_bytes_total` | COUNTER   | Measures the size of HTTP response messages.                       |
+	// | `otel_scope_info`                       | GAUGE     | Instrumentation Scope metadata                                     |
+	// | `target_info`                           | GAUGE     | Target metadata                                                    |
 }

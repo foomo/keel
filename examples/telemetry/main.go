@@ -3,20 +3,16 @@ package main
 import (
 	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/foomo/keel/service"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/net/http/middleware"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )

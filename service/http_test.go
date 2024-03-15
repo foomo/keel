@@ -43,8 +43,8 @@ func ExampleNewHTTP() {
 	// {"level":"info","msg":"keel graceful shutdown closers"}
 	// {"level":"info","msg":"stopping keel service","keel_service_type":"http","keel_service_name":"demo"}
 	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"*service.HTTP"}
-	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"trace.noopTracerProvider"}
-	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"nonrecording.noopMeterProvider"}
+	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"noop.TracerProvider"}
+	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"noop.MeterProvider"}
 	// {"level":"info","msg":"keel graceful shutdown complete"}
 	// {"level":"info","msg":"keel server stopped"}
 }
