@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -20,6 +21,17 @@ func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
 	return l.With(fields...)
 }
 
+func WithAttributes(l *zap.Logger, attrs ...attribute.KeyValue) *zap.Logger {
+	if l == nil {
+		l = Logger()
+	}
+	fields := make([]zap.Field, len(attrs))
+	for i, attr := range attrs {
+		fields[i] = zap.Any(strings.ReplaceAll(string(attr.Key), ".", "_"), attr.Value.AsInterface())
+	}
+	return l.With(fields...)
+}
+
 func WithError(l *zap.Logger, err error) *zap.Logger {
 	return With(l, FErrorType(err), FError(err))
 }
@@ -29,8 +41,8 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 }
 
 func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
-	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		l = With(l, FTraceID(spanCtx.TraceID().String()))
+	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
+		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
 	}
 	return l
 }

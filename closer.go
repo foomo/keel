@@ -1,37 +1,29 @@
 package keel
 
-import "context"
+import (
+	"github.com/foomo/keel/interfaces"
+)
 
-type closer struct {
-	handle func(context.Context) error
-}
-
-func NewCloserFn(handle func(context.Context) error) closer {
-	return closer{
-		handle: handle,
+func IsCloser(v any) bool {
+	switch v.(type) {
+	case interfaces.Closer,
+		interfaces.ErrorCloser,
+		interfaces.CloserWithContext,
+		interfaces.ErrorCloserWithContext,
+		interfaces.Shutdowner,
+		interfaces.ErrorShutdowner,
+		interfaces.ShutdownerWithContext,
+		interfaces.ErrorShutdownerWithContext,
+		interfaces.Stopper,
+		interfaces.ErrorStopper,
+		interfaces.StopperWithContext,
+		interfaces.ErrorStopperWithContext,
+		interfaces.Unsubscriber,
+		interfaces.ErrorUnsubscriber,
+		interfaces.UnsubscriberWithContext,
+		interfaces.ErrorUnsubscriberWithContext:
+		return true
+	default:
+		return false
 	}
-}
-
-func (h healther) Close(ctx context.Context) error {
-	return h.handle(ctx)
-}
-
-// Closer interface
-type Closer interface {
-	Close()
-}
-
-// ErrorCloser interface
-type ErrorCloser interface {
-	Close() error
-}
-
-// CloserWithContext interface
-type CloserWithContext interface {
-	Close(ctx context.Context)
-}
-
-// ErrorCloserWithContext interface
-type ErrorCloserWithContext interface {
-	Close(ctx context.Context) error
 }

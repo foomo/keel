@@ -3,8 +3,15 @@ package env
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
+)
+
+var (
+	defaults     = map[string]interface{}{}
+	requiredKeys []string
+	types        = map[string]string{}
 )
 
 // Exists return true if env var is defined
@@ -15,13 +22,20 @@ func Exists(key string) bool {
 
 // MustExists panics if not exists
 func MustExists(key string) {
-	if _, ok := os.LookupEnv(key); !ok {
-		panic(fmt.Sprintf("required environment variable %s does not exist", key))
+	if !Exists(key) {
+		panic(fmt.Sprintf("required environment variable `%s` does not exist", key))
+	}
+	if !slices.Contains(requiredKeys, key) {
+		requiredKeys = append(requiredKeys, key)
 	}
 }
 
 // Get env var or fallback
 func Get(key, fallback string) string {
+	defaults[key] = fallback
+	if _, ok := types[key]; !ok {
+		types[key] = "string"
+	}
 	if v, ok := os.LookupEnv(key); ok {
 		return v
 	}
@@ -36,6 +50,9 @@ func MustGet(key string) string {
 
 // GetInt env var or fallback as int
 func GetInt(key string, fallback int) int {
+	if _, ok := types[key]; !ok {
+		types[key] = "int"
+	}
 	if value, err := strconv.Atoi(Get(key, "")); err == nil {
 		return value
 	}
@@ -50,6 +67,9 @@ func MustGetInt(key string) int {
 
 // GetInt64 env var or fallback as int64
 func GetInt64(key string, fallback int64) int64 {
+	if _, ok := types[key]; !ok {
+		types[key] = "int64"
+	}
 	if value, err := strconv.ParseInt(Get(key, ""), 10, 64); err == nil {
 		return value
 	}
@@ -64,6 +84,9 @@ func MustGetInt64(key string) int64 {
 
 // GetFloat64 env var or fallback as float64
 func GetFloat64(key string, fallback float64) float64 {
+	if _, ok := types[key]; !ok {
+		types[key] = "float64"
+	}
 	if value, err := strconv.ParseFloat(Get(key, ""), 64); err == nil {
 		return value
 	}
@@ -78,6 +101,9 @@ func MustGetFloat64(key string) float64 {
 
 // GetBool env var or fallback as bool
 func GetBool(key string, fallback bool) bool {
+	if _, ok := types[key]; !ok {
+		types[key] = "bool"
+	}
 	if val, err := strconv.ParseBool(Get(key, "")); err == nil {
 		return val
 	}
@@ -92,6 +118,9 @@ func MustGetBool(key string) bool {
 
 // GetStringSlice env var or fallback as []string
 func GetStringSlice(key string, fallback []string) []string {
+	if _, ok := types[key]; !ok {
+		types[key] = "[]string"
+	}
 	if v := Get(key, ""); v != "" {
 		return strings.Split(v, ",")
 	}
@@ -106,6 +135,9 @@ func MustGetStringSlice(key string) []string {
 
 // GetIntSlice env var or fallback as []string
 func GetIntSlice(key string, fallback []int) []int {
+	if _, ok := types[key]; !ok {
+		types[key] = "[]int"
+	}
 	if v := Get(key, ""); v != "" {
 		elements := strings.Split(v, ",")
 		ret := make([]int, len(elements))
@@ -124,4 +156,23 @@ func GetIntSlice(key string, fallback []int) []int {
 func MustGetGetIntSlice(key string) []int {
 	MustExists(key)
 	return GetIntSlice(key, nil)
+}
+
+func RequiredKeys() []string {
+	return requiredKeys
+}
+
+func Defaults() map[string]interface{} {
+	return defaults
+}
+
+func Types() map[string]string {
+	return types
+}
+
+func TypeOf(key string) string {
+	if v, ok := types[key]; ok {
+		return v
+	}
+	return ""
 }

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/foomo/keel/log"
@@ -9,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -26,7 +26,11 @@ type (
 // GetDefaultTelemetryOptions returns the default options
 func GetDefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
-		OtelOpts:                []otelhttp.Option{},
+		OtelOpts: []otelhttp.Option{
+			otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+				return fmt.Sprintf("HTTP %s", operation)
+			}),
+		},
 		InjectPropagationHeader: true,
 	}
 }
@@ -57,7 +61,7 @@ func TelemetryWithInjectPropagationHeader(v bool) TelemetryOption {
 // TelemetryWithOtelOpts middleware options
 func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.OtelOpts = v
+		o.OtelOpts = append(o.OtelOpts, v...)
 	}
 }
 
@@ -67,18 +71,6 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		if opts.Name != "" {
 			name = opts.Name
 		}
-		// TODO remove once https://github.com/open-telemetry/opentelemetry-go-contrib/pull/771 is merged
-		m := otel.Meter(
-			"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
-			metric.WithInstrumentationVersion(otelhttp.Version()),
-		)
-		c, err := m.Int64Counter(
-			"foo_"+otelhttp.RequestCount,
-			metric.WithDescription("counts number of requests withs specific status code"),
-		)
-		if err != nil {
-			otel.Handle(err)
-		}
 
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if opts.InjectPropagationHeader {
@@ -86,8 +78,9 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			}
 
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {
-				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() {
+				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() && spanCtx.IsSampled() {
 					labeler.Add(log.FTraceID(spanCtx.TraceID().String()))
+					labeler.Add(log.FSpanID(spanCtx.SpanID().String()))
 				}
 			}
 
@@ -95,10 +88,6 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			wr := WrapResponseWriter(w)
 
 			next.ServeHTTP(wr, r)
-
-			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				c.Add(r.Context(), 1, metric.WithAttributes(append(labeler.Get(), semconv.HTTPStatusCodeKey.Int(wr.StatusCode()))...))
-			}
 		}), name, opts.OtelOpts...)
 	}
 }
