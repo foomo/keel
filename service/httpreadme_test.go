@@ -28,7 +28,7 @@ func _ExampleNewHTTPReadme() {
 		keel.WithPrometheusMeter(true),
 		keel.WithHTTPReadmeService(true),
 		keel.WithGracefulTimeout(time.Second),
-		keel.WithShutdownTimeout(3*time.Second),
+		keel.WithGracefulPeriod(3*time.Second),
 	)
 
 	// access some env vars
