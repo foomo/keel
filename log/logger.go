@@ -2,17 +2,11 @@ package log
 
 import (
 	"fmt"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/foomo/keel/env"
-)
-
-const (
-	ModeDev  = "dev"
-	ModeProd = "prod"
 )
 
 var (
@@ -21,47 +15,32 @@ var (
 )
 
 func init() {
-	var level string
-	switch env.Get("LOG_MODE", ModeProd) {
-	case ModeDev:
-		config = NewDevelopmentConfig()
-		level = env.Get("LOG_LEVEL", "debug")
-	default:
-		config = NewProductionConfig()
-		level = env.Get("LOG_LEVEL", "info")
+	zap.ReplaceGlobals(NewLogger(
+		env.Get("LOG_LEVEL", "info"),
+		env.Get("LOG_FORMAT", "json"),
+	))
+}
+
+// NewLogger return a new logger instance
+func NewLogger(level, encoding string) *zap.Logger {
+	config = zap.NewProductionConfig()
+	if value, err := zapcore.ParseLevel(level); err == nil {
+		atomicLevel.SetLevel(value)
 	}
+	config.Encoding = encoding
 	config.Level = atomicLevel
 	config.EncoderConfig.TimeKey = "time"
-	config.DisableCaller = env.GetBool("LOG_DISABLE_STACKTRACE", true)
-	config.DisableStacktrace = env.GetBool("LOG_DISABLE_CALLER", true)
-
+	config.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
+	if encoding == "console" {
+		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	}
+	config.DisableCaller = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
+	config.DisableStacktrace = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
 	if value, err := config.Build(); err != nil {
 		panic(err)
 	} else {
-		zap.ReplaceGlobals(value)
+		return value
 	}
-
-	if value, err := zapcore.ParseLevel(env.Get("LOG_LEVEL", level)); err != nil {
-		panic(err)
-	} else {
-		atomicLevel.SetLevel(value)
-	}
-}
-
-func NewProductionConfig() zap.Config {
-	config = zap.NewProductionConfig()
-	config.Encoding = env.Get("LOG_ENCODING", "json")
-	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	return config
-}
-
-func NewDevelopmentConfig() zap.Config {
-	config = zap.NewDevelopmentConfig()
-	config.Encoding = env.Get("LOG_ENCODING", "console")
-	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {}
-	return config
 }
 
 // Logger return the logger instance
