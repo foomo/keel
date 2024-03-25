@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
+var (
 	DefaultHTTPPProfName = "pprof"
 	DefaultHTTPPProfAddr = "localhost:6060"
 	DefaultHTTPPProfPath = "/debug/pprof"
