@@ -32,6 +32,10 @@ type (
 	DatabaseOption func(*options.DatabaseOptions)
 )
 
+// ------------------------------------------------------------------------------------------------
+// ~ Options
+// ------------------------------------------------------------------------------------------------
+
 func WithOtelEnabled(v bool) Option {
 	return func(o *Options) {
 		o.OtelEnabled = v
@@ -72,7 +76,10 @@ func DefaultOptions() Options {
 	}
 }
 
-// New ...
+// ------------------------------------------------------------------------------------------------
+// ~ Constructor
+// ------------------------------------------------------------------------------------------------
+
 func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	o := DefaultOptions()
 

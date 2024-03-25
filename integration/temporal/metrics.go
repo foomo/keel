@@ -7,8 +7,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.temporal.io/sdk/client"
 )
 
@@ -30,16 +28,16 @@ func (m metricsHandler) WithTags(tags map[string]string) client.MetricsHandler {
 }
 
 type counter struct {
-	inst syncint64.Counter
+	inst metric.Int64Counter
 	attr []attribute.KeyValue
 }
 
 func (c *counter) Inc(v int64) {
-	c.inst.Add(context.Background(), v, c.attr...)
+	c.inst.Add(context.Background(), v, metric.WithAttributes(c.attr...))
 }
 
 func (m metricsHandler) Counter(name string) client.MetricsCounter {
-	c, err := m.meter.SyncInt64().Counter(name)
+	c, err := m.meter.Int64Counter(name)
 	if err != nil {
 		otel.Handle(err)
 	}
@@ -50,36 +48,43 @@ func (m metricsHandler) Counter(name string) client.MetricsCounter {
 }
 
 type gauge struct {
-	inst asyncfloat64.Gauge
-	attr []attribute.KeyValue
+	inst  metric.Float64ObservableGauge
+	value float64
 }
 
 func (c *gauge) Update(v float64) {
-	c.inst.Observe(context.TODO(), v, c.attr...)
+	c.value = v
 }
 
 func (m metricsHandler) Gauge(name string) client.MetricsGauge {
-	c, err := m.meter.AsyncFloat64().Gauge(name)
+	c, err := m.meter.Float64ObservableGauge(name)
 	if err != nil {
 		otel.Handle(err)
 	}
-	return &gauge{
+	inst := &gauge{
 		inst: c,
-		attr: m.attr,
 	}
+	_, err = m.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		o.ObserveFloat64(c, inst.value, metric.WithAttributes(m.attr...))
+		return nil
+	})
+	if err != nil {
+		otel.Handle(err)
+	}
+	return inst
 }
 
 type timer struct {
-	inst syncint64.Histogram
+	inst metric.Int64Histogram
 	attr []attribute.KeyValue
 }
 
 func (c *timer) Record(v time.Duration) {
-	c.inst.Record(context.TODO(), v.Milliseconds(), c.attr...)
+	c.inst.Record(context.TODO(), v.Milliseconds(), metric.WithAttributes(c.attr...))
 }
 
 func (m metricsHandler) Timer(name string) client.MetricsTimer {
-	c, err := m.meter.SyncInt64().Histogram(name)
+	c, err := m.meter.Int64Histogram(name)
 	if err != nil {
 		otel.Handle(err)
 	}

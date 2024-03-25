@@ -64,7 +64,7 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 		keel.WithContext(ctx),
 		keel.WithLogger(s.l),
 		keel.WithGracefulTimeout(400*time.Millisecond),
-		keel.WithShutdownTimeout(800*time.Millisecond),
+		keel.WithGracefulPeriod(800*time.Millisecond),
 	)
 	s.cancel = cancel
 }
