@@ -45,10 +45,10 @@ type Server struct {
 	traceProvider   trace.TracerProvider
 	shutdown        atomic.Bool
 	shutdownSignals []os.Signal
-	// gracefulTimeout should equal the readinessProbe's periodSeconds * failureThreshold
+	// gracefulTimeout should be lower than terminationGracePeriodSeconds
 	gracefulTimeout time.Duration
-	// shutdownTimeout should equal the readinessProbe's terminationGracePeriodSeconds
-	shutdownTimeout  time.Duration
+	// gracefulPeriod should equal the terminationGracePeriodSeconds
+	gracefulPeriod   time.Duration
 	running          atomic.Bool
 	syncClosers      []interface{}
 	syncClosersLock  sync.RWMutex
@@ -69,8 +69,8 @@ type Server struct {
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
-		gracefulTimeout: time.Duration(env.GetInt("KEEL_GRACEFUL_TIMEOUT", 10*3)) * time.Second,
-		shutdownTimeout: time.Duration(env.GetInt("KEEL_SHUTDOWN_TIMEOUT", 30)) * time.Second,
+		gracefulTimeout: time.Duration(env.GetInt("KEEL_GRACEFUL_PERIOD", 30)) * time.Second,
+		gracefulPeriod:  time.Duration(env.GetInt("KEEL_GRACEFUL_TIMEOUT", 15)) * time.Second,
 		shutdownSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
 		syncProbes:      map[healthz.Type][]interface{}{},
@@ -98,17 +98,16 @@ func NewServer(opts ...Option) *Server {
 		// gracefully shutdown
 		inst.g.Go(func() error {
 			<-inst.shutdownCtx.Done()
-			inst.l.Info("keel graceful shutdown")
-
-			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.shutdownTimeout)
+			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
 			defer timeoutCancel()
 
-			inst.shutdown.Store(true)
-
-			inst.l.Info("keel graceful shutdown timeout",
+			inst.l.Info("keel graceful shutdown",
+				// zap.Int32("readiness_threshold", inst.readinessThreshold),
 				zap.Duration("graceful_timeout", inst.gracefulTimeout),
-				zap.Duration("shutdown_timeout", inst.shutdownTimeout),
+				zap.Duration("graceful_period", inst.gracefulPeriod),
 			)
+
+			inst.l.Info("keel graceful shutdown: timeout")
 			{
 				timer := time.NewTimer(inst.gracefulTimeout)
 				select {
@@ -117,12 +116,12 @@ func NewServer(opts ...Option) *Server {
 				case <-timer.C:
 				}
 			}
-			inst.l.Info("keel graceful shutdown timeout complete")
+			inst.l.Info("keel graceful shutdown: timeout complete")
 
 			// append internal closers
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
-			inst.l.Info("keel graceful shutdown closers")
+			inst.l.Info("keel graceful shutdown: closers")
 			for _, closer := range closers {
 				var err error
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
@@ -161,13 +160,13 @@ func NewServer(opts ...Option) *Server {
 					err = c.Unsubscribe(timeoutCtx)
 				}
 				if err != nil {
-					l.Warn("keel graceful shutdown closer failed", zap.Error(err))
+					l.Warn("keel graceful shutdown: closer failed", zap.Error(err))
 				} else {
-					l.Debug("keel graceful shutdown closer closed")
+					l.Debug("keel graceful shutdown: closer closed")
 				}
 			}
 
-			inst.l.Info("keel graceful shutdown complete")
+			inst.l.Info("keel graceful shutdown: complete")
 
 			return nil
 		})

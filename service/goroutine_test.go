@@ -17,7 +17,7 @@ func ExampleNewGoRoutine() {
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),
 		keel.WithGracefulTimeout(time.Second),
-		keel.WithShutdownTimeout(3*time.Second),
+		keel.WithGracefulPeriod(3*time.Second),
 	)
 
 	svr.AddService(
@@ -45,16 +45,16 @@ func ExampleNewGoRoutine() {
 	// {"level":"info","msg":"starting keel service","keel_service_type":"goroutine","keel_service_name":"demo"}
 	// {"level":"info","msg":"ping","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
 	// {"level":"info","msg":"ping","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
-	// {"level":"info","msg":"keel graceful shutdown"}
-	// {"level":"info","msg":"keel graceful shutdown timeout","graceful_timeout":"1s","shutdown_timeout":"3s"}
+	// {"level":"info","msg":"keel graceful shutdown","graceful_timeout":"1s","graceful_period":"3s"}
+	// {"level":"info","msg":"keel graceful shutdown: timeout"}
 	// {"level":"info","msg":"ping","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
-	// {"level":"info","msg":"keel graceful shutdown timeout complete"}
-	// {"level":"info","msg":"keel graceful shutdown closers"}
+	// {"level":"info","msg":"keel graceful shutdown: timeout complete"}
+	// {"level":"info","msg":"keel graceful shutdown: closers"}
 	// {"level":"info","msg":"stopping keel service","keel_service_type":"goroutine","keel_service_name":"demo"}
 	// {"level":"info","msg":"context has been canceled du to graceful shutdow","keel_service_type":"goroutine","keel_service_name":"demo","keel_service_inst":0}
-	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"*service.GoRoutine"}
-	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"trace.noopTracerProvider"}
-	// {"level":"debug","msg":"keel graceful shutdown closer closed","name":"nonrecording.noopMeterProvider"}
-	// {"level":"info","msg":"keel graceful shutdown complete"}
+	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"*service.GoRoutine"}
+	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"noop.TracerProvider"}
+	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"noop.MeterProvider"}
+	// {"level":"info","msg":"keel graceful shutdown: complete"}
 	// {"level":"info","msg":"keel server stopped"}
 }
