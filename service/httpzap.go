@@ -11,7 +11,7 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-const (
+var (
 	DefaultHTTPZapName = "zap"
 	DefaultHTTPZapAddr = "localhost:9100"
 	DefaultHTTPZapPath = "/log"

@@ -2,6 +2,7 @@ package keel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,13 +14,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
+	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
 	"github.com/foomo/keel/metrics"
 	"github.com/foomo/keel/service"
+	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -29,23 +33,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/foomo/keel/config"
-	"github.com/foomo/keel/env"
-	"github.com/foomo/keel/log"
-	"github.com/foomo/keel/telemetry"
 )
 
 // Server struct
 type Server struct {
-	services         []Service
-	initServices     []Service
-	meter            metric.Meter
-	meterProvider    metric.MeterProvider
-	tracer           trace.Tracer
-	traceProvider    trace.TracerProvider
-	shutdownSignals  []os.Signal
-	shutdownTimeout  time.Duration
+	services        []Service
+	initServices    []Service
+	meter           metric.Meter
+	meterProvider   metric.MeterProvider
+	tracer          trace.Tracer
+	traceProvider   trace.TracerProvider
+	shutdown        atomic.Bool
+	shutdownSignals []os.Signal
+	// gracefulTimeout should be lower than terminationGracePeriodSeconds
+	gracefulTimeout time.Duration
+	// gracefulPeriod should equal the terminationGracePeriodSeconds
+	gracefulPeriod   time.Duration
 	running          atomic.Bool
 	syncClosers      []interface{}
 	syncClosersLock  sync.RWMutex
@@ -54,8 +57,10 @@ type Server struct {
 	syncProbes       map[healthz.Type][]interface{}
 	syncProbesLock   sync.RWMutex
 	ctx              context.Context
-	ctxCancel        context.Context
-	ctxCancelFn      context.CancelFunc
+	cancelCtx        context.Context
+	cancelFunc       context.CancelFunc
+	shutdownCtx      context.Context
+	shutdownFunc     context.CancelFunc
 	g                *errgroup.Group
 	gCtx             context.Context
 	l                *zap.Logger
@@ -64,8 +69,9 @@ type Server struct {
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
-		shutdownTimeout: 30 * time.Second,
-		shutdownSignals: []os.Signal{os.Interrupt, syscall.SIGTERM},
+		gracefulTimeout: time.Duration(env.GetInt("KEEL_GRACEFUL_PERIOD", 30)) * time.Second,
+		gracefulPeriod:  time.Duration(env.GetInt("KEEL_GRACEFUL_TIMEOUT", 15)) * time.Second,
+		shutdownSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
 		syncProbes:      map[healthz.Type][]interface{}{},
 		ctx:             context.Background(),
@@ -78,75 +84,91 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	{ // setup error group
-		inst.ctxCancel, inst.ctxCancelFn = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
-		inst.g, inst.gCtx = errgroup.WithContext(inst.ctxCancel)
+		inst.AddReadinessHealthzers(healthz.NewHealthzerFn(func(ctx context.Context) error {
+			if inst.shutdown.Load() {
+				return ErrServerShutdown
+			}
+			return nil
+		}))
+
+		inst.cancelCtx, inst.cancelFunc = context.WithCancel(inst.ctx)
+		inst.g, inst.gCtx = errgroup.WithContext(inst.cancelCtx)
+		inst.shutdownCtx, inst.shutdownFunc = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
 
 		// gracefully shutdown
 		inst.g.Go(func() error {
-			<-inst.gCtx.Done()
-			inst.l.Debug("keel graceful shutdown")
-			defer inst.ctxCancelFn()
-
-			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.shutdownTimeout)
+			<-inst.shutdownCtx.Done()
+			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
 			defer timeoutCancel()
+
+			inst.l.Info("keel graceful shutdown",
+				// zap.Int32("readiness_threshold", inst.readinessThreshold),
+				zap.Duration("graceful_timeout", inst.gracefulTimeout),
+				zap.Duration("graceful_period", inst.gracefulPeriod),
+			)
+
+			inst.l.Info("keel graceful shutdown: timeout")
+			{
+				timer := time.NewTimer(inst.gracefulTimeout)
+				select {
+				case <-timeoutCtx.Done():
+					timer.Stop()
+				case <-timer.C:
+				}
+			}
+			inst.l.Info("keel graceful shutdown: timeout complete")
 
 			// append internal closers
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
+			inst.l.Info("keel graceful shutdown: closers")
 			for _, closer := range closers {
+				var err error
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
 				switch c := closer.(type) {
 				case interfaces.Closer:
 					c.Close()
 				case interfaces.ErrorCloser:
-					if err := c.Close(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorCloser")
-					}
+					err = c.Close()
 				case interfaces.CloserWithContext:
 					c.Close(timeoutCtx)
 				case interfaces.ErrorCloserWithContext:
-					if err := c.Close(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorCloserWithContext")
-					}
+					err = c.Close(timeoutCtx)
 				case interfaces.Shutdowner:
 					c.Shutdown()
 				case interfaces.ErrorShutdowner:
-					if err := c.Shutdown(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdowner")
-					}
+					err = c.Shutdown()
 				case interfaces.ShutdownerWithContext:
 					c.Shutdown(timeoutCtx)
 				case interfaces.ErrorShutdownerWithContext:
-					if err := c.Shutdown(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorShutdownerWithContext")
-					}
+					err = c.Shutdown(timeoutCtx)
 				case interfaces.Stopper:
 					c.Stop()
 				case interfaces.ErrorStopper:
-					if err := c.Stop(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorStopper")
-					}
+					err = c.Stop()
 				case interfaces.StopperWithContext:
 					c.Stop(timeoutCtx)
 				case interfaces.ErrorStopperWithContext:
-					if err := c.Stop(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorStopperWithContext")
-					}
+					err = c.Stop(timeoutCtx)
 				case interfaces.Unsubscriber:
 					c.Unsubscribe()
 				case interfaces.ErrorUnsubscriber:
-					if err := c.Unsubscribe(); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriber")
-					}
+					err = c.Unsubscribe()
 				case interfaces.UnsubscriberWithContext:
 					c.Unsubscribe(timeoutCtx)
 				case interfaces.ErrorUnsubscriberWithContext:
-					if err := c.Unsubscribe(timeoutCtx); err != nil {
-						log.WithError(l, err).Error("failed to gracefully stop ErrorUnsubscriberWithContext")
-					}
+					err = c.Unsubscribe(timeoutCtx)
+				}
+				if err != nil {
+					l.Warn("keel graceful shutdown: closer failed", zap.Error(err))
+				} else {
+					l.Debug("keel graceful shutdown: closer closed")
 				}
 			}
-			return inst.gCtx.Err()
+
+			inst.l.Info("keel graceful shutdown: complete")
+
+			return nil
 		})
 	}
 
@@ -218,7 +240,22 @@ func (s *Server) Context() context.Context {
 
 // CancelContext returns server's cancel context
 func (s *Server) CancelContext() context.Context {
-	return s.ctxCancel
+	return s.cancelCtx
+}
+
+// CancelFunc returns server's cancel function
+func (s *Server) CancelFunc() context.CancelFunc {
+	return s.cancelFunc
+}
+
+// ShutdownContext returns server's shutdown cancel context
+func (s *Server) ShutdownContext() context.Context {
+	return s.shutdownCtx
+}
+
+// ShutdownCancel returns server's shutdown cancel function
+func (s *Server) ShutdownCancel() context.CancelFunc {
+	return s.shutdownFunc
 }
 
 // AddService add a single service
@@ -308,7 +345,7 @@ func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
 
 // IsCanceled returns true if the internal errgroup has been canceled
 func (s *Server) IsCanceled() bool {
-	return errors.Is(s.gCtx.Err(), context.Canceled)
+	return s.cancelCtx.Err() != nil
 }
 
 // Healthz returns true if the server is running
@@ -326,7 +363,7 @@ func (s *Server) Run() {
 		return
 	}
 
-	defer s.ctxCancelFn()
+	defer s.cancelFunc()
 	s.l.Info("starting keel server")
 
 	// start services

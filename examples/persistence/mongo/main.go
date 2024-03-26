@@ -26,8 +26,9 @@ func main() {
 	l := svr.Logger()
 
 	cDateTime := &store.DateTimeCodec{}
-	rb := bson.NewRegistryBuilder()
-	rb.RegisterCodec(store.TDateTime, cDateTime)
+	rb := bson.NewRegistry()
+	rb.RegisterTypeEncoder(store.TDateTime, cDateTime)
+	rb.RegisterTypeDecoder(store.TDateTime, cDateTime)
 
 	// create persistor
 	persistor, err := keelmongo.New(
@@ -36,7 +37,9 @@ func main() {
 		// enable telemetry (enabled by default)
 		keelmongo.WithOtelEnabled(true),
 		keelmongo.WithClientOptions(
-			options.Client().SetRegistry(rb.Build()),
+			func(clientOptions *options.ClientOptions) {
+				clientOptions.SetRegistry(rb)
+			},
 		),
 	)
 	// use log must helper to exit on error

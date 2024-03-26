@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -23,6 +24,10 @@ type HTTP struct {
 	l       *zap.Logger
 }
 
+// ------------------------------------------------------------------------------------------------
+// ~ Constructor
+// ------------------------------------------------------------------------------------------------
+
 func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...middleware.Middleware) *HTTP {
 	if l == nil {
 		l = log.Logger()
@@ -35,18 +40,33 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 
 	return &HTTP{
 		server: &http.Server{
-			Addr:     addr,
-			ErrorLog: zap.NewStdLog(l),
-			Handler:  middleware.Compose(l, name, handler, middlewares...),
+			Addr:         addr,
+			ErrorLog:     zap.NewStdLog(l),
+			IdleTimeout:  5 * time.Second,
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 5 * time.Second,
+			Handler:      middleware.Compose(l, name, handler, middlewares...),
 		},
 		name: name,
 		l:    l,
 	}
 }
 
+// ------------------------------------------------------------------------------------------------
+// ~ Getter
+// ------------------------------------------------------------------------------------------------
+
 func (s *HTTP) Name() string {
 	return s.name
 }
+
+func (s *HTTP) Server() *http.Server {
+	return s.server
+}
+
+// ------------------------------------------------------------------------------------------------
+// ~ Public methods
+// ------------------------------------------------------------------------------------------------
 
 func (s *HTTP) Healthz() error {
 	if !s.running.Load() {
@@ -69,12 +89,12 @@ func (s *HTTP) Start(ctx context.Context) error {
 		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
 	}
 	s.l.Info("starting keel service", fields...)
-	s.server.BaseContext = func(_ net.Listener) context.Context { return ctx }
-	s.server.RegisterOnShutdown(func() {
+	s.Server().BaseContext = func(_ net.Listener) context.Context { return ctx }
+	s.Server().RegisterOnShutdown(func() {
 		s.running.Store(false)
 	})
 	s.running.Store(true)
-	if err := s.server.ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
+	if err := s.Server().ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, "failed to start service")
@@ -84,7 +104,7 @@ func (s *HTTP) Start(ctx context.Context) error {
 
 func (s *HTTP) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
-	if err := s.server.Shutdown(ctx); err != nil {
+	if err := s.Server().Shutdown(ctx); err != nil {
 		return errors.Wrap(err, "failed to stop service")
 	}
 	return nil

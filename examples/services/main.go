@@ -4,9 +4,12 @@ import (
 	"os"
 
 	"github.com/foomo/keel"
+	"github.com/foomo/keel/service"
 )
 
 func main() {
+	service.DefaultHTTPPrometheusAddr = "localhost:9200"
+
 	// you can override the below config by settings env vars
 	_ = os.Setenv("SERVICE_ZAP_ENABLED", "true")
 	_ = os.Setenv("SERVICE_VIPER_ENABLED", "true")

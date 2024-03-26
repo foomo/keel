@@ -6,15 +6,14 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 )
 
 // Metric returns a RoundTripper which prints out the request & response object
 func Metric(meter metric.Meter, name, description string) RoundTripware {
-	histogram, err := meter.SyncFloat64().Histogram(
+	histogram, err := meter.Float64Histogram(
 		name,
-		instrument.WithDescription(description),
+		metric.WithDescription(description),
 	)
 	if err != nil {
 		panic(err)
@@ -37,7 +36,7 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 				attributes = append(labeler.Get(), attribute.Int("status_code", resp.StatusCode))
 			}
 
-			histogram.Record(ctx, duration.Seconds(), attributes...)
+			histogram.Record(ctx, duration.Seconds(), metric.WithAttributes(attributes...))
 
 			return resp, err
 		}

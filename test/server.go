@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/nonrecording"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -34,7 +34,7 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	{
-		inst.meterProvider = nonrecording.NewNoopMeterProvider()
+		inst.meterProvider = noop.NewMeterProvider()
 		inst.meter = inst.meterProvider.Meter("github.com/foomo/keel")
 		traceProfiver, err := telemetry.NewNoopTraceProvider()
 		log.Must(inst.l, err, "failed to create noop trace provider")
