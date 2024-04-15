@@ -69,13 +69,6 @@ func WithGracefulPeriod(gracefulPeriod time.Duration) Option {
 	}
 }
 
-// WithGracefulTimeout option
-func WithGracefulTimeout(gracefulTimeout time.Duration) Option {
-	return func(inst *Server) {
-		inst.gracefulTimeout = gracefulTimeout
-	}
-}
-
 // WithHTTPZapService option with default value
 func WithHTTPZapService(enabled bool) Option {
 	return func(inst *Server) {

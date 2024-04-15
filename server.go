@@ -45,8 +45,6 @@ type Server struct {
 	traceProvider   trace.TracerProvider
 	shutdown        atomic.Bool
 	shutdownSignals []os.Signal
-	// gracefulTimeout should be lower than terminationGracePeriodSeconds
-	gracefulTimeout time.Duration
 	// gracefulPeriod should equal the terminationGracePeriodSeconds
 	gracefulPeriod   time.Duration
 	running          atomic.Bool
@@ -57,10 +55,9 @@ type Server struct {
 	syncProbes       map[healthz.Type][]interface{}
 	syncProbesLock   sync.RWMutex
 	ctx              context.Context
-	cancelCtx        context.Context
-	cancelFunc       context.CancelFunc
-	shutdownCtx      context.Context
-	shutdownFunc     context.CancelFunc
+	cancel           context.CancelFunc
+	gracefulCtx      context.Context
+	gracefulCancel   context.CancelFunc
 	g                *errgroup.Group
 	gCtx             context.Context
 	l                *zap.Logger
@@ -69,8 +66,7 @@ type Server struct {
 
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
-		gracefulTimeout: time.Duration(env.GetInt("KEEL_GRACEFUL_PERIOD", 30)) * time.Second,
-		gracefulPeriod:  time.Duration(env.GetInt("KEEL_GRACEFUL_TIMEOUT", 15)) * time.Second,
+		gracefulPeriod:  time.Duration(env.GetInt("KEEL_GRACEFUL_PERIOD", 30)) * time.Second,
 		shutdownSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
 		syncProbes:      map[healthz.Type][]interface{}{},
@@ -91,32 +87,20 @@ func NewServer(opts ...Option) *Server {
 			return nil
 		}))
 
-		inst.cancelCtx, inst.cancelFunc = context.WithCancel(inst.ctx)
-		inst.g, inst.gCtx = errgroup.WithContext(inst.cancelCtx)
-		inst.shutdownCtx, inst.shutdownFunc = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
+		inst.ctx, inst.cancel = context.WithCancel(inst.ctx)
+		inst.g, inst.gCtx = errgroup.WithContext(inst.ctx)
+		inst.gracefulCtx, inst.gracefulCancel = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
 
 		// gracefully shutdown
 		inst.g.Go(func() error {
-			<-inst.shutdownCtx.Done()
+			<-inst.gracefulCtx.Done()
+			inst.shutdown.Store(true)
 			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
 			defer timeoutCancel()
 
 			inst.l.Info("keel graceful shutdown",
-				// zap.Int32("readiness_threshold", inst.readinessThreshold),
-				zap.Duration("graceful_timeout", inst.gracefulTimeout),
 				zap.Duration("graceful_period", inst.gracefulPeriod),
 			)
-
-			inst.l.Info("keel graceful shutdown: timeout")
-			{
-				timer := time.NewTimer(inst.gracefulTimeout)
-				select {
-				case <-timeoutCtx.Done():
-					timer.Stop()
-				case <-timer.C:
-				}
-			}
-			inst.l.Info("keel graceful shutdown: timeout complete")
 
 			// append internal closers
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
@@ -168,7 +152,7 @@ func NewServer(opts ...Option) *Server {
 
 			inst.l.Info("keel graceful shutdown: complete")
 
-			return nil
+			return ErrServerShutdown
 		})
 	}
 
@@ -238,24 +222,14 @@ func (s *Server) Context() context.Context {
 	return s.ctx
 }
 
-// CancelContext returns server's cancel context
-func (s *Server) CancelContext() context.Context {
-	return s.cancelCtx
-}
-
-// CancelFunc returns server's cancel function
-func (s *Server) CancelFunc() context.CancelFunc {
-	return s.cancelFunc
-}
-
 // ShutdownContext returns server's shutdown cancel context
 func (s *Server) ShutdownContext() context.Context {
-	return s.shutdownCtx
+	return s.gracefulCtx
 }
 
 // ShutdownCancel returns server's shutdown cancel function
 func (s *Server) ShutdownCancel() context.CancelFunc {
-	return s.shutdownFunc
+	return s.gracefulCancel
 }
 
 // AddService add a single service
@@ -343,11 +317,6 @@ func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
 	s.AddHealthzers(healthz.TypeReadiness, probes...)
 }
 
-// IsCanceled returns true if the internal errgroup has been canceled
-func (s *Server) IsCanceled() bool {
-	return s.cancelCtx.Err() != nil
-}
-
 // Healthz returns true if the server is running
 func (s *Server) Healthz() error {
 	if !s.running.Load() {
@@ -358,12 +327,7 @@ func (s *Server) Healthz() error {
 
 // Run runs the server
 func (s *Server) Run() {
-	if s.IsCanceled() {
-		s.l.Info("keel server canceled")
-		return
-	}
-
-	defer s.cancelFunc()
+	defer s.cancel()
 	s.l.Info("starting keel server")
 
 	// start services
@@ -381,11 +345,11 @@ func (s *Server) Run() {
 	s.running.Store(true)
 
 	// wait for shutdown
-	if err := s.g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		log.WithError(s.l, err).Error("service error")
+	if err := s.g.Wait(); errors.Is(err, ErrServerShutdown) {
+		s.l.Info("keel server stopped")
+	} else if err != nil {
+		log.WithError(s.l, err).Error("keel server failed")
 	}
-
-	s.l.Info("keel server stopped")
 }
 
 func (s *Server) closers() []interface{} {
@@ -441,9 +405,11 @@ func (s *Server) Readme() string {
 
 // startService starts the given services
 func (s *Server) startService(services ...Service) {
+	c := make(chan struct{}, 1)
 	for _, value := range services {
 		value := value
 		s.g.Go(func() error {
+			c <- struct{}{}
 			if err := value.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Debug("server has closed")
 			} else if err != nil {
@@ -452,7 +418,9 @@ func (s *Server) startService(services ...Service) {
 			}
 			return nil
 		})
+		<-c
 	}
+	close(c)
 }
 
 func (s *Server) readmeCloser() string {

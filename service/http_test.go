@@ -12,7 +12,6 @@ import (
 func ExampleNewHTTP() {
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),
-		keel.WithGracefulTimeout(time.Second),
 		keel.WithGracefulPeriod(10*time.Second),
 	)
 
@@ -37,9 +36,7 @@ func ExampleNewHTTP() {
 	// {"level":"info","msg":"starting keel server"}
 	// {"level":"info","msg":"starting keel service","keel_service_type":"http","keel_service_name":"demo","net_host_ip":"localhost","net_host_port":"8080"}
 	// {"level":"info","msg":"OK"}
-	// {"level":"info","msg":"keel graceful shutdown","graceful_timeout":"1s","graceful_period":"10s"}
-	// {"level":"info","msg":"keel graceful shutdown: timeout"}
-	// {"level":"info","msg":"keel graceful shutdown: timeout complete"}
+	// {"level":"info","msg":"keel graceful shutdown","graceful_period":"10s"}
 	// {"level":"info","msg":"keel graceful shutdown: closers"}
 	// {"level":"info","msg":"stopping keel service","keel_service_type":"http","keel_service_name":"demo"}
 	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"*service.HTTP"}

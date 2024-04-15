@@ -60,10 +60,6 @@ func (s *HTTP) Name() string {
 	return s.name
 }
 
-func (s *HTTP) Server() *http.Server {
-	return s.server
-}
-
 // ------------------------------------------------------------------------------------------------
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
@@ -89,12 +85,12 @@ func (s *HTTP) Start(ctx context.Context) error {
 		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
 	}
 	s.l.Info("starting keel service", fields...)
-	s.Server().BaseContext = func(_ net.Listener) context.Context { return ctx }
-	s.Server().RegisterOnShutdown(func() {
+	s.server.BaseContext = func(_ net.Listener) context.Context { return ctx }
+	s.server.RegisterOnShutdown(func() {
 		s.running.Store(false)
 	})
 	s.running.Store(true)
-	if err := s.Server().ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
+	if err := s.server.ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, "failed to start service")
@@ -104,7 +100,7 @@ func (s *HTTP) Start(ctx context.Context) error {
 
 func (s *HTTP) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
-	if err := s.Server().Shutdown(ctx); err != nil {
+	if err := s.server.Shutdown(ctx); err != nil {
 		return errors.Wrap(err, "failed to stop service")
 	}
 	return nil
