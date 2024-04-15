@@ -13,7 +13,7 @@ import (
 	"github.com/foomo/keel"
 )
 
-func ExampleMain() {
+func main() {
 	service.DefaultHTTPHealthzAddr = "localhost:9400"
 
 	l := zap.NewExample().Named("root")
