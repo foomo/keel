@@ -327,8 +327,8 @@ func (s *Server) Healthz() error {
 
 // Run runs the server
 func (s *Server) Run() {
-	defer s.cancel()
 	s.l.Info("starting keel server")
+	defer s.cancel()
 
 	// start services
 	s.startService(s.services...)
@@ -339,9 +339,7 @@ func (s *Server) Run() {
 	}
 
 	// set running
-	defer func() {
-		s.running.Store(false)
-	}()
+	defer s.running.Store(false)
 	s.running.Store(true)
 
 	// wait for shutdown
