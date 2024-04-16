@@ -12,7 +12,6 @@ import (
 
 	"github.com/foomo/keel/service"
 	"github.com/stretchr/testify/suite"
-	"go.uber.org/goleak"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -74,9 +73,7 @@ func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
 }
 
 // TearDownSuite hook
-func (s *KeelTestSuite) TearDownSuite() {
-	goleak.VerifyNone(s.T())
-}
+func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(

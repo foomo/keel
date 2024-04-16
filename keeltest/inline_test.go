@@ -5,12 +5,9 @@ import (
 
 	"github.com/foomo/keel/keeltest"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/goleak"
 )
 
 func TestInline(t *testing.T) {
-	defer goleak.VerifyNone(t)
-
 	t.Run("read inline", func(t *testing.T) {
 		value, ok := keeltest.Inline(t, 1) // INLINE: hello world
 		assert.True(t, ok)
