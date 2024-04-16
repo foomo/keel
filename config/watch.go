@@ -20,7 +20,7 @@ func WatchBool(ctx context.Context, fn func() bool, callback func(bool)) {
 func WatchTime(ctx context.Context, fn func() time.Time, callback func(time.Time)) {
 	current := fn()
 	watch(ctx, func() {
-		if value := fn(); value != current {
+		if value := fn(); !value.Equal(current) {
 			current = value
 			callback(current)
 		}
@@ -102,7 +102,7 @@ func WatchBoolChan(ctx context.Context, fn func() bool, ch chan bool) {
 func WatchTimeChan(ctx context.Context, fn func() time.Time, ch chan time.Time) {
 	current := fn()
 	watch(ctx, func() {
-		if value := fn(); value != current {
+		if value := fn(); !value.Equal(current) {
 			current = value
 			ch <- current
 		}

@@ -233,11 +233,11 @@ func (s *Server) ShutdownCancel() context.CancelFunc {
 }
 
 // AddService add a single service
-func (s *Server) AddService(service Service) {
-	if !slices.Contains(s.services, service) {
-		s.services = append(s.services, service)
-		s.AddAlwaysHealthzers(service)
-		s.AddCloser(service)
+func (s *Server) AddService(v Service) {
+	if !slices.Contains(s.services, v) {
+		s.services = append(s.services, v)
+		s.AddAlwaysHealthzers(v)
+		s.AddCloser(v)
 	}
 }
 

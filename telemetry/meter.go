@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"os"
 
 	"github.com/foomo/keel/env"
@@ -44,7 +43,7 @@ func NewStdOutMeterProvider(ctx context.Context, opts ...stdoutmetric.Option) (m
 
 	exporter, err := stdoutmetric.New(opts...)
 	if err != nil {
-		log.Fatalf("creating stdoutmetric exporter: %v", err)
+		return nil, err
 	}
 
 	resource := otelresource.NewSchemaless(

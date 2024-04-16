@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func _ExampleNewHTTPReadme() {
+func _ExampleNewHTTPReadme() { //nolint:unused
 	// define vars so it does not panic
 	_ = os.Setenv("EXAMPLE_REQUIRED_BOOL", "true")
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")

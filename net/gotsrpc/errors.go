@@ -19,7 +19,7 @@ func NewError(e Error) *Error {
 func (e *Error) Is(err error) bool {
 	if e == nil || err == nil {
 		return false
-	} else if v, ok := err.(*Error); ok && v != nil { //nolint:errorlint
+	} else if v, ok := err.(*Error); ok && v != nil {
 		return e.Error() == v.Error()
 	}
 	return false

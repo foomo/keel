@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	_ "github.com/spf13/viper/remote"
+	_ "github.com/spf13/viper/remote" // required import
 )
 
 var remotes []struct {

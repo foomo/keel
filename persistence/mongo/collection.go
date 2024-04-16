@@ -394,7 +394,7 @@ func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handle
 		return err
 	}
 
-	defer CloseCursor(cursor)
+	defer CloseCursor(context.WithoutCancel(ctx), cursor)
 
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {
@@ -424,7 +424,7 @@ func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeli
 		return err
 	}
 
-	defer CloseCursor(cursor)
+	defer CloseCursor(context.WithoutCancel(ctx), cursor)
 
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {

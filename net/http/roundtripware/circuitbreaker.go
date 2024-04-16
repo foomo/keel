@@ -191,7 +191,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			}
 
 			// continue with the middleware chain
-			resp, err = next(r) //nolint:bodyclose
+			resp, err = next(r)
 
 			var respCopy *http.Response
 			if resp != nil {

@@ -7,6 +7,7 @@ import (
 	keelerrors "github.com/foomo/keel/errors"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleNewWrappedError() {
@@ -63,13 +64,13 @@ func Test_wrappedError_Error(t *testing.T) {
 	parentErr := errors.New("parent")
 	childErr := errors.New("child")
 	wrappedErr := keelerrors.NewWrappedError(parentErr, childErr)
-	assert.Equal(t, wrappedErr.Error(), "parent: child")
+	assert.Equal(t, "parent: child", wrappedErr.Error())
 }
 
 func Test_wrappedError_Is(t *testing.T) {
 	parentErr := errors.New("parent")
 	childErr := errors.New("child")
 	wrappedErr := keelerrors.NewWrappedError(parentErr, childErr)
-	assert.ErrorIs(t, wrappedErr, parentErr)
-	assert.ErrorIs(t, wrappedErr, childErr)
+	require.ErrorIs(t, wrappedErr, parentErr)
+	require.ErrorIs(t, wrappedErr, childErr)
 }

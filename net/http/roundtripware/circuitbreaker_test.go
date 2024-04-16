@@ -41,7 +41,7 @@ var cbSettings = &roundtripware.CircuitBreakerSettings{
 		return counts.ConsecutiveFailures > 3
 	},
 	OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-		fmt.Printf("\n\nstate changed from %s to %s\n\n", from, to)
+		_, _ = fmt.Printf("\n\nstate changed from %s to %s\n\n", from, to)
 	},
 }
 
@@ -101,7 +101,7 @@ func TestCircuitBreaker(t *testing.T) {
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		if resp != nil {
-			defer resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 	}
@@ -112,7 +112,7 @@ func TestCircuitBreaker(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	if err == nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 
@@ -123,7 +123,7 @@ func TestCircuitBreaker(t *testing.T) {
 	require.NoError(t, err)
 	resp, err = client.Do(req)
 	if resp != nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.NoError(t, err)
 }
@@ -161,7 +161,7 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 						require.NoError(t, errRead)
 
 						// also try to close one of the bodies (should also be handled by the RoundTripware)
-						req.Body.Close()
+						_ = req.Body.Close()
 
 						return err
 					}, true, true,
@@ -175,7 +175,7 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	if resp != nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.NoError(t, err)
 	// make sure the correct data is returned
@@ -227,7 +227,7 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	if resp != nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.Error(t, err)
 	require.ErrorIs(t, err, roundtripware.ErrReadFromActualBody)
@@ -256,7 +256,7 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	require.NoError(t, err)
 	resp, err = client.Do(req)
 	if resp != nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.Error(t, err)
 	require.ErrorIs(t, err, roundtripware.ErrReadFromActualBody)
@@ -303,7 +303,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		if resp != nil {
-			defer resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 	}
@@ -318,7 +318,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		if resp != nil {
-			defer resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 	}
@@ -328,7 +328,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	if resp != nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 }
@@ -370,7 +370,7 @@ func TestCircuitBreakerIgnore(t *testing.T) {
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		if resp != nil {
-			defer resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 		require.NoError(t, err)
@@ -399,16 +399,16 @@ func TestCircuitBreakerTimeout(t *testing.T) {
 	// -> circuit breaker should change to open state
 	for i := 0; i < 4; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		if resp != nil {
-			defer resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		require.NotErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 		require.ErrorIs(t, err, context.DeadlineExceeded)
+		cancel()
 	}
 
 	// send another request with a bigger timeout
@@ -419,7 +419,7 @@ func TestCircuitBreakerTimeout(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	if resp != nil {
-		defer resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.ErrorIs(t, err, roundtripware.ErrCircuitBreaker)
 }

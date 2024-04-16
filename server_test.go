@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/foomo/keel/service"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/goleak"
 	"go.uber.org/zap"
@@ -102,7 +101,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("default", func() {
 		if statusCode, body, err := s.httpGet("http://localhost:9100/log"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"info","disableCaller":true,"disableStacktrace":true}`)
+			s.Equal(`{"level":"info","disableCaller":true,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -115,7 +114,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("set debug level", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"level":"debug"}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"debug","disableCaller":true,"disableStacktrace":true}`)
+			s.Equal(`{"level":"debug","disableCaller":true,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -128,7 +127,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("enable caller", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableCaller":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":true}`)
+			s.Equal(`{"level":"debug","disableCaller":false,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -138,7 +137,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("enable stacktrace", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableStacktrace":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":false}`)
+			s.Equal(`{"level":"debug","disableCaller":false,"disableStacktrace":false}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -179,7 +178,7 @@ func (s *KeelTestSuite) TestGraceful() {
 		go func(waitChan chan string) {
 			waitChan <- "ok"
 			time.Sleep(time.Second)
-			if assert.NoError(s.T(), syscall.Kill(syscall.Getpid(), syscall.SIGINT)) {
+			if s.NoError(syscall.Kill(syscall.Getpid(), syscall.SIGINT)) {
 				s.l.Info("killed myself")
 			}
 		}(waitChan)
@@ -190,7 +189,7 @@ func (s *KeelTestSuite) TestGraceful() {
 
 	{ // check that server is down
 		_, _, err := s.httpGet("http://localhost:55000/ok")
-		s.Error(err)
+		s.Require().Error(err)
 	}
 
 	s.l.Info("done")
