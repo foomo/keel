@@ -13,10 +13,11 @@ import (
 	"github.com/foomo/keel/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/goleak"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/foomo/keel"
-	keeltest "github.com/foomo/keel/test"
 )
 
 type KeelTestSuite struct {
@@ -29,12 +30,12 @@ type KeelTestSuite struct {
 
 // SetupSuite hook
 func (s *KeelTestSuite) SetupSuite() {
-	s.l = keeltest.NewLogger(s.T()).Zap()
+	s.l = zaptest.NewLogger(s.T())
 }
 
 // BeforeTest hook
 func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
-	s.l = keeltest.NewLogger(s.T()).Zap()
+	s.l = zaptest.NewLogger(s.T())
 	s.mux = http.NewServeMux()
 	s.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -74,7 +75,9 @@ func (s *KeelTestSuite) AfterTest(suiteName, testName string) {
 }
 
 // TearDownSuite hook
-func (s *KeelTestSuite) TearDownSuite() {}
+func (s *KeelTestSuite) TearDownSuite() {
+	goleak.VerifyNone(s.T())
+}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/foomo/keel/keeltest"
 	"github.com/foomo/keel/log"
-	keeltestutil "github.com/foomo/keel/test/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/pretty"
 )
@@ -14,7 +14,7 @@ import (
 func InlineEqual(t *testing.T, actual interface{}, msgAndArgs ...interface{}) bool {
 	t.Helper()
 
-	expected, ok := keeltestutil.Inline(t, 2, "%v", actual)
+	expected, ok := keeltest.Inline(t, 2, "%v", actual)
 	if ok {
 		return assert.Equal(t, expected, fmt.Sprintf("%v", actual), msgAndArgs...)
 	} else {
@@ -30,7 +30,7 @@ func InlineJSONEq(t *testing.T, actual interface{}, msgAndArgs ...interface{}) b
 		t.Fatal("failed to marshal json", log.FError(err))
 	}
 
-	expected, ok := keeltestutil.Inline(t, 2, string(actualBytes))
+	expected, ok := keeltest.Inline(t, 2, string(actualBytes))
 	if ok {
 		return assert.Equal(t, string(pretty.Pretty([]byte(expected))), string(pretty.Pretty(actualBytes)), msgAndArgs...)
 	} else {
