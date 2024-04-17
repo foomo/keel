@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -77,10 +78,7 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 			}
 
 			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				labeler.Add(
-					log.KeelServiceTypeKey.String("http"),
-					log.KeelServiceNameKey.String(name),
-				)
+				labeler.Add(semconv.HTTPServerNameKey.String(name))
 			}
 
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {
