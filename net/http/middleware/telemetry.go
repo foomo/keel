@@ -76,6 +76,13 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
 			}
 
+			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+				labeler.Add(
+					log.KeelServiceTypeKey.String("http"),
+					log.KeelServiceNameKey.String(name),
+				)
+			}
+
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {
 				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() && spanCtx.IsSampled() {
 					labeler.Add(log.FTraceID(spanCtx.TraceID().String()))
