@@ -40,12 +40,13 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 
 	return &HTTP{
 		server: &http.Server{
-			Addr:         addr,
-			ErrorLog:     zap.NewStdLog(l),
-			IdleTimeout:  5 * time.Second,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			Handler:      middleware.Compose(l, name, handler, middlewares...),
+			Addr:        addr,
+			ErrorLog:    zap.NewStdLog(l),
+			IdleTimeout: 30 * time.Second,
+			// @TODO: @Kevin: proper defaults and documentation
+			//ReadTimeout:  5 * time.Second,
+			//WriteTimeout: 5 * time.Second,
+			Handler: middleware.Compose(l, name, handler, middlewares...),
 		},
 		name: name,
 		l:    l,
