@@ -10,8 +10,6 @@ import (
 	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.uber.org/zap"
 )
 
@@ -57,7 +55,7 @@ type CircuitBreakerSettings struct {
 }
 
 type CircuitBreakerOptions struct {
-	Counter syncint64.Counter
+	Counter metric.Int64Counter
 
 	IsSuccessful func(err error, req *http.Request, resp *http.Response) error
 	CopyReqBody  bool
@@ -85,9 +83,9 @@ func CircuitBreakerWithMetric(
 	meterDescription string,
 ) CircuitBreakerOption {
 	// intitialize the success counter
-	counter, err := meter.SyncInt64().Counter(
+	counter, err := meter.Int64Counter(
 		meterName,
-		instrument.WithDescription(meterDescription),
+		metric.WithDescription(meterDescription),
 	)
 	if err != nil {
 		panic(err)
@@ -159,11 +157,11 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				if err != nil {
 					if o.Counter != nil {
 						attributes := append(attributes, attribute.Bool("error", true))
-						o.Counter.Add(r.Context(), 1, attributes...)
+						o.Counter.Add(r.Context(), 1, metric.WithAttributes(attributes...))
 					}
 				} else if o.Counter != nil {
 					attributes := append(attributes, attribute.Bool("error", false))
-					o.Counter.Add(r.Context(), 1, attributes...)
+					o.Counter.Add(r.Context(), 1, metric.WithAttributes(attributes...))
 				}
 			}()
 
@@ -193,7 +191,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			}
 
 			// continue with the middleware chain
-			resp, err = next(r) //nolint:bodyclose
+			resp, err = next(r)
 
 			var respCopy *http.Response
 			if resp != nil {

@@ -27,13 +27,13 @@ func main() {
 	fmt.Println("initial foo:", fooFn()) //nolint:forbidigo
 
 	// watch changes
-	config.WatchString(svr.CancelContext(), fooFn, func(s string) {
+	config.WatchString(svr.Context(), fooFn, func(s string) {
 		fmt.Println("change foo:", fooFn()) //nolint:forbidigo
 	})
 
 	ch := make(chan string)
 	// watch changes
-	config.WatchStringChan(svr.CancelContext(), fooFn, ch)
+	config.WatchStringChan(svr.Context(), fooFn, ch)
 	go func(ch chan string) {
 		for {
 			value := <-ch

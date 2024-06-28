@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -17,11 +18,15 @@ import (
 
 // HTTP struct
 type HTTP struct {
-	running atomic.Bool
-	server  *http.Server
-	name    string
 	l       *zap.Logger
+	name    string
+	server  *http.Server
+	running atomic.Bool
 }
+
+// ------------------------------------------------------------------------------------------------
+// ~ Constructor
+// ------------------------------------------------------------------------------------------------
 
 func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...middleware.Middleware) *HTTP {
 	if l == nil {
@@ -34,19 +39,32 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 	)
 
 	return &HTTP{
-		server: &http.Server{
-			Addr:     addr,
-			ErrorLog: zap.NewStdLog(l),
-			Handler:  middleware.Compose(l, name, handler, middlewares...),
-		},
-		name: name,
 		l:    l,
+		name: name,
+		server: &http.Server{
+			Addr:        addr,
+			Handler:     middleware.Compose(l, name, handler, middlewares...),
+			ErrorLog:    zap.NewStdLog(l),
+			IdleTimeout: 30 * time.Second,
+		},
 	}
 }
+
+// ------------------------------------------------------------------------------------------------
+// ~ Getter
+// ------------------------------------------------------------------------------------------------
 
 func (s *HTTP) Name() string {
 	return s.name
 }
+
+func (s *HTTP) Server() *http.Server {
+	return s.server
+}
+
+// ------------------------------------------------------------------------------------------------
+// ~ Public methods
+// ------------------------------------------------------------------------------------------------
 
 func (s *HTTP) Healthz() error {
 	if !s.running.Load() {

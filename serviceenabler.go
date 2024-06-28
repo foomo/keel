@@ -40,10 +40,10 @@ func (w *ServiceEnabler) Name() string {
 }
 
 func (w *ServiceEnabler) Start(ctx context.Context) error {
-	w.watch()
+	w.watch(w.ctx) //nolint:contextcheck
 	w.ctx = ctx
 	if w.enabled() {
-		if err := w.enable(w.ctx); err != nil {
+		if err := w.enable(w.ctx); err != nil { //nolint:contextcheck
 			return err
 		}
 	} else {
@@ -56,7 +56,7 @@ func (w *ServiceEnabler) Close(ctx context.Context) error {
 	l := log.WithServiceName(w.l, w.Name())
 	w.setClosed(true)
 	if w.enabled() {
-		if err := w.disable(w.ctx); err != nil {
+		if err := w.disable(w.ctx); err != nil { //nolint:contextcheck
 			return err
 		}
 	} else {
@@ -102,7 +102,7 @@ func (w *ServiceEnabler) disable(ctx context.Context) error {
 	return w.service.Close(ctx)
 }
 
-func (w *ServiceEnabler) watch() {
+func (w *ServiceEnabler) watch(ctx context.Context) {
 	go func() {
 		for {
 			if w.closed() {
@@ -112,12 +112,12 @@ func (w *ServiceEnabler) watch() {
 			if value := w.enabledFn(); value != w.enabled() {
 				if value {
 					go func() {
-						if err := w.enable(w.ctx); err != nil {
+						if err := w.enable(ctx); err != nil {
 							w.l.Fatal("failed to dynamically start service", log.FError(err))
 						}
 					}()
 				} else {
-					if err := w.disable(context.TODO()); err != nil {
+					if err := w.disable(context.TODO()); err != nil { //nolint:contextcheck
 						w.l.Fatal("failed to dynamically close service", log.FError(err))
 					}
 				}

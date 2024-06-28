@@ -125,18 +125,18 @@ func JWTWithSetContext(v bool) JWTOption {
 }
 
 // JWT middleware
-func JWT(jwt *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
+func JWT(v *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
 	options := GetDefaultJWTOptions()
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
-	return JWTWithOptions(jwt, contextKey, options)
+	return JWTWithOptions(v, contextKey, options)
 }
 
 // JWTWithOptions middleware
-func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middleware {
+func JWTWithOptions(v *jwt.JWT, contextKey interface{}, opts JWTOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims := opts.ClaimsProvider()
@@ -174,7 +174,7 @@ func JWTWithOptions(jwt *jwt.JWT, contextKey interface{}, opts JWTOptions) Middl
 			}
 
 			// handle existing token
-			jwtToken, err := jwt.ParseWithClaims(token, claims)
+			jwtToken, err := v.ParseWithClaims(token, claims)
 			if err != nil {
 				if resume := opts.ErrorHandler(l, w, r, err); resume {
 					next.ServeHTTP(w, r)

@@ -1,4 +1,4 @@
-package keeltestutil
+package keeltest
 
 import (
 	"encoding/json"

@@ -62,10 +62,10 @@ func WithShutdownSignals(shutdownSignals ...os.Signal) Option {
 	}
 }
 
-// WithShutdownTimeout option
-func WithShutdownTimeout(shutdownTimeout time.Duration) Option {
+// WithGracefulPeriod option
+func WithGracefulPeriod(gracefulPeriod time.Duration) Option {
 	return func(inst *Server) {
-		inst.shutdownTimeout = shutdownTimeout
+		inst.gracefulPeriod = gracefulPeriod
 	}
 }
 

@@ -27,7 +27,7 @@ doc:
 .PHONY: test
 ## Run tests
 test:
-	@go test -coverprofile=coverage.out -race -json ./... | gotestfmt
+	@go test -p 1 -coverprofile=coverage.out -race -json ./... | gotestfmt
 
 .PHONY: lint
 ## Run linter

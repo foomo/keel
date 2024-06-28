@@ -11,6 +11,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/foomo/keel/env"
 )
@@ -24,7 +25,7 @@ func TraceProvider() trace.TracerProvider {
 }
 
 func NewNoopTraceProvider() (trace.TracerProvider, error) {
-	tracerProvider := trace.NewNoopTracerProvider()
+	tracerProvider := noop.NewTracerProvider()
 	otel.SetTracerProvider(tracerProvider)
 	return tracerProvider, nil
 }
@@ -33,6 +34,9 @@ func NewStdOutTraceProvider(ctx context.Context) (trace.TracerProvider, error) {
 	var exportOpts []stdouttrace.Option
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
 		exportOpts = append(exportOpts, stdouttrace.WithPrettyPrint())
+	}
+	if !env.GetBool("OTEL_EXPORTER_STDOUT_TIMESTAMPS", true) {
+		exportOpts = append(exportOpts, stdouttrace.WithoutTimestamps())
 	}
 
 	exporter, err := stdouttrace.New(exportOpts...)

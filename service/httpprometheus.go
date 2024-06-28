@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
+var (
 	DefaultHTTPPrometheusName = "prometheus"
 	DefaultHTTPPrometheusAddr = ":9200"
 	DefaultHTTPPrometheusPath = "/metrics"

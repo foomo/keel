@@ -3,7 +3,7 @@ package keelassert_test
 import (
 	"testing"
 
-	keelassert "github.com/foomo/keel/test/assert"
+	keelassert "github.com/foomo/keel/keeltest/assert"
 	"github.com/stretchr/testify/assert"
 )
 

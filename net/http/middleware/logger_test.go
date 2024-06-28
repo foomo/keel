@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/foomo/keel/keeltest"
 	"github.com/foomo/keel/log"
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/foomo/keel/net/http/middleware"
-	keeltest "github.com/foomo/keel/test"
 	"go.uber.org/zap"
 )
 

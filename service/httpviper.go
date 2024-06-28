@@ -10,7 +10,7 @@ import (
 	"github.com/foomo/keel/config"
 )
 
-const (
+var (
 	DefaultHTTPViperName = "viper"
 	DefaultHTTPViperAddr = "localhost:9300"
 	DefaultHTTPViperPath = "/config"

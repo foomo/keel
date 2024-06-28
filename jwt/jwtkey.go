@@ -38,9 +38,9 @@ func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Ke
 
 	// load private key
 	if privateKeyPemFilename != "" {
-		if bytes, err := os.ReadFile(privateKeyPemFilename); err != nil {
+		if value, err := os.ReadFile(privateKeyPemFilename); err != nil {
 			return Key{}, errors.Wrap(err, "failed to read private key: "+privateKeyPemFilename)
-		} else if key, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(strings.ReplaceAll(string(bytes), `\n`, "\n"))); err != nil {
+		} else if key, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(strings.ReplaceAll(string(value), `\n`, "\n"))); err != nil {
 			return Key{}, errors.Wrap(err, "failed to parse private key: "+privateKeyPemFilename)
 		} else {
 			private = key
@@ -54,7 +54,7 @@ func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Ke
 		return Key{}, errors.Wrap(err, "failed to parse public key: "+publicKeyPemFilename)
 	} else {
 		hasher := sha256.New()
-		hasher.Write(bytes.TrimSpace(v))
+		_, _ = hasher.Write(bytes.TrimSpace(v))
 		id = hex.EncodeToString(hasher.Sum(nil))
 		public = key
 	}
