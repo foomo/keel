@@ -18,10 +18,10 @@ import (
 
 // HTTP struct
 type HTTP struct {
-	running atomic.Bool
-	server  *http.Server
-	name    string
 	l       *zap.Logger
+	name    string
+	server  *http.Server
+	running atomic.Bool
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -39,16 +39,14 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 	)
 
 	return &HTTP{
-		server: &http.Server{
-			Addr:         addr,
-			ErrorLog:     zap.NewStdLog(l),
-			IdleTimeout:  5 * time.Second,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			Handler:      middleware.Compose(l, name, handler, middlewares...),
-		},
-		name: name,
 		l:    l,
+		name: name,
+		server: &http.Server{
+			Addr:        addr,
+			Handler:     middleware.Compose(l, name, handler, middlewares...),
+			ErrorLog:    zap.NewStdLog(l),
+			IdleTimeout: 30 * time.Second,
+		},
 	}
 }
 
@@ -58,6 +56,10 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 
 func (s *HTTP) Name() string {
 	return s.name
+}
+
+func (s *HTTP) Server() *http.Server {
+	return s.server
 }
 
 // ------------------------------------------------------------------------------------------------

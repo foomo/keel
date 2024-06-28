@@ -14,6 +14,7 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/roundtripware"
 	"github.com/sony/gobreaker"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
@@ -138,11 +139,9 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 	// create http server with handler
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.Equal(t, string(data), requestData)
-		_, err = w.Write([]byte(responseData))
-		if err != nil {
-			panic(err)
+		if assert.NoError(t, err) && assert.Equal(t, string(data), requestData) {
+			_, err = w.Write([]byte(responseData))
+			assert.NoError(t, err)
 		}
 	}))
 	defer svr.Close()
@@ -194,11 +193,9 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 	// create http server with handler
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.Equal(t, string(data), requestData)
-		_, err = w.Write([]byte(responseData))
-		if err != nil {
-			panic(err)
+		if assert.NoError(t, err) && assert.Equal(t, string(data), requestData) {
+			_, err = w.Write([]byte(responseData))
+			assert.NoError(t, err)
 		}
 	}))
 	defer svr.Close()
