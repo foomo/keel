@@ -8,7 +8,7 @@ import (
 )
 
 func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return Tracer().Start(ctx, spanName, opts...)
+	return Tracer().Start(ctx, spanName, opts...) //nolint:spancheck
 }
 
 func End(sp trace.Span, err error) {
