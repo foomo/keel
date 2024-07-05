@@ -2,6 +2,7 @@ package keelmongo
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	keelerrors "github.com/foomo/keel/errors"
@@ -120,10 +121,21 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 	}
 
 	col := db.Collection(name, o.CollectionOptions)
+	if !slices.Contains(dbs[db.Name()], name) {
+		dbs[db.Name()] = append(dbs[db.Name()], name)
+	}
 
 	if len(o.Indexes) > 0 {
 		if _, err := col.Indexes().CreateMany(o.IndexesContext, o.Indexes, o.CreateIndexesOptions); err != nil {
 			return nil, err
+		}
+		if _, ok := indices[db.Name()]; !ok {
+			indices[db.Name()] = map[string][]string{}
+		}
+		for _, index := range o.Indexes {
+			if index.Options != nil && index.Options.Name != nil {
+				indices[db.Name()][name] = append(indices[db.Name()][name], *index.Options.Name)
+			}
 		}
 	}
 
@@ -189,8 +201,8 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 			return c.Insert(ctx, entity)
 		} else if err := c.collection.FindOneAndUpdate(
 			ctx,
-			bson.D{{Key: "id", Value: id}, {Key: "version", Value: currentVersion}},
-			bson.D{{Key: "$set", Value: entity}},
+			bson.D{bson.E{Key: "id", Value: id}, bson.E{Key: "version", Value: currentVersion}},
+			bson.D{bson.E{Key: "$set", Value: entity}},
 			options.FindOneAndUpdate().SetUpsert(false),
 		).Err(); errors.Is(err, mongo.ErrNoDocuments) {
 			return keelerrors.NewWrappedError(keelpersistence.ErrDirtyWrite, err)
@@ -199,8 +211,8 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 		}
 	} else if _, err := c.collection.UpdateOne(
 		ctx,
-		bson.D{{Key: "id", Value: id}},
-		bson.D{{Key: "$set", Value: entity}},
+		bson.D{bson.E{Key: "id", Value: id}},
+		bson.D{bson.E{Key: "$set", Value: entity}},
 		options.Update().SetUpsert(true),
 	); err != nil {
 		return err
@@ -242,16 +254,16 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 				versionUpserts++
 				operations = append(operations,
 					mongo.NewUpdateOneModel().
-						SetFilter(bson.D{{Key: "id", Value: entity.GetID()}, {Key: "version", Value: currentVersion}}).
-						SetUpdate(bson.D{{Key: "$set", Value: entity}}).
+						SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}, bson.E{Key: "version", Value: currentVersion}}).
+						SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
 						SetUpsert(false),
 				)
 			}
 		} else {
 			operations = append(operations,
 				mongo.NewUpdateOneModel().
-					SetFilter(bson.D{{Key: "id", Value: entity.GetID()}}).
-					SetUpdate(bson.D{{Key: "$set", Value: entity}}).
+					SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}}).
+					SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
 					SetUpsert(true),
 			)
 		}
@@ -382,7 +394,7 @@ func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handle
 		return err
 	}
 
-	defer CloseCursor(cursor)
+	defer CloseCursor(context.WithoutCancel(ctx), cursor)
 
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {
@@ -412,7 +424,7 @@ func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeli
 		return err
 	}
 
-	defer CloseCursor(cursor)
+	defer CloseCursor(context.WithoutCancel(ctx), cursor)
 
 	for cursor.Next(ctx) {
 		if err := handler(cursor.Decode); err != nil {

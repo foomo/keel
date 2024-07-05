@@ -36,6 +36,7 @@ const (
 	HeaderServer              = "Server"
 	HeaderTrueClientIP        = "True-Client-Ip"
 	HeaderOrigin              = "Origin"
+	HeaderXReferer            = "X-Referer"
 	HeaderUserAgent           = "User-Agent"
 
 	// Cloudflare

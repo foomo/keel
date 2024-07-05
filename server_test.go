@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/foomo/keel/service"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/foomo/keel"
-	keeltest "github.com/foomo/keel/test"
 )
 
 type KeelTestSuite struct {
@@ -28,12 +28,12 @@ type KeelTestSuite struct {
 
 // SetupSuite hook
 func (s *KeelTestSuite) SetupSuite() {
-	s.l = keeltest.NewLogger(s.T()).Zap()
+	s.l = zaptest.NewLogger(s.T())
 }
 
 // BeforeTest hook
 func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
-	s.l = keeltest.NewLogger(s.T()).Zap()
+	s.l = zaptest.NewLogger(s.T())
 	s.mux = http.NewServeMux()
 	s.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -59,7 +59,10 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	s.svr = keel.NewServer(keel.WithContext(ctx), keel.WithLogger(s.l))
+	s.svr = keel.NewServer(
+		keel.WithContext(ctx),
+		keel.WithLogger(s.l),
+	)
 	s.cancel = cancel
 }
 
@@ -74,7 +77,7 @@ func (s *KeelTestSuite) TearDownSuite() {}
 
 func (s *KeelTestSuite) TestServiceHTTP() {
 	s.svr.AddServices(
-		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTP(s.l, "test", "localhost:55000", s.mux),
 	)
 
 	s.runServer()
@@ -86,8 +89,8 @@ func (s *KeelTestSuite) TestServiceHTTP() {
 
 func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.svr.AddServices(
-		keel.NewServiceHTTPZap(s.l, "zap", ":9100", "/log"),
-		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTPZap(s.l, "zap", "localhost:9100", "/log"),
+		service.NewHTTP(s.l, "test", "localhost:55000", s.mux),
 	)
 
 	s.runServer()
@@ -95,7 +98,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("default", func() {
 		if statusCode, body, err := s.httpGet("http://localhost:9100/log"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"info","disableCaller":true,"disableStacktrace":true}`)
+			s.Equal(`{"level":"info","disableCaller":true,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -108,7 +111,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("set debug level", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"level":"debug"}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"debug","disableCaller":true,"disableStacktrace":true}`)
+			s.Equal(`{"level":"debug","disableCaller":true,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -121,7 +124,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("enable caller", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableCaller":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":true}`)
+			s.Equal(`{"level":"debug","disableCaller":false,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -131,7 +134,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("enable stacktrace", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableStacktrace":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(body, `{"level":"debug","disableCaller":false,"disableStacktrace":false}`)
+			s.Equal(`{"level":"debug","disableCaller":false,"disableStacktrace":false}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -141,7 +144,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 
 func (s *KeelTestSuite) TestGraceful() {
 	s.svr.AddServices(
-		keel.NewServiceHTTP(s.l, "test", ":55000", s.mux),
+		service.NewHTTP(s.l, "test", "localhost:55000", s.mux),
 	)
 
 	s.runServer()
@@ -172,7 +175,7 @@ func (s *KeelTestSuite) TestGraceful() {
 		go func(waitChan chan string) {
 			waitChan <- "ok"
 			time.Sleep(time.Second)
-			if assert.NoError(s.T(), syscall.Kill(syscall.Getpid(), syscall.SIGINT)) {
+			if s.NoError(syscall.Kill(syscall.Getpid(), syscall.SIGINT)) {
 				s.l.Info("killed myself")
 			}
 		}(waitChan)
@@ -183,7 +186,7 @@ func (s *KeelTestSuite) TestGraceful() {
 
 	{ // check that server is down
 		_, _, err := s.httpGet("http://localhost:55000/ok")
-		s.Error(err)
+		s.Require().Error(err)
 	}
 
 	s.l.Info("done")

@@ -1,17 +1,15 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"time"
 
+	httplog "github.com/foomo/keel/net/http/log"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
 	keeltime "github.com/foomo/keel/time"
 )
-
-const loggerLabelerContextKey log.LabelerContextKey = "github.com/foomo/keel/net/middleware.Logger"
 
 type (
 	LoggerOptions struct {
@@ -29,7 +27,7 @@ func GetDefaultLoggerOptions() LoggerOptions {
 		Message:       "handled http request",
 		MinWarnCode:   400,
 		MinErrorCode:  500,
-		InjectLabeler: false,
+		InjectLabeler: true,
 	}
 }
 
@@ -85,8 +83,8 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			var labeler *log.Labeler
 
-			if opts.InjectLabeler {
-				r, labeler = LoggerLabelerFromRequest(r)
+			if labeler == nil && opts.InjectLabeler {
+				r, labeler = httplog.InjectLabelerIntoRequest(r)
 			}
 
 			next.ServeHTTP(wr, r)
@@ -111,13 +109,4 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 			}
 		})
 	}
-}
-
-func LoggerLabelerFromContext(ctx context.Context) (context.Context, *log.Labeler) {
-	return log.LabelerFromContext(ctx, loggerLabelerContextKey)
-}
-
-func LoggerLabelerFromRequest(r *http.Request) (*http.Request, *log.Labeler) {
-	ctx, l := log.LabelerFromContext(r.Context(), loggerLabelerContextKey)
-	return r.WithContext(ctx), l
 }

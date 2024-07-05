@@ -8,8 +8,8 @@ import (
 )
 
 // CloseCursor with defer
-func CloseCursor(cursor *mongo.Cursor) {
-	if err := cursor.Close(context.Background()); err != nil {
+func CloseCursor(ctx context.Context, cursor *mongo.Cursor) {
+	if err := cursor.Close(ctx); err != nil {
 		log.WithError(nil, err).Error("failed to close cursor")
 	}
 }

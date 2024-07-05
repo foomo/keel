@@ -2,6 +2,7 @@ package jetstream
 
 import (
 	"encoding/json"
+	"slices"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -20,7 +21,9 @@ type (
 		name                   string
 		info                   *nats.StreamInfo
 		config                 *nats.StreamConfig
+		configJSOptions        []nats.JSOpt
 		namespace              string
+		jsOptions              []nats.JSOpt
 		natsOptions            []nats.Option
 		reconnectMaxRetries    int
 		reconnectTimeout       time.Duration
@@ -59,22 +62,30 @@ func WithReconnectMaxRetries(v int) Option {
 	}
 }
 
-func WithConfig(v *nats.StreamConfig) Option {
+func WithConfig(v *nats.StreamConfig, opts ...nats.JSOpt) Option {
 	return func(o *Stream) {
 		o.config = v
+		o.configJSOptions = append(o.configJSOptions, opts...)
+	}
+}
+
+// WithJSOptions option
+func WithJSOptions(v ...nats.JSOpt) Option {
+	return func(o *Stream) {
+		o.jsOptions = append(o.jsOptions, v...)
 	}
 }
 
 // WithNatsOptions option
 func WithNatsOptions(v ...nats.Option) Option {
 	return func(o *Stream) {
-		o.natsOptions = v
+		o.natsOptions = append(o.natsOptions, v...)
 	}
 }
 
 func PublisherWithPubOpts(v ...nats.PubOpt) PublisherOption {
 	return func(o *Publisher) {
-		o.pubOpts = v
+		o.pubOpts = append(o.pubOpts, v...)
 	}
 }
 
@@ -98,7 +109,7 @@ func SubscriberWithNamespace(v string) SubscriberOption {
 
 func SubscriberWithSubOpts(v ...nats.SubOpt) SubscriberOption {
 	return func(o *Subscriber) {
-		o.opts = v
+		o.opts = append(o.opts, v...)
 	}
 }
 
@@ -118,9 +129,14 @@ func (s *Stream) connect() error {
 
 	// create jet stream
 	js, err := conn.JetStream(
-		nats.PublishAsyncErrHandler(func(js nats.JetStream, msg *nats.Msg, err error) {
-			s.l.Error("nats async publish error", log.FError(err))
-		}),
+		append(
+			[]nats.JSOpt{
+				nats.PublishAsyncErrHandler(func(js nats.JetStream, msg *nats.Msg, err error) {
+					s.l.Error("nats async publish error", log.FError(err))
+				}),
+			},
+			s.jsOptions...,
+		)...,
 	)
 	if err != nil {
 		return err
@@ -130,8 +146,8 @@ func (s *Stream) connect() error {
 	// create / update stream if config exists
 	if s.config != nil {
 		s.config.Name = s.Name()
-		if _, err = js.StreamInfo(s.Name()); errors.Is(err, nats.ErrStreamNotFound) {
-			if info, err := js.AddStream(s.config); err != nil {
+		if _, err = js.StreamInfo(s.Name(), s.configJSOptions...); errors.Is(err, nats.ErrStreamNotFound) {
+			if info, err := js.AddStream(s.config, s.configJSOptions...); err != nil {
 				return errors.Wrap(err, "failed to add stream")
 			} else if err != nil {
 				return errors.Wrap(err, "failed to retrieve stream info")
@@ -140,7 +156,7 @@ func (s *Stream) connect() error {
 			}
 		} else if err != nil {
 			return errors.Wrap(err, "failed get stream info")
-		} else if info, err := js.UpdateStream(s.config); err != nil {
+		} else if info, err := js.UpdateStream(s.config, s.configJSOptions...); err != nil {
 			return errors.Wrap(err, "failed to update stream")
 		} else {
 			s.info = info
@@ -265,6 +281,20 @@ func (s *Stream) Publisher(subject string, opts ...PublisherOption) *Publisher {
 			opt(pub)
 		}
 	}
+
+	{ // append to recoreded publishers
+		value := publisher{
+			Stream:    s.name,
+			Namespace: s.namespace,
+			Subject:   subject,
+		}
+		if !slices.ContainsFunc(publishers, func(p publisher) bool {
+			return p.Stream == value.Stream && p.Namespace == value.Namespace && p.Subject == value.Subject
+		}) {
+			publishers = append(publishers, value)
+		}
+	}
+
 	return pub
 }
 
@@ -280,6 +310,20 @@ func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscribe
 			opt(sub)
 		}
 	}
+
+	{ // append to recoreded publishers
+		value := subscriber{
+			Stream:    s.name,
+			Namespace: s.namespace,
+			Subject:   subject,
+		}
+		if !slices.ContainsFunc(subscribers, func(p subscriber) bool {
+			return p.Stream == value.Stream && p.Namespace == value.Namespace && p.Subject == value.Subject
+		}) {
+			subscribers = append(subscribers, value)
+		}
+	}
+
 	return sub
 }
 

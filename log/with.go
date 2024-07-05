@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -20,6 +21,17 @@ func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
 	return l.With(fields...)
 }
 
+func WithAttributes(l *zap.Logger, attrs ...attribute.KeyValue) *zap.Logger {
+	if l == nil {
+		l = Logger()
+	}
+	fields := make([]zap.Field, len(attrs))
+	for i, attr := range attrs {
+		fields[i] = zap.Any(strings.ReplaceAll(string(attr.Key), ".", "_"), attr.Value.AsInterface())
+	}
+	return l.With(fields...)
+}
+
 func WithError(l *zap.Logger, err error) *zap.Logger {
 	return With(l, FErrorType(err), FError(err))
 }
@@ -28,9 +40,9 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 	return With(l, FServiceName(name))
 }
 
-func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
-	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		l = With(l, FTraceID(spanCtx.TraceID().String()))
+func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger { //nolint:revive
+	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
+		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
 	}
 	return l
 }
@@ -72,6 +84,16 @@ func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 		return With(l, FHTTPRequestID(id))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
 		return With(l, FHTTPRequestID(id))
+	} else {
+		return l
+	}
+}
+
+func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
+	if value := r.Header.Get("X-Referer"); value != "" {
+		return With(l, FHTTPReferer(value))
+	} else if value := r.Referer(); value != "" {
+		return With(l, FHTTPReferer(value))
 	} else {
 		return l
 	}
@@ -120,6 +142,7 @@ func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPHost(l, r)
+	l = WithHTTPReferer(l, r)
 	l = WithHTTPRequestID(l, r)
 	l = WithHTTPSessionID(l, r)
 	l = WithHTTPTrackingID(l, r)

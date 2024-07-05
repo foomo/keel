@@ -1,38 +1,55 @@
 .DEFAULT_GOAL:=help
+-include .makerc
+
+# --- Targets -----------------------------------------------------------------
+
+# This allows us to accept extra arguments
+%: .husky
+	@:
+
+.PHONY: .husky
+# Configure git hooks for husky
+.husky:
+	@if ! command -v husky &> /dev/null; then \
+		echo "ERROR: missing executeable 'husky', please run:"; \
+		echo "\n$ go install github.com/go-courier/husky/cmd/husky@latest\n"; \
+	fi
+	@git config core.hooksPath .husky
 
 ## === Tasks ===
+
+.PHONY: doc
+## Run tests
+doc:
+	@open "http://localhost:6060/pkg/github.com/foomo/keel/"
+	@godoc -http=localhost:6060 -play
 
 .PHONY: test
 ## Run tests
 test:
-	go test -v ./...
+	@go test -p 1 -coverprofile=coverage.out -race -json ./... | gotestfmt
 
 .PHONY: lint
 ## Run linter
-lint: files=$(shell find . -type f -name go.mod)
-lint: dirs=$(foreach file,$(files),$(dir $(file)) )
 lint:
-	@for dir in $(dirs); do cd $$dir && pwd && golangci-lint run; done
+	@golangci-lint run
 
 .PHONY: lint.fix
 ## Fix lint violations
-lint.fix: files=$(shell find . -type f -name go.mod)
-lint.fix: dirs=$(foreach file,$(files),$(dir $(file)) )
 lint.fix:
-	@for dir in $(dirs); do cd $$dir && golangci-lint run --fix; done
+	@golangci-lint run --fix
+
+.PHONY: tidy
+## Run go mod tidy
+tidy:
+	@go mod tidy
+
+.PHONY: outdated
+## Show outdated direct dependencies
+outdated:
+	@go list -u -m -json all | go-mod-outdated -update -direct
 
 ## === Utils ===
-
-.PHONY: gomod
-## Run go mod tidy
-gomod:
-	go mod tidy
-	cd example && go mod tidy
-
-.PHONY: gomod.outdated
-## Show outdated direct dependencies
-gomod.outdated:
-	go list -u -m -json all | go-mod-outdated -update -direct
 
 ## Show help text
 help:

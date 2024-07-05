@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/foomo/keel/service"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -61,10 +62,10 @@ func WithShutdownSignals(shutdownSignals ...os.Signal) Option {
 	}
 }
 
-// WithShutdownTimeout option
-func WithShutdownTimeout(shutdownTimeout time.Duration) Option {
+// WithGracefulPeriod option
+func WithGracefulPeriod(gracefulPeriod time.Duration) Option {
 	return func(inst *Server) {
-		inst.shutdownTimeout = shutdownTimeout
+		inst.gracefulPeriod = gracefulPeriod
 	}
 }
 
@@ -72,9 +73,9 @@ func WithShutdownTimeout(shutdownTimeout time.Duration) Option {
 func WithHTTPZapService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.zap.enabled", enabled)() {
-			service := NewDefaultServiceHTTPZap()
-			inst.initServices = append(inst.initServices, service)
-			inst.AddAlwaysHealthzers(service)
+			svs := service.NewDefaultHTTPZap(inst.Logger())
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
 		}
 	}
 }
@@ -83,9 +84,9 @@ func WithHTTPZapService(enabled bool) Option {
 func WithHTTPViperService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.viper.enabled", enabled)() {
-			service := NewDefaultServiceHTTPViper()
-			inst.initServices = append(inst.initServices, service)
-			inst.AddAlwaysHealthzers(service)
+			svs := service.NewDefaultHTTPViper(inst.Logger())
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
 		}
 	}
 }
@@ -149,19 +150,42 @@ func WithPrometheusMeter(enabled bool) Option {
 func WithHTTPPrometheusService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.prometheus.enabled", enabled)() {
-			service := NewDefaultServiceHTTPPrometheus()
-			inst.initServices = append(inst.initServices, service)
-			inst.AddAlwaysHealthzers(service)
+			svs := service.NewDefaultHTTPPrometheus(inst.Logger())
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
 		}
 	}
 }
 
+// WithHTTPPProfService option with default value
+func WithHTTPPProfService(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "service.pprof.enabled", enabled)() {
+			svs := service.NewDefaultHTTPPProf(inst.Logger())
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
+		}
+	}
+}
+
+// WithHTTPHealthzService option with default value
 func WithHTTPHealthzService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.healthz.enabled", enabled)() {
-			service := NewDefaultServiceHTTPProbes(inst.probes)
-			inst.initServices = append(inst.initServices, service)
-			inst.AddAlwaysHealthzers(service)
+			svs := service.NewDefaultHTTPProbes(inst.Logger(), inst.probes())
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
+		}
+	}
+}
+
+// WithHTTPReadmeService option with default value
+func WithHTTPReadmeService(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "service.readme.enabled", enabled)() {
+			svs := service.NewDefaultHTTPReadme(inst.Logger(), inst.readmers)
+			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
 		}
 	}
 }

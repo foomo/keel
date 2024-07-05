@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	keelassert "github.com/foomo/keel/keeltest/assert"
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/middleware"
-	keelassert "github.com/foomo/keel/test/assert"
 	"go.uber.org/zap/zaptest"
 )
 

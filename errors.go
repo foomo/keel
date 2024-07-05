@@ -5,6 +5,6 @@ import (
 )
 
 var (
-	ErrServerNotRunning  = errors.New("server not running")
-	ErrServiceNotRunning = errors.New("service not running")
+	ErrServerNotRunning = errors.New("server not running")
+	ErrServerShutdown   = errors.New("server is shutting down")
 )

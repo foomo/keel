@@ -10,8 +10,6 @@ import (
 	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
-	"go.opentelemetry.io/otel/metric/instrument/syncint64"
 	"go.uber.org/zap"
 )
 
@@ -20,6 +18,14 @@ var (
 	// RoundTripware. It wraps the two gobreaker errors (ErrTooManyRequests & ErrOpenState) so only one comparison is
 	// needed
 	ErrCircuitBreaker = errors.New("circuit breaker triggered")
+
+	// ErrIgnoreSuccessfulness can be returned by the IsSuccessful callback in order for the RoundTripware to ignore the
+	// result of the function
+	ErrIgnoreSuccessfulness = errors.New("ignored successfulness")
+
+	// ErrReadFromActualBody when it is attempted to read from a body in the IsSuccessful callback that has not
+	// previously been copied.
+	ErrReadFromActualBody = errors.New("read from actual body")
 )
 
 // CircuitBreakerSettings is a copy of the gobreaker.Settings, except that the IsSuccessful function is omitted since we
@@ -49,7 +55,7 @@ type CircuitBreakerSettings struct {
 }
 
 type CircuitBreakerOptions struct {
-	Counter syncint64.Counter
+	Counter metric.Int64Counter
 
 	IsSuccessful func(err error, req *http.Request, resp *http.Response) error
 	CopyReqBody  bool
@@ -77,9 +83,9 @@ func CircuitBreakerWithMetric(
 	meterDescription string,
 ) CircuitBreakerOption {
 	// intitialize the success counter
-	counter, err := meter.SyncInt64().Counter(
+	counter, err := meter.Int64Counter(
 		meterName,
-		instrument.WithDescription(meterDescription),
+		metric.WithDescription(meterDescription),
 	)
 	if err != nil {
 		panic(err)
@@ -122,16 +128,42 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 		ReadyToTrip:   set.ReadyToTrip,
 		OnStateChange: set.OnStateChange,
 	}
-	circuitBreaker := gobreaker.NewCircuitBreaker(cbrSettings)
+	circuitBreaker := gobreaker.NewTwoStepCircuitBreaker(cbrSettings)
 
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(r *http.Request) (*http.Response, error) {
+		return func(r *http.Request) (resp *http.Response, err error) { //nolint:nonamedreturns
 			if r == nil {
 				return nil, errors.New("request is nil")
 			}
 
 			// we need to detect the state change by ourselves, because the context does not allow us to hand in a context
 			fromState := circuitBreaker.State()
+
+			defer func() {
+				// detect and log a state change
+				toState := circuitBreaker.State()
+				if fromState != toState {
+					l.Warn("state change occurred",
+						zap.String("state_from", fromState.String()),
+						zap.String("state_to", toState.String()),
+					)
+				}
+
+				attributes := []attribute.KeyValue{
+					attribute.String("current_state", toState.String()),
+					attribute.String("previous_state", fromState.String()),
+					attribute.Bool("state_change", fromState != toState),
+				}
+				if err != nil {
+					if o.Counter != nil {
+						attributes := append(attributes, attribute.Bool("error", true))
+						o.Counter.Add(r.Context(), 1, metric.WithAttributes(attributes...))
+					}
+				} else if o.Counter != nil {
+					attributes := append(attributes, attribute.Bool("error", false))
+					o.Counter.Add(r.Context(), 1, metric.WithAttributes(attributes...))
+				}
+			}()
 
 			// clone the request and the body if wanted
 			var errCopy error
@@ -144,15 +176,27 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				defer reqCopy.Body.Close()
 			}
 
-			// call the next handler enclosed in the circuit breaker.
-			resp, err := circuitBreaker.Execute(func() (interface{}, error) {
-				resp, err := next(r) //nolint:bodyclose
-				if resp == nil {
-					return nil, o.IsSuccessful(err, reqCopy, nil)
-				}
+			// check whether the circuit breaker is closed (an error is returned if not)
+			done, err := circuitBreaker.Allow()
 
+			// wrap the error in case it was produced because of the circuit breaker being (half-)open
+			if errors.Is(err, gobreaker.ErrTooManyRequests) || errors.Is(err, gobreaker.ErrOpenState) {
+				return nil, keelerrors.NewWrappedError(ErrCircuitBreaker, err)
+			} else if err != nil {
+				l.Error("unexpected error in circuit breaker",
+					log.FError(err),
+					zap.String("state", fromState.String()),
+				)
+				return nil, err
+			}
+
+			// continue with the middleware chain
+			resp, err = next(r)
+
+			var respCopy *http.Response
+			if resp != nil {
 				// clone the response and the body if wanted
-				respCopy, errCopy := copyResponse(resp, o.CopyRespBody)
+				respCopy, errCopy = copyResponse(resp, o.CopyRespBody)
 				if errCopy != nil {
 					l.Error("unable to copy response", log.FError(errCopy))
 					return nil, errCopy
@@ -160,47 +204,22 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					// make sure the body is closed again - since it is a NopCloser it does not make a difference though
 					defer respCopy.Body.Close()
 				}
+			}
 
-				return resp, o.IsSuccessful(err, reqCopy, respCopy)
-			})
-
-			// detect and log a state change
-			toState := circuitBreaker.State()
-			if fromState != toState {
-				l.Warn("state change occurred",
-					zap.String("from", fromState.String()),
-					zap.String("to", toState.String()),
+			if errSuccess := o.IsSuccessful(err, reqCopy, respCopy); errors.Is(errSuccess, errNoBody) {
+				l.Error("encountered read from not previously copied request/response body",
+					zap.Bool("copy_request", o.CopyReqBody),
+					zap.Bool("copy_response", o.CopyRespBody),
 				)
+				// we actually want to return an error instead of the original request and error since the user
+				// should be made aware that there is a misconfiguration
+				return nil, ErrReadFromActualBody
+			} else if !errors.Is(errSuccess, ErrIgnoreSuccessfulness) {
+				done(errSuccess == nil)
 			}
 
-			// wrap the error in case it was produced because of the circuit breaker being (half-)open
-			if errors.Is(gobreaker.ErrTooManyRequests, err) || errors.Is(gobreaker.ErrOpenState, err) {
-				err = keelerrors.NewWrappedError(ErrCircuitBreaker, err)
-			}
-
-			attributes := []attribute.KeyValue{
-				attribute.String("current_state", toState.String()),
-				attribute.String("previous_state", fromState.String()),
-				attribute.Bool("state_change", fromState != toState),
-			}
-			if err != nil {
-				if o.Counter != nil {
-					attributes := append(attributes, attribute.Bool("error", true))
-					o.Counter.Add(r.Context(), 1, attributes...)
-				}
-				return nil, err
-			}
-
-			if o.Counter != nil {
-				attributes := append(attributes, attribute.Bool("error", false))
-				o.Counter.Add(r.Context(), 1, attributes...)
-			}
-
-			if res, ok := resp.(*http.Response); ok {
-				return res, nil
-			} else {
-				return nil, errors.New("result is no *http.Response")
-			}
+			// return the response and error received from the next call
+			return resp, err
 		}
 	}
 }
