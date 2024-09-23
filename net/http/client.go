@@ -8,10 +8,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/foomo/keel/net/http/roundtripware"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
-
-	"github.com/foomo/keel/net/http/roundtripware"
 )
 
 type HTTPClientOption func(*http.Client)
