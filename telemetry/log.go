@@ -22,7 +22,7 @@ func (l Logger) Init(info logr.RuntimeInfo) {
 }
 
 func (l Logger) Enabled(level int) bool {
-	return log.AtomicLevel().Enabled(zapcore.Level(-1 * level))
+	return log.AtomicLevel().Enabled(zapcore.Level(-1 * level)) //nolint:gosec
 }
 
 func (l Logger) Info(level int, msg string, keysAndValues ...interface{}) {
