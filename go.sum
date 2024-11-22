@@ -27,8 +27,8 @@ github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJ
 github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+3JqfkOG4=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
-github.com/avast/retry-go v3.0.0+incompatible h1:4SOWQ7Qs+oroOTQOYnAHqelpCO0biHSxpiH9JdtuBj0=
-github.com/avast/retry-go v3.0.0+incompatible/go.mod h1:XtSnn+n/sHqQIpZ10K1qAevBhOOCWBLXXy3hyiqqBrY=
+github.com/avast/retry-go/v4 v4.6.0 h1:K9xNA+KeB8HHc2aWFuLb25Offp+0iVRXEvFx8IinRJA=
+github.com/avast/retry-go/v4 v4.6.0/go.mod h1:gvWlPhBVsvBbLkVGDg/KwvBv0bEkCOLRRSHKIr2PyOE=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
@@ -88,6 +88,10 @@ github.com/fbiville/markdown-table-formatter v0.3.0 h1:PIm1UNgJrFs8q1htGTw+wnnNY
 github.com/fbiville/markdown-table-formatter v0.3.0/go.mod h1:q89TDtSEVDdTaufgSbfHpNVdPU/bmfvqNkrC5HagmLY=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
+github.com/foomo/go v0.0.3 h1:5pGzcPC78dImuBTT7nsZZnH+GIQUylbCtMkFEH26uZk=
+github.com/foomo/go v0.0.3/go.mod h1:x6g64wiQusqaFElnh5rlk9unCgLKmfUWy0YFLejJxio=
+github.com/foomo/gostandards v0.2.0 h1:Ryd7TI9yV3Xk5B84DcUDB7KcL3LzQ8NS+TVOrFxTYfA=
+github.com/foomo/gostandards v0.2.0/go.mod h1:XQx7Ur6vyvxaIe2cQvAthuhPYDe+d2soibqVcXDXOh4=
 github.com/foomo/gotsrpc/v2 v2.8.2 h1:8TNHPIvYIIzfaRYOLK9OP1S1FN+yrrZ3a2UH6TGddtQ=
 github.com/foomo/gotsrpc/v2 v2.8.2/go.mod h1:CcBiruenqIcpn+XeuOpedaJcsPeBtLt1XNQwJnhQ7rg=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=

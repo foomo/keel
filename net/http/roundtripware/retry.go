@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"go.uber.org/zap"
 )
 

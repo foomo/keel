@@ -3,13 +3,16 @@ module github.com/foomo/keel
 go 1.23.0
 
 require (
-	github.com/avast/retry-go v3.0.0+incompatible
+	github.com/avast/retry-go/v4 v4.6.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/fbiville/markdown-table-formatter v0.3.0
+	github.com/foomo/go v0.0.3
+	github.com/foomo/gostandards v0.2.0
 	github.com/foomo/gotsrpc/v2 v2.8.2
 	github.com/go-logr/logr v1.4.2
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/klauspost/compress v1.17.11
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats.go v1.37.0
@@ -96,7 +99,6 @@ require (
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
