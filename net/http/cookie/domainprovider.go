@@ -48,7 +48,7 @@ func NewDomainProvider(opts ...DomainProviderOption) DomainProvider {
 	return func(r *http.Request) (string, error) {
 		domain := keelhttp.GetRequestDomain(r)
 
-		if options.Domains == nil || len(options.Domains) == 0 {
+		if len(options.Domains) == 0 {
 			return domain, nil
 		}
 
@@ -58,7 +58,7 @@ func NewDomainProvider(opts ...DomainProviderOption) DomainProvider {
 			}
 		}
 
-		if options.Domains != nil && len(options.Domains) > 0 {
+		if len(options.Domains) > 0 {
 			for _, value := range options.Domains {
 				// foo.com = foo.com
 				// foo.com = *.foo.com

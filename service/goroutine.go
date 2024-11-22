@@ -87,8 +87,7 @@ func (s *GoRoutine) Start(ctx context.Context) error {
 	s.cancelLock.Lock()
 	s.cancel = cancel
 	s.cancelLock.Unlock()
-	for i := 0; i < s.parallel; i++ {
-		i := i
+	for i := range s.parallel {
 		l := log.WithAttributes(s.l, log.KeelServiceInstKey.Int(i))
 		s.wg.Go(func() error {
 			return s.handler(ctx, l)

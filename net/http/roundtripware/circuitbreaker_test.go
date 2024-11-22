@@ -295,7 +295,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 	)
 
 	// send exactly 3 requests (lower than the maximum amount of allowed consecutive failures)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
@@ -310,7 +310,7 @@ func TestCircuitBreakerInterval(t *testing.T) {
 
 	// now we should be able to send 3 more requests without triggering the circuit breaker (last request should finally
 	// trigger the circuit breaker, but the error will not yet be a circuitbreaker error)
-	for i := 0; i <= 3; i++ {
+	for range 4 {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
@@ -362,7 +362,7 @@ func TestCircuitBreakerIgnore(t *testing.T) {
 
 	// send 4 requests (higher than the maximum amount of allowed consecutive failures), but they are ignored
 	// -> circuit breaker should remain open
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
 		require.NoError(t, err)
 		resp, err := client.Do(req)
@@ -394,7 +394,7 @@ func TestCircuitBreakerTimeout(t *testing.T) {
 
 	// send 4 requests (more than the maximum amount of allowed consecutive failures)
 	// -> circuit breaker should change to open state
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
