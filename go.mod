@@ -6,6 +6,7 @@ require (
 	github.com/avast/retry-go/v4 v4.6.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/fbiville/markdown-table-formatter v0.3.0
+	github.com/foomo/go v0.0.3
 	github.com/foomo/gostandards v0.2.0
 	github.com/foomo/gotsrpc/v2 v2.8.2
 	github.com/go-logr/logr v1.4.2
