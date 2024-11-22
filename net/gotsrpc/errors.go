@@ -5,9 +5,9 @@ type Error string
 
 // Common errors
 const (
-	ErrorNotFound         Error = "notFound"         //nolint:errname
-	ErrorForbidden        Error = "forbidden"        //nolint:errname
-	ErrorPermissionDenied Error = "permissionDenied" //nolint:errname
+	ErrorNotFound         Error = "notFound"
+	ErrorForbidden        Error = "forbidden"
+	ErrorPermissionDenied Error = "permissionDenied"
 )
 
 // NewError returns a pointer error

@@ -98,7 +98,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("default", func() {
 		if statusCode, body, err := s.httpGet("http://localhost:9100/log"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(`{"level":"info","disableCaller":true,"disableStacktrace":true}`, body)
+			s.JSONEq(`{"level":"info","disableCaller":true,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -111,7 +111,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("set debug level", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"level":"debug"}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(`{"level":"debug","disableCaller":true,"disableStacktrace":true}`, body)
+			s.JSONEq(`{"level":"debug","disableCaller":true,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -124,7 +124,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("enable caller", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableCaller":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(`{"level":"debug","disableCaller":false,"disableStacktrace":true}`, body)
+			s.JSONEq(`{"level":"debug","disableCaller":false,"disableStacktrace":true}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
@@ -134,7 +134,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	s.Run("enable stacktrace", func() {
 		if statusCode, body, err := s.httpPut("http://localhost:9100/log", `{"disableStacktrace":false}`); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
-			s.Equal(`{"level":"debug","disableCaller":false,"disableStacktrace":false}`, body)
+			s.JSONEq(`{"level":"debug","disableCaller":false,"disableStacktrace":false}`, body)
 		}
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)

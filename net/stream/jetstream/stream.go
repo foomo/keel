@@ -190,7 +190,7 @@ func (s *Stream) initNatsOptions() {
 				s.l.Error("nats disconnected error", log.FError(err))
 
 				var errRetry error
-				for i := 0; i < s.reconnectMaxRetries; i++ {
+				for range s.reconnectMaxRetries {
 					errRetry = s.connect()
 					if errRetry != nil {
 						s.l.Error("nats reconnect failed", log.FError(errRetry))

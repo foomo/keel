@@ -405,7 +405,6 @@ func (s *Server) Readme() string {
 func (s *Server) startService(services ...Service) {
 	c := make(chan struct{}, 1)
 	for _, value := range services {
-		value := value
 		s.g.Go(func() error {
 			c <- struct{}{}
 			if err := value.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
