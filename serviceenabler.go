@@ -40,8 +40,8 @@ func (w *ServiceEnabler) Name() string {
 }
 
 func (w *ServiceEnabler) Start(ctx context.Context) error {
-	w.watch(w.ctx) //nolint:contextcheck
 	w.ctx = ctx
+	w.watch(w.ctx) //nolint:contextcheck
 	if w.enabled() {
 		if err := w.enable(w.ctx); err != nil { //nolint:contextcheck
 			return err
