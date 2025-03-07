@@ -1,3 +1,5 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 version: 2
 
 updates:
@@ -5,6 +7,9 @@ updates:
     directory: '/'
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']
 
   - package-ecosystem: gomod
     directory: '/'
@@ -13,7 +18,12 @@ updates:
     groups:
       gomod-security:
         applies-to: security-updates
+        update-types: ['minor', 'patch']
         patterns: ['*']
       gomod-update:
         applies-to: version-updates
+        update-types: ['minor', 'patch']
         patterns: ['*']
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
