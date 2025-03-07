@@ -3,6 +3,8 @@ package keelmongo
 import (
 	"context"
 
+	"github.com/foomo/keel/env"
+	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,8 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
-
-	"github.com/foomo/keel/env"
+	"go.uber.org/zap"
 )
 
 // Persistor exported to used also for embedding into other types in foreign packages.
@@ -22,14 +23,16 @@ type (
 		db     *mongo.Database
 	}
 	Options struct {
-		OtelEnabled     bool
-		OtelOptions     []otelmongo.Option
-		ClientOptions   []ClientOption
-		DatabaseOptions []DatabaseOption
+		OtelEnabled         bool
+		OtelOptions         []otelmongo.Option
+		ClientOptions       []ClientOption
+		ClientLoggerOptions []ClientLoggerOption
+		DatabaseOptions     []DatabaseOption
 	}
-	Option         func(o *Options)
-	ClientOption   func(*options.ClientOptions)
-	DatabaseOption func(*options.DatabaseOptions)
+	Option             func(o *Options)
+	ClientOption       func(*options.ClientOptions)
+	ClientLoggerOption func(*options.LoggerOptions)
+	DatabaseOption     func(*options.DatabaseOptions)
 )
 
 // ------------------------------------------------------------------------------------------------
@@ -39,6 +42,30 @@ type (
 func WithOtelEnabled(v bool) Option {
 	return func(o *Options) {
 		o.OtelEnabled = v
+	}
+}
+
+func WithClientLogger(v *zap.Logger) Option {
+	return func(o *Options) {
+		o.ClientLoggerOptions = append(o.ClientLoggerOptions, func(o *options.LoggerOptions) {
+			o.SetSink(zapr.NewLogger(v).GetSink())
+		})
+	}
+}
+
+func WithClientLoggerComponentLevel(c options.LogComponent, l options.LogLevel) Option {
+	return func(o *Options) {
+		o.ClientLoggerOptions = append(o.ClientLoggerOptions, func(o *options.LoggerOptions) {
+			o.SetComponentLevel(c, l)
+		})
+	}
+}
+
+func WithClientCompression(v *zap.Logger) Option {
+	return func(o *Options) {
+		o.ClientOptions = append(o.ClientOptions, func(o *options.ClientOptions) {
+			o.SetCompressors([]string{"snappy", "zstd"})
+		})
 	}
 }
 
@@ -72,7 +99,8 @@ func DefaultOptions() Options {
 				clientOptions.SetWriteConcern(writeconcern.Majority())
 			},
 		},
-		DatabaseOptions: nil,
+		ClientLoggerOptions: nil,
+		DatabaseOptions:     nil,
 	}
 }
 
@@ -100,6 +128,12 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	for _, opt := range o.ClientOptions {
 		opt(clientOptions)
+	}
+	if clientOptions.LoggerOptions == nil && len(o.ClientLoggerOptions) > 0 {
+		clientOptions.LoggerOptions = options.Logger()
+		for _, opt := range o.ClientLoggerOptions {
+			opt(clientOptions.LoggerOptions)
+		}
 	}
 
 	// apply database options
