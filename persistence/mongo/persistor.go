@@ -73,12 +73,10 @@ func WithClientLoggerComponentLevel(c options.LogComponent, l options.LogLevel) 
 	}
 }
 
-func WithClientCompression() Option {
-	return func(o *Options) {
-		o.ClientOptions = append(o.ClientOptions, func(o *options.ClientOptions) {
-			o.SetCompressors([]string{"snappy", "zstd"})
-		})
-	}
+func WithClientCompression(o *Options) {
+	o.ClientOptions = append(o.ClientOptions, func(o *options.ClientOptions) {
+		o.SetCompressors([]string{"snappy", "zstd"})
+	})
 }
 
 func WithDatabaseOptions(v ...DatabaseOption) Option {
