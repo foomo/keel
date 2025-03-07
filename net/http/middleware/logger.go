@@ -99,6 +99,10 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 				l = l.With(labeler.Get()...)
 			}
 
+			if err := r.Context().Err(); err != nil {
+				l = l.With(zap.String("error_context", err.Error()))
+			}
+
 			switch {
 			case opts.MinErrorCode > 0 && wr.statusCode >= opts.MinErrorCode:
 				l.Error(opts.Message)
