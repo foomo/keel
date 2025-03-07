@@ -1,7 +1,6 @@
 package roundtripware_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -37,7 +36,7 @@ func TestRequestID(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -70,7 +69,7 @@ func TestRequestID_Context(t *testing.T) {
 	)
 
 	// set request id on context
-	ctx := keelhttpcontext.SetRequestID(context.Background(), testRequestID)
+	ctx := keelhttpcontext.SetRequestID(t.Context(), testRequestID)
 
 	// create request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
@@ -110,7 +109,7 @@ func TestRequestID_WithProvider(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -147,7 +146,7 @@ func TestRequestID_WithHeader(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request

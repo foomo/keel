@@ -22,7 +22,7 @@ func TestNew(t *testing.T) {
 	testingx.Tags(t, tagx.Skip)
 
 	l := zaptest.NewLogger(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	natsContainer, err := natscontainer.Run(ctx, "nats:2.9.20-alpine")
 	require.NoError(t, err)

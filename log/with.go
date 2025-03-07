@@ -70,7 +70,7 @@ func WithHTTPScheme(l *zap.Logger, r *http.Request) *zap.Logger {
 }
 
 func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
-	if id := r.Header.Get("X-Session-ID"); id != "" {
+	if id := r.Header.Get("X-Session-Id"); id != "" {
 		return With(l, FHTTPSessionID(id))
 	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
 		return With(l, FHTTPSessionID(id))
@@ -80,7 +80,7 @@ func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
 }
 
 func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
-	if id := r.Header.Get("X-Request-ID"); id != "" {
+	if id := r.Header.Get("X-Request-Id"); id != "" {
 		return With(l, FHTTPRequestID(id))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
 		return With(l, FHTTPRequestID(id))
@@ -110,7 +110,7 @@ func WithHTTPHost(l *zap.Logger, r *http.Request) *zap.Logger {
 }
 
 func WithHTTPTrackingID(l *zap.Logger, r *http.Request) *zap.Logger {
-	if id := r.Header.Get("X-Tracking-ID"); id != "" {
+	if id := r.Header.Get("X-Tracking-Id"); id != "" {
 		return With(l, FHTTPTrackingID(id))
 	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
 		return With(l, FHTTPTrackingID(id))
