@@ -45,6 +45,18 @@ func WithOtelEnabled(v bool) Option {
 	}
 }
 
+func WithOtelOptions(v ...otelmongo.Option) Option {
+	return func(o *Options) {
+		o.OtelOptions = append(o.OtelOptions, v...)
+	}
+}
+
+func WithClientOptions(v ...ClientOption) Option {
+	return func(o *Options) {
+		o.ClientOptions = append(o.ClientOptions, v...)
+	}
+}
+
 func WithClientLogger(v *zap.Logger) Option {
 	return func(o *Options) {
 		o.ClientLoggerOptions = append(o.ClientLoggerOptions, func(o *options.LoggerOptions) {
@@ -61,23 +73,11 @@ func WithClientLoggerComponentLevel(c options.LogComponent, l options.LogLevel) 
 	}
 }
 
-func WithClientCompression(v *zap.Logger) Option {
+func WithClientCompression() Option {
 	return func(o *Options) {
 		o.ClientOptions = append(o.ClientOptions, func(o *options.ClientOptions) {
 			o.SetCompressors([]string{"snappy", "zstd"})
 		})
-	}
-}
-
-func WithOtelOptions(v ...otelmongo.Option) Option {
-	return func(o *Options) {
-		o.OtelOptions = append(o.OtelOptions, v...)
-	}
-}
-
-func WithClientOptions(v ...ClientOption) Option {
-	return func(o *Options) {
-		o.ClientOptions = append(o.ClientOptions, v...)
 	}
 }
 
