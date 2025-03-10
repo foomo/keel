@@ -1,7 +1,6 @@
 package roundtripware_test
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +38,7 @@ func TestLogger(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -73,7 +72,7 @@ func TestLogger_WithMessage(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -113,7 +112,7 @@ func TestLogger_WithErrorMessage(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -148,7 +147,7 @@ func TestLogger_WithMinWarnCode(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -180,7 +179,7 @@ func TestLogger_WithMinErrorCode(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request

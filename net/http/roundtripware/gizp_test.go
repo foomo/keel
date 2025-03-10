@@ -3,7 +3,6 @@ package roundtripware_test
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -75,7 +74,7 @@ func TestGZip(t *testing.T) {
 		compressed = false
 
 		// create request
-		req, err := http.NewRequestWithContext(context.TODO(), http.MethodPost, svr.URL, strings.NewReader(payload))
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, svr.URL, strings.NewReader(payload))
 		req.Header.Set(stdhttp.HeaderAcceptEncoding.String(), stdhttp.EncodingGzip.String())
 		require.NoError(t, err)
 
@@ -98,7 +97,7 @@ func TestGZip(t *testing.T) {
 		compressed = true
 
 		// create request
-		req, err := http.NewRequestWithContext(context.TODO(), http.MethodPost, svr.URL, strings.NewReader(payload))
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, svr.URL, strings.NewReader(payload))
 		req.Header.Set(stdhttp.HeaderAcceptEncoding.String(), stdhttp.EncodingGzip.String())
 		require.NoError(t, err)
 

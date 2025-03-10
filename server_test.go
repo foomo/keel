@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foomo/keel"
 	"github.com/foomo/keel/service"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-
-	"github.com/foomo/keel"
 )
 
 type KeelTestSuite struct {
@@ -58,7 +57,7 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 		s.l.Error("logging error")
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(s.T().Context())
 	s.svr = keel.NewServer(
 		keel.WithContext(ctx),
 		keel.WithLogger(s.l),
@@ -208,7 +207,7 @@ func (s *KeelTestSuite) runServer() {
 
 // httpGet helper
 func (s *KeelTestSuite) httpGet(url string) (int, string, error) {
-	if req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil); err != nil {
+	if req, err := http.NewRequestWithContext(s.T().Context(), http.MethodGet, url, nil); err != nil {
 		return 0, "", err
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
 		return 0, "", err
@@ -223,7 +222,7 @@ func (s *KeelTestSuite) httpGet(url string) (int, string, error) {
 
 // httpPut helper
 func (s *KeelTestSuite) httpPut(url, data string) (int, string, error) {
-	if req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, url, strings.NewReader(data)); err != nil {
+	if req, err := http.NewRequestWithContext(s.T().Context(), http.MethodPut, url, strings.NewReader(data)); err != nil {
 		return 0, "", err
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
 		return 0, "", err

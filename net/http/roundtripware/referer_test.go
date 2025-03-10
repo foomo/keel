@@ -1,7 +1,6 @@
 package roundtripware_test
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -37,7 +36,7 @@ func TestReferer(t *testing.T) {
 	)
 
 	// create request
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, svr.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
 	require.NoError(t, err)
 
 	// do request
@@ -70,7 +69,7 @@ func TestReferer_Context(t *testing.T) {
 	)
 
 	// set request id on context
-	ctx := keelhttpcontext.SetReferer(context.Background(), testReferer)
+	ctx := keelhttpcontext.SetReferer(t.Context(), testReferer)
 
 	// create request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
@@ -109,7 +108,7 @@ func TestReferer_WithHeader(t *testing.T) {
 	)
 
 	// set request id on context
-	ctx := keelhttpcontext.SetReferer(context.Background(), testReferer)
+	ctx := keelhttpcontext.SetReferer(t.Context(), testReferer)
 
 	// create request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
