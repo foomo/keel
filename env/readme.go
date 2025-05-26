@@ -11,23 +11,29 @@ func Readme() string {
 	md := &markdown.Markdown{}
 
 	{
-		for key, fallback := range defaults {
-			rows = append(rows, []string{
-				markdown.Code(key),
-				markdown.Code(TypeOf(key)),
-				"",
-				markdown.Code(fmt.Sprintf("%v", fallback)),
-			})
-		}
+		defaults.Range(func(key, fallback any) bool {
+			if k, ok := key.(string); ok {
+				rows = append(rows, []string{
+					markdown.Code(k),
+					markdown.Code(TypeOf(k)),
+					"",
+					markdown.Code(fmt.Sprintf("%v", fallback)),
+				})
+			}
+			return true
+		})
 
-		for _, key := range requiredKeys {
-			rows = append(rows, []string{
-				markdown.Code(key),
-				markdown.Code(TypeOf(key)),
-				markdown.Code("true"),
-				"",
-			})
-		}
+		requiredKeys.Range(func(key, fallback any) bool {
+			if k, ok := key.(string); ok {
+				rows = append(rows, []string{
+					markdown.Code(k),
+					markdown.Code(TypeOf(k)),
+					markdown.Code("true"),
+					"",
+				})
+			}
+			return true
+		})
 	}
 
 	if len(rows) > 0 {

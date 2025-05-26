@@ -3,15 +3,15 @@ package env
 import (
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
-	defaults     = map[string]interface{}{}
-	requiredKeys []string
-	types        = map[string]string{}
+	types        = sync.Map{}
+	defaults     = sync.Map{}
+	requiredKeys = sync.Map{}
 )
 
 // Exists return true if env var is defined
@@ -25,16 +25,16 @@ func MustExists(key string) {
 	if !Exists(key) {
 		panic(fmt.Sprintf("required environment variable `%s` does not exist", key))
 	}
-	if !slices.Contains(requiredKeys, key) {
-		requiredKeys = append(requiredKeys, key)
+	if _, ok := requiredKeys.Load(key); !ok {
+		requiredKeys.Store(key, true)
 	}
 }
 
 // Get env var or fallback
 func Get(key, fallback string) string {
-	defaults[key] = fallback
-	if _, ok := types[key]; !ok {
-		types[key] = "string"
+	defaults.Store(key, fallback)
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "string")
 	}
 	if v, ok := os.LookupEnv(key); ok {
 		return v
@@ -50,8 +50,8 @@ func MustGet(key string) string {
 
 // GetInt env var or fallback as int
 func GetInt(key string, fallback int) int {
-	if _, ok := types[key]; !ok {
-		types[key] = "int"
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "int")
 	}
 	if value, err := strconv.Atoi(Get(key, "")); err == nil {
 		return value
@@ -67,8 +67,8 @@ func MustGetInt(key string) int {
 
 // GetInt64 env var or fallback as int64
 func GetInt64(key string, fallback int64) int64 {
-	if _, ok := types[key]; !ok {
-		types[key] = "int64"
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "int64")
 	}
 	if value, err := strconv.ParseInt(Get(key, ""), 10, 64); err == nil {
 		return value
@@ -84,8 +84,8 @@ func MustGetInt64(key string) int64 {
 
 // GetFloat64 env var or fallback as float64
 func GetFloat64(key string, fallback float64) float64 {
-	if _, ok := types[key]; !ok {
-		types[key] = "float64"
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "float64")
 	}
 	if value, err := strconv.ParseFloat(Get(key, ""), 64); err == nil {
 		return value
@@ -101,8 +101,8 @@ func MustGetFloat64(key string) float64 {
 
 // GetBool env var or fallback as bool
 func GetBool(key string, fallback bool) bool {
-	if _, ok := types[key]; !ok {
-		types[key] = "bool"
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "bool")
 	}
 	if val, err := strconv.ParseBool(Get(key, "")); err == nil {
 		return val
@@ -118,8 +118,8 @@ func MustGetBool(key string) bool {
 
 // GetStringSlice env var or fallback as []string
 func GetStringSlice(key string, fallback []string) []string {
-	if _, ok := types[key]; !ok {
-		types[key] = "[]string"
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "[]string")
 	}
 	if v := Get(key, ""); v != "" {
 		return strings.Split(v, ",")
@@ -135,8 +135,8 @@ func MustGetStringSlice(key string) []string {
 
 // GetIntSlice env var or fallback as []string
 func GetIntSlice(key string, fallback []int) []int {
-	if _, ok := types[key]; !ok {
-		types[key] = "[]int"
+	if _, ok := types.Load(key); !ok {
+		types.Store(key, "[]int")
 	}
 	if v := Get(key, ""); v != "" {
 		elements := strings.Split(v, ",")
@@ -159,20 +159,46 @@ func MustGetGetIntSlice(key string) []int {
 }
 
 func RequiredKeys() []string {
-	return requiredKeys
+	var ret []string
+	requiredKeys.Range(func(key, value interface{}) bool {
+		if v, ok := key.(string); ok {
+			ret = append(ret, v)
+		}
+		return true
+	})
+	return ret
 }
 
 func Defaults() map[string]interface{} {
-	return defaults
+	ret := map[string]interface{}{}
+	defaults.Range(func(key, value interface{}) bool {
+		if k, ok := key.(string); ok {
+			ret[k] = value
+		}
+		return true
+	})
+	return ret
 }
 
 func Types() map[string]string {
-	return types
+	ret := map[string]string{}
+	types.Range(func(key, value interface{}) bool {
+		if v, ok := value.(string); ok {
+			if k, ok := key.(string); ok {
+				ret[k] = v
+			}
+		}
+		return true
+	})
+	return ret
 }
 
 func TypeOf(key string) string {
-	if v, ok := types[key]; ok {
-		return v
+	if v, ok := types.Load(key); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+		return ""
 	}
 	return ""
 }
