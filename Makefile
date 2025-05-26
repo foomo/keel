@@ -27,7 +27,8 @@ doc:
 .PHONY: test
 ## Run tests
 test:
-	@GO_TEST_TAGS=-skip go test -coverprofile=coverage.out -race -json ./... | gotestfmt
+	@GO_TEST_TAGS=-skip go test -coverprofile=coverage.out -race ./...
+	#@GO_TEST_TAGS=-skip go test -coverprofile=coverage.out -race -json ./... | gotestfmt
 
 .PHONY: lint
 ## Run linter
