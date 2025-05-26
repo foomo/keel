@@ -21,7 +21,7 @@ func waitFor(addr string) {
 }
 
 func httpGet(url string) string {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		panic(err.Error())
 	}
