@@ -105,10 +105,10 @@ func (w *ServiceEnabler) disable(ctx context.Context) error {
 func (w *ServiceEnabler) watch(ctx context.Context) {
 	go func() {
 		for {
+			time.Sleep(time.Second)
 			if w.closed() {
 				break
 			}
-			time.Sleep(time.Second)
 			if value := w.enabledFn(); value != w.enabled() {
 				if value {
 					go func() {
