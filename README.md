@@ -1,6 +1,5 @@
-[![Build Status](https://github.com/foomo/keel/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/foomo/keel/actions/workflows/test.yml)
+[![Build Status](https://github.com/foomo/keel/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/foomo/keel/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/foomo/keel)](https://goreportcard.com/report/github.com/foomo/keel)
-[![Coverage Status](https://coveralls.io/repos/github/foomo/keel/badge.svg?branch=main&)](https://coveralls.io/github/foomo/keel?branch=main)
 [![GoDoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
 
 <p align="center">
