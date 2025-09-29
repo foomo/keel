@@ -19,7 +19,7 @@ type (
 
 func HTTPClientWithCookieJar(v *cookiejar.Jar) HTTPClientOption {
 	return func(c *HTTPClient) {
-		c.Client.Jar = v
+		c.Jar = v
 	}
 }
 
@@ -45,7 +45,7 @@ func NewHTTPClient(opts ...HTTPClientOption) *HTTPClient {
 func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) {
 	if req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil); err != nil {
 		return nil, 0, err
-	} else if resp, err := c.Client.Do(req); err != nil {
+	} else if resp, err := c.Do(req); err != nil {
 		return nil, 0, err
 	} else if body, err := c.readBody(resp); err != nil {
 		return nil, 0, err
@@ -64,7 +64,7 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 		req = r
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if resp, err := c.Client.Do(req); err != nil {
+	if resp, err := c.Do(req); err != nil {
 		return nil, 0, err
 	} else if body, err := c.readBody(resp); err != nil {
 		return nil, 0, err

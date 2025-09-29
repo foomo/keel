@@ -68,7 +68,7 @@ func TestNew(t *testing.T) {
 
 	send(t, l, "Hello World #2", pub, messages)
 
-	natsContainerName, err := natsContainer.Container.Name(ctx)
+	natsContainerName, err := natsContainer.Name(ctx)
 	natsContainerName = strings.TrimPrefix(natsContainerName, "/")
 	require.NoError(t, err)
 
