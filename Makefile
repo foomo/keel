@@ -70,6 +70,20 @@ test:
 outdated:
 	@go list -u -m -json all | go-mod-outdated -update -direct
 
+.PHONY: release
+## Create release TAG=1.0.0
+release: MODS=$(shell find . -type f -name 'go.mod' -mindepth 2)
+release:
+ifndef TAG
+	$(error $(br)$(br)TAG variable is required.$(br)Usage: make release TAG=1.0.0$(br)$(br))
+endif
+	@echo "〉️Create release"
+	@echo "🔖 v$(TAG)" && git tag v$(TAG)
+	@$(foreach mod,$(MODS), (echo "🔖 $(patsubst %/,%,$(patsubst ./%,%,$(basename $(dir $(mod)))))/v$(TAG)" && git tag $(patsubst %/,%,$(patsubst ./%,%,$(basename $(dir $(mod)))))/v$(TAG)") &&) true
+	@echo
+	@read -p "Do you want to push the tags to the remote? [y/N] " yn; \
+	@case $$yn in [Yy]*) git push origin --tags ;; *) echo "Skipping git push." ;; esac
+
 ### Utils
 
 .PHONY: docs
