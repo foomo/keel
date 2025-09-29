@@ -49,7 +49,7 @@ func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 				if e := recover(); e != nil {
 					err, ok := e.(error)
 					if !ok {
-						err = fmt.Errorf("%v", e) //nolint:goerr113
+						err = fmt.Errorf("%v", e)
 					}
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {

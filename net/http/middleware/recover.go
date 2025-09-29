@@ -51,7 +51,7 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 				if e := recover(); e != nil {
 					err, ok := e.(error)
 					if !ok {
-						err = fmt.Errorf("%v", e) //nolint:goerr113
+						err = fmt.Errorf("%v", e)
 					}
 					if errors.Is(err, http.ErrAbortHandler) {
 						panic(e)

@@ -15,13 +15,13 @@ func shutdown() {
 }
 
 func waitFor(addr string) {
-	if _, err := net.DialTimeout("tcp", addr, 10*time.Second); err != nil {
+	if _, err := net.DialTimeout("tcp", addr, 10*time.Second); err != nil { //nolint:noctx
 		panic(err.Error())
 	}
 }
 
 func httpGet(url string) string {
-	resp, err := http.Get(url) //nolint:gosec,noctx
+	resp, err := http.Get(url) //nolint:noctx
 	if err != nil {
 		panic(err.Error())
 	}

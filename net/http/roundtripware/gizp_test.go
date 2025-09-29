@@ -128,7 +128,7 @@ func gunzipString(body []byte) ([]byte, error) {
 	defer gr.Close()
 
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, gr) //nolint:gosec
+	_, err = io.Copy(&buf, gr)
 	if err != nil {
 		return nil, err
 	}
