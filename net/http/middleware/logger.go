@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -74,7 +73,7 @@ func LoggerWithInjectLabeler(v bool) LoggerOption {
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := keeltime.Now()
+			start := time.Now()
 
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)

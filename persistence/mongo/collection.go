@@ -7,7 +7,6 @@ import (
 
 	keelerrors "github.com/foomo/keel/errors"
 	keelpersistence "github.com/foomo/keel/persistence"
-	keeltime "github.com/foomo/keel/time"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
@@ -52,25 +51,25 @@ func DefaultCollectionOptions() CollectionOptions {
 
 func CollectionWithReadConcern(v *readconcern.ReadConcern) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetReadConcern(v)
+		o.SetReadConcern(v)
 	}
 }
 
 func CollectionWithWriteConcern(v *writeconcern.WriteConcern) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetWriteConcern(v)
+		o.SetWriteConcern(v)
 	}
 }
 
 func CollectionWithReadPreference(v *readpref.ReadPref) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetReadPreference(v)
+		o.SetReadPreference(v)
 	}
 }
 
 func CollectionWithRegistry(v *bsoncodec.Registry) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetRegistry(v)
+		o.SetRegistry(v)
 	}
 }
 
@@ -82,31 +81,31 @@ func CollectionWithIndexes(v ...mongo.IndexModel) CollectionOption {
 
 func CollectionWithIndexesMaxTime(v time.Duration) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetMaxTime(v)
+		o.SetMaxTime(v)
 	}
 }
 
 func CollectionWithIndexesContext(v int32) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumInt(v)
+		o.SetCommitQuorumInt(v)
 	}
 }
 
 func CollectionWithIndexesQuorumMajority() CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumMajority()
+		o.SetCommitQuorumMajority()
 	}
 }
 
 func CollectionWithIndexesCommitQuorumString(v string) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumString(v)
+		o.SetCommitQuorumString(v)
 	}
 }
 
 func CollectionWithIndexesCommitQuorumVotingMembers(v context.Context) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumVotingMembers()
+		o.SetCommitQuorumVotingMembers()
 	}
 }
 
@@ -184,7 +183,7 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	}
 
 	if v, ok := entity.(EntityWithTimestamps); ok {
-		now := keeltime.Now()
+		now := time.Now()
 		if ct := v.GetCreatedAt(); ct.IsZero() {
 			v.SetCreatedAt(now)
 		}
@@ -234,7 +233,7 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 		}
 
 		if v, ok := entity.(EntityWithTimestamps); ok {
-			now := keeltime.Now()
+			now := time.Now()
 			if ct := v.GetCreatedAt(); ct.IsZero() {
 				v.SetCreatedAt(now)
 			}
@@ -299,7 +298,7 @@ func (c *Collection) Insert(ctx context.Context, entity Entity) error {
 	}
 
 	if v, ok := entity.(EntityWithTimestamps); ok {
-		now := keeltime.Now()
+		now := time.Now()
 		if ct := v.GetCreatedAt(); ct.IsZero() {
 			v.SetCreatedAt(now)
 		}
@@ -327,7 +326,7 @@ func (c *Collection) InsertMany(ctx context.Context, entities []Entity) error {
 		}
 
 		if v, ok := entity.(EntityWithTimestamps); ok {
-			now := keeltime.Now()
+			now := time.Now()
 			if ct := v.GetCreatedAt(); ct.IsZero() {
 				v.SetCreatedAt(now)
 			}

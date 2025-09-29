@@ -2,11 +2,11 @@ package roundtripware
 
 import (
 	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -67,7 +67,7 @@ func Logger(opts ...LoggerOption) RoundTripware {
 	}
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
-			start := keeltime.Now()
+			start := time.Now()
 			statusCode := http.StatusTeapot
 
 			// extend logger using local instance
@@ -85,7 +85,7 @@ func Logger(opts ...LoggerOption) RoundTripware {
 				statusCode = resp.StatusCode
 			}
 
-			l = l.With(log.FDuration(keeltime.Now().Sub(start)))
+			l = l.With(log.FDuration(time.Since(start)))
 
 			switch {
 			case err != nil:
