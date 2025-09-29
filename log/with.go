@@ -40,7 +40,7 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 	return With(l, FServiceName(name))
 }
 
-func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger { //nolint:revive
+func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
 		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
 	}
@@ -52,11 +52,12 @@ func WithHTTPServerName(l *zap.Logger, name string) *zap.Logger {
 }
 
 func WithHTTPFlavor(l *zap.Logger, r *http.Request) *zap.Logger {
-	if r.ProtoMajor == 1 {
+	switch r.ProtoMajor {
+	case 1:
 		return With(l, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
-	} else if r.ProtoMajor == 2 {
+	case 2:
 		return With(l, FHTTPFlavor("2"))
-	} else {
+	default:
 		return l
 	}
 }
