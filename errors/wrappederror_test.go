@@ -1,11 +1,11 @@
 package keelerrors_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	keelerrors "github.com/foomo/keel/errors"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
