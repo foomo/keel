@@ -23,7 +23,7 @@ func TestInline(t *testing.T) {
 	t.Run("read inline float", func(t *testing.T) {
 		value, ok := keeltest.InlineFloat64(t, 1) // INLINE: 1.5
 		assert.True(t, ok)
-		assert.Equal(t, 1.5, value)
+		assert.InDelta(t, 1.5, value, 0)
 	})
 
 	t.Run("read inline json", func(t *testing.T) {
