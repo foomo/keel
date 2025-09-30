@@ -17,7 +17,7 @@ import (
 )
 
 func Tracer() trace.Tracer {
-	return TraceProvider().Tracer(TracerName)
+	return TraceProvider().Tracer(Name)
 }
 
 func TraceProvider() trace.TracerProvider {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/foomo/keel/service"
+	"github.com/grafana/pyroscope-go"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -142,6 +143,48 @@ func WithPrometheusMeter(enabled bool) Option {
 			var err error
 			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider()
 			log.Must(inst.l, err, "failed to create prometheus meter provider")
+		}
+	}
+}
+
+// WithPyroscopeService option with default value
+func WithPyroscopeService(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			tags := map[string]string{}
+			if v := os.Getenv("HOSTNAME"); v != "" {
+				tags["pod"] = v
+			}
+			if v := config.GetString(inst.Config(), "otel.service.git.ref", "")(); v != "" {
+				tags["service_git_ref"] = v
+			}
+			if v := config.GetString(inst.Config(), "otel.service.repository", "")(); v != "" {
+				tags["service_repository"] = v
+			}
+			if v := config.GetString(inst.Config(), "otel.service.root_path", "")(); v != "" {
+				tags["service_root_path"] = v
+			}
+
+			svs := service.NewPyroscope(inst.Logger(), pyroscope.Config{
+				ApplicationName: config.GetString(inst.Config(), "otel.service.name", telemetry.ServiceName)(),
+				Tags:            tags,
+				Logger:          telemetry.NewPyroscopeLogger(inst.l),
+				ProfileTypes: []pyroscope.ProfileType{
+					// Default
+					pyroscope.ProfileCPU,
+					pyroscope.ProfileAllocObjects,
+					pyroscope.ProfileAllocSpace,
+					pyroscope.ProfileInuseObjects,
+					pyroscope.ProfileInuseSpace,
+					// Optional
+					pyroscope.ProfileGoroutines,
+					pyroscope.ProfileMutexCount,
+					pyroscope.ProfileMutexDuration,
+					pyroscope.ProfileBlockCount,
+					pyroscope.ProfileBlockDuration,
+				},
+			})
+			inst.initServices = append(inst.initServices, svs)
 		}
 	}
 }

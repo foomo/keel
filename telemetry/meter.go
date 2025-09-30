@@ -22,7 +22,7 @@ var (
 )
 
 func Meter() metric.Meter {
-	return otel.Meter("")
+	return otel.Meter(Name)
 }
 
 func NewNoopMeterProvider() (metric.MeterProvider, error) {

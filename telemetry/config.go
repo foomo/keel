@@ -2,10 +2,10 @@ package telemetry
 
 const (
 	DefaultServiceName = "service"
-	DefaultTracerName  = "github.com/foomo/keel/telemetry"
+	DefaultName        = "github.com/foomo/keel/telemetry"
 )
 
 var (
-	TracerName  = DefaultTracerName
+	Name        = DefaultName
 	ServiceName = DefaultServiceName
 )
