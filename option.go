@@ -3,11 +3,14 @@ package keel
 import (
 	"context"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/foomo/keel/service"
+	otelpyroscope "github.com/grafana/otel-profiling-go"
 	"github.com/grafana/pyroscope-go"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
@@ -164,35 +167,50 @@ func WithPyroscopeService(enabled bool) Option {
 			if v := config.GetString(inst.Config(), "otel.service.root_path", "")(); v != "" {
 				tags["service_root_path"] = v
 			}
-
+			profileTypes := []pyroscope.ProfileType{
+				// Default
+				pyroscope.ProfileCPU,
+				pyroscope.ProfileAllocObjects,
+				pyroscope.ProfileAllocSpace,
+				pyroscope.ProfileInuseObjects,
+				pyroscope.ProfileInuseSpace,
+				// Optional
+				pyroscope.ProfileGoroutines,
+			}
+			if v := config.GetInt(inst.Config(), "otel.profile.block_rate", 0)(); v >= 0 {
+				runtime.SetBlockProfileRate(v)
+				profileTypes = append(profileTypes,
+					pyroscope.ProfileBlockCount,
+					pyroscope.ProfileBlockDuration,
+				)
+			}
+			if v := config.GetInt(inst.Config(), "otel.profile.mutex_fraction", 0)(); v >= 0 {
+				runtime.SetMutexProfileFraction(v)
+				profileTypes = append(profileTypes,
+					pyroscope.ProfileMutexCount,
+					pyroscope.ProfileMutexDuration,
+				)
+			}
 			svs := service.NewGoRoutine(inst.Logger(), "pyroscope", func(ctx context.Context, l *zap.Logger) error {
 				p, err := pyroscope.Start(pyroscope.Config{
 					ApplicationName: config.GetString(inst.Config(), "otel.service.name", telemetry.ServiceName)(),
 					Tags:            tags,
 					Logger:          telemetry.NewPyroscopeLogger(inst.l),
-					ProfileTypes: []pyroscope.ProfileType{
-						// Default
-						pyroscope.ProfileCPU,
-						pyroscope.ProfileAllocObjects,
-						pyroscope.ProfileAllocSpace,
-						pyroscope.ProfileInuseObjects,
-						pyroscope.ProfileInuseSpace,
-						// Optional
-						pyroscope.ProfileGoroutines,
-						pyroscope.ProfileMutexCount,
-						pyroscope.ProfileMutexDuration,
-						pyroscope.ProfileBlockCount,
-						pyroscope.ProfileBlockDuration,
-					},
+					ProfileTypes:    profileTypes,
 				})
 				if err != nil {
 					return err
 				}
 				<-ctx.Done()
+				p.Flush(true)
 				l.Info("stopping pyroscope")
 				return p.Stop()
 			})
+			telemetry.AddTraceMiddleware(func(t trace.TracerProvider) trace.TracerProvider {
+				return otelpyroscope.NewTracerProvider(t)
+			})
 			inst.initServices = append(inst.initServices, svs)
+			inst.AddAlwaysHealthzers(svs)
 		}
 	}
 }

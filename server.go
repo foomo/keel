@@ -24,6 +24,7 @@ import (
 	"github.com/foomo/keel/service"
 	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
+	otelpyroscope "github.com/grafana/otel-profiling-go"
 	"github.com/spf13/viper"
 	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -160,6 +161,7 @@ func NewServer(opts ...Option) *Server {
 		var err error
 		otel.SetLogger(logr.New(telemetry.NewLogger(inst.l)))
 		otel.SetErrorHandler(telemetry.NewErrorHandler(inst.l))
+		otel.SetTracerProvider(otelpyroscope.NewTracerProvider(otel.GetTracerProvider()))
 		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 		if inst.meterProvider == nil {

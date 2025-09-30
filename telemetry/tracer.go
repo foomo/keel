@@ -16,6 +16,19 @@ import (
 	"github.com/foomo/keel/env"
 )
 
+var traceMiddlewares []func(t trace.TracerProvider) trace.TracerProvider
+
+func setTracerProvider(t trace.TracerProvider) {
+	for _, middleware := range traceMiddlewares {
+		t = middleware(t)
+	}
+	otel.SetTracerProvider(t)
+}
+
+func AddTraceMiddleware(m func(t trace.TracerProvider) trace.TracerProvider) {
+	traceMiddlewares = append(traceMiddlewares, m)
+}
+
 func Tracer() trace.Tracer {
 	return TraceProvider().Tracer(Name)
 }
@@ -26,7 +39,7 @@ func TraceProvider() trace.TracerProvider {
 
 func NewNoopTraceProvider() (trace.TracerProvider, error) {
 	tracerProvider := noop.NewTracerProvider()
-	otel.SetTracerProvider(tracerProvider)
+	setTracerProvider(tracerProvider)
 	return tracerProvider, nil
 }
 
@@ -94,6 +107,6 @@ func newTracerProvider(e sdktrace.SpanExporter) (trace.TracerProvider, error) {
 		),
 	)
 
-	otel.SetTracerProvider(tracerProvider)
+	setTracerProvider(tracerProvider)
 	return tracerProvider, nil
 }
