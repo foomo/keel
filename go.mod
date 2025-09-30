@@ -9,7 +9,6 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go v1.2.7
 	github.com/klauspost/compress v1.18.0
 	github.com/mitchellh/mapstructure v1.5.0
