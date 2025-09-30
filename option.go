@@ -165,24 +165,32 @@ func WithPyroscopeService(enabled bool) Option {
 				tags["service_root_path"] = v
 			}
 
-			svs := service.NewPyroscope(inst.Logger(), pyroscope.Config{
-				ApplicationName: config.GetString(inst.Config(), "otel.service.name", telemetry.ServiceName)(),
-				Tags:            tags,
-				Logger:          telemetry.NewPyroscopeLogger(inst.l),
-				ProfileTypes: []pyroscope.ProfileType{
-					// Default
-					pyroscope.ProfileCPU,
-					pyroscope.ProfileAllocObjects,
-					pyroscope.ProfileAllocSpace,
-					pyroscope.ProfileInuseObjects,
-					pyroscope.ProfileInuseSpace,
-					// Optional
-					pyroscope.ProfileGoroutines,
-					pyroscope.ProfileMutexCount,
-					pyroscope.ProfileMutexDuration,
-					pyroscope.ProfileBlockCount,
-					pyroscope.ProfileBlockDuration,
-				},
+			svs := service.NewGoRoutine(inst.Logger(), "pyroscope", func(ctx context.Context, l *zap.Logger) error {
+				p, err := pyroscope.Start(pyroscope.Config{
+					ApplicationName: config.GetString(inst.Config(), "otel.service.name", telemetry.ServiceName)(),
+					Tags:            tags,
+					Logger:          telemetry.NewPyroscopeLogger(inst.l),
+					ProfileTypes: []pyroscope.ProfileType{
+						// Default
+						pyroscope.ProfileCPU,
+						pyroscope.ProfileAllocObjects,
+						pyroscope.ProfileAllocSpace,
+						pyroscope.ProfileInuseObjects,
+						pyroscope.ProfileInuseSpace,
+						// Optional
+						pyroscope.ProfileGoroutines,
+						pyroscope.ProfileMutexCount,
+						pyroscope.ProfileMutexDuration,
+						pyroscope.ProfileBlockCount,
+						pyroscope.ProfileBlockDuration,
+					},
+				})
+				if err != nil {
+					return err
+				}
+				<-ctx.Done()
+				l.Info("stopping pyroscope")
+				return p.Stop()
 			})
 			inst.initServices = append(inst.initServices, svs)
 		}
