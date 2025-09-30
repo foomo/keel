@@ -27,10 +27,19 @@ jobs:
           check-latest: true
           go-version-file: 'go.mod'
 
-      - uses: golangci/golangci-lint-action@v8
+      - name: Setup golangci cache
+        uses: actions/cache@v4
         with:
-          args: --timeout=10m
-          install-mode: 'none'
+          path: |
+            ~/.cache/golangci-lint
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/*.go') }}
+            ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-
+            ${{ runner.os }}-go-
+
+      - name: Setup golangci cache status
+        run: golangci-lint cache status
 
       - name: Run tidy
         run: make tidy && git diff --exit-code
