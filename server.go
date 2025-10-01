@@ -18,16 +18,14 @@ import (
 	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
+	internalotel "github.com/foomo/keel/internal/otel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
 	"github.com/foomo/keel/metrics"
 	"github.com/foomo/keel/service"
 	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
-	otelpyroscope "github.com/grafana/otel-profiling-go"
 	"github.com/spf13/viper"
-	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
-	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
@@ -40,9 +38,7 @@ import (
 type Server struct {
 	services        []Service
 	initServices    []Service
-	meter           metric.Meter
 	meterProvider   metric.MeterProvider
-	tracer          trace.Tracer
 	traceProvider   trace.TracerProvider
 	shutdown        atomic.Bool
 	shutdownSignals []os.Signal
@@ -158,30 +154,17 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	{ // setup telemetry
-		var err error
-		otel.SetLogger(logr.New(telemetry.NewLogger(inst.l)))
-		otel.SetErrorHandler(telemetry.NewErrorHandler(inst.l))
-		otel.SetTracerProvider(otelpyroscope.NewTracerProvider(otel.GetTracerProvider()))
+		otel.SetLogger(logr.New(internalotel.NewLogger(inst.l)))
+		otel.SetErrorHandler(internalotel.NewErrorHandler(inst.l))
 		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 		if inst.meterProvider == nil {
-			inst.meterProvider, err = telemetry.NewNoopMeterProvider()
-			log.Must(inst.l, err, "failed to create meter provider")
-		} else if env.GetBool("OTEL_ENABLED", false) {
-			if env.GetBool("OTEL_METRICS_HOST_ENABLED", false) {
-				log.Must(inst.l, otelhost.Start(), "failed to start otel host metrics")
-			}
-			if env.GetBool("OTEL_METRICS_RUNTIME_ENABLED", false) {
-				log.Must(inst.l, otelruntime.Start(), "failed to start otel runtime metrics")
-			}
+			inst.meterProvider = telemetry.NewNoopMeterProvider()
 		}
-		inst.meter = telemetry.Meter()
 
 		if inst.traceProvider == nil {
-			inst.traceProvider, err = telemetry.NewNoopTraceProvider()
-			log.Must(inst.l, err, "failed to create tracer provider")
+			inst.traceProvider = telemetry.NewNoopTraceProvider()
 		}
-		inst.tracer = telemetry.Tracer()
 	}
 
 	// add probe
@@ -206,12 +189,12 @@ func (s *Server) Logger() *zap.Logger {
 
 // Meter returns the implementation meter
 func (s *Server) Meter() metric.Meter {
-	return s.meter
+	return telemetry.Meter()
 }
 
 // Tracer returns the implementation tracer
 func (s *Server) Tracer() trace.Tracer {
-	return s.tracer
+	return telemetry.Tracer()
 }
 
 // Config returns server config

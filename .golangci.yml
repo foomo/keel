@@ -60,7 +60,10 @@ linters:
     - wsl # add or remove empty lines [fast: true, auto-fix: false]
     - zerologlint # Detects the wrong usage of `zerolog` that a user forgets to dispatch with `Send` or `Msg` [fast: false, auto-fix: false]
 
+  # https://golangci-lint.run/docs/linters/
   settings:
+    exhaustive:
+      default-signifies-exhaustive: true
     gocritic:
       disabled-checks:
         - assignOp

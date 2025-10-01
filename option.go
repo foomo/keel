@@ -3,14 +3,10 @@ package keel
 import (
 	"context"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/foomo/keel/service"
-	otelpyroscope "github.com/grafana/otel-profiling-go"
-	"github.com/grafana/pyroscope-go"
 	"github.com/spf13/viper"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/config"
@@ -144,7 +140,7 @@ func WithPrometheusMeter(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
-			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider()
+			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create prometheus meter provider")
 		}
 	}
@@ -154,50 +150,8 @@ func WithPrometheusMeter(enabled bool) Option {
 func WithPyroscopeService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			tags := map[string]string{}
-			if v := os.Getenv("HOSTNAME"); v != "" {
-				tags["pod"] = v
-			}
-			if v := config.GetString(inst.Config(), "otel.service.git.ref", "")(); v != "" {
-				tags["service_git_ref"] = v
-			}
-			if v := config.GetString(inst.Config(), "otel.service.repository", "")(); v != "" {
-				tags["service_repository"] = v
-			}
-			if v := config.GetString(inst.Config(), "otel.service.root_path", "")(); v != "" {
-				tags["service_root_path"] = v
-			}
-			profileTypes := []pyroscope.ProfileType{
-				// Default
-				pyroscope.ProfileCPU,
-				pyroscope.ProfileAllocObjects,
-				pyroscope.ProfileAllocSpace,
-				pyroscope.ProfileInuseObjects,
-				pyroscope.ProfileInuseSpace,
-				// Optional
-				pyroscope.ProfileGoroutines,
-			}
-			if v := config.GetInt(inst.Config(), "otel.profile.block_rate", 0)(); v >= 0 {
-				runtime.SetBlockProfileRate(v)
-				profileTypes = append(profileTypes,
-					pyroscope.ProfileBlockCount,
-					pyroscope.ProfileBlockDuration,
-				)
-			}
-			if v := config.GetInt(inst.Config(), "otel.profile.mutex_fraction", 0)(); v >= 0 {
-				runtime.SetMutexProfileFraction(v)
-				profileTypes = append(profileTypes,
-					pyroscope.ProfileMutexCount,
-					pyroscope.ProfileMutexDuration,
-				)
-			}
 			svs := service.NewGoRoutine(inst.Logger(), "pyroscope", func(ctx context.Context, l *zap.Logger) error {
-				p, err := pyroscope.Start(pyroscope.Config{
-					ApplicationName: config.GetString(inst.Config(), "otel.service.name", telemetry.ServiceName)(),
-					Tags:            tags,
-					Logger:          telemetry.NewPyroscopeLogger(inst.l),
-					ProfileTypes:    profileTypes,
-				})
+				p, err := telemetry.NewProfiler()
 				if err != nil {
 					return err
 				}
@@ -205,9 +159,6 @@ func WithPyroscopeService(enabled bool) Option {
 				p.Flush(true)
 				l.Info("stopping pyroscope")
 				return p.Stop()
-			})
-			telemetry.AddTraceMiddleware(func(t trace.TracerProvider) trace.TracerProvider {
-				return otelpyroscope.NewTracerProvider(t)
 			})
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
