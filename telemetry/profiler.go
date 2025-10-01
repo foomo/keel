@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/foomo/keel/env"
 	otelpyroscope "github.com/grafana/otel-profiling-go"
@@ -63,7 +64,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		if value.Key == "service.name" {
 			continue
 		}
-		tags[string(value.Key)] = value.Value.Emit()
+		tags[strings.ReplaceAll(string(value.Key), ".", "_")] = value.Value.Emit()
 	}
 
 	p, err := pyroscope.Start(pyroscope.Config{
