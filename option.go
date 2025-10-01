@@ -151,7 +151,7 @@ func WithPyroscopeService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			svs := service.NewGoRoutine(inst.Logger(), "pyroscope", func(ctx context.Context, l *zap.Logger) error {
-				p, err := telemetry.NewProfiler()
+				p, err := telemetry.NewProfiler(ctx)
 				if err != nil {
 					return err
 				}

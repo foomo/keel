@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"context"
 	"os"
 	"runtime"
 
@@ -10,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-func NewProfiler() (*pyroscope.Profiler, error) {
+func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	tags := map[string]string{}
 	if v := os.Getenv("HOSTNAME"); v != "" {
 		tags["pod"] = v
@@ -51,6 +52,18 @@ func NewProfiler() (*pyroscope.Profiler, error) {
 		profileTypes = append(profileTypes,
 			pyroscope.ProfileGoroutines,
 		)
+	}
+
+	resource, err := NewResource(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, value := range resource.Attributes() {
+		if value.Key == "service.name" {
+			continue
+		}
+		tags[string(value.Key)] = value.Value.Emit()
 	}
 
 	p, err := pyroscope.Start(pyroscope.Config{
