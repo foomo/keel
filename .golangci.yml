@@ -81,6 +81,7 @@ linters:
       - path: _test\.go
         linters:
           - forbidigo
+          - unused
           - gosec
     paths:
       - examples
