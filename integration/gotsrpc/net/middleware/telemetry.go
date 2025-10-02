@@ -197,6 +197,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
 					pkg = parts[len(parts)-1] + "."
 				}
+
 				span.SetName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
 				span.SetAttributes(
 					attribute.String("gotsrpc.func", stats.Func),
