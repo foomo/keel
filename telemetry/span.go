@@ -37,6 +37,7 @@ func Span(ctx context.Context, handler func(ctx context.Context, span trace.Span
 }
 
 func End(sp trace.Span, err error) {
+	sp.SetStatus(codes.Ok, "")
 	if err != nil {
 		sp.RecordError(err)
 		sp.SetStatus(codes.Error, err.Error())
