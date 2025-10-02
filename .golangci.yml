@@ -1,3 +1,4 @@
+# https://golangci-lint.run/usage/configuration/
 # yaml-language-server: $schema=https://golangci-lint.run/jsonschema/golangci.jsonschema.json
 version: "2"
 
@@ -8,6 +9,7 @@ run:
 linters:
   default: all
   disable:
+    # TODO: enable linters
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: false, auto-fix: false]
     - forbidigo # Forbids identifiers [fast: false, auto-fix: false]
     - goconst # Finds repeated strings that could be replaced by a constant [fast: true, auto-fix: false]
@@ -20,10 +22,12 @@ linters:
     - tparallel # tparallel detects inappropriate usage of t.Parallel() method in your Go test codes. [fast: false, auto-fix: false]
     - noinlineerr
     - funcorder
-    - wsl_v5
-    ## Discouraged linters
     - godoclint
-    - embeddedstructfieldcheck
+    - wsl_v5
+    ## Deprected linters
+    - wsl
+    ## Discouraged linters
+    - embeddedstructfieldcheck #  Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
     - cyclop # checks function and package cyclomatic complexity [fast: false, auto-fix: false]
     - depguard # Go linter that checks if package imports are in a list of acceptable packages [fast: true, auto-fix: false]
     - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f()) [fast: true, auto-fix: false]
@@ -57,7 +61,6 @@ linters:
     - unparam # Reports unused function parameters [fast: false, auto-fix: false]
     - varnamelen # checks that the length of a variable's name matches its scope [fast: false, auto-fix: false]
     - wrapcheck # Checks that errors returned from external packages are wrapped [fast: false, auto-fix: false]
-    - wsl # add or remove empty lines [fast: true, auto-fix: false]
     - zerologlint # Detects the wrong usage of `zerolog` that a user forgets to dispatch with `Send` or `Msg` [fast: false, auto-fix: false]
 
   # https://golangci-lint.run/docs/linters/
