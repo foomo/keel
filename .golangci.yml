@@ -20,10 +20,10 @@ linters:
     - paralleltest # Detects missing usage of t.Parallel() method in your Go test [fast: false, auto-fix: false]
     - thelper # thelper detects tests helpers which is not start with t.Helper() method. [fast: false, auto-fix: false]
     - tparallel # tparallel detects inappropriate usage of t.Parallel() method in your Go test codes. [fast: false, auto-fix: false]
-    - noinlineerr
     ## Deprected linters
     - wsl
     ## Discouraged linters
+    - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
     - embeddedstructfieldcheck #  Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
     - cyclop # checks function and package cyclomatic complexity [fast: false, auto-fix: false]
     - depguard # Go linter that checks if package imports are in a list of acceptable packages [fast: true, auto-fix: false]
