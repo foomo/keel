@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
@@ -51,6 +52,9 @@ func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) Mi
 func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("BasicAuth")
+
 			// basic auth from request header
 			u, p, ok := r.BasicAuth()
 			if !ok || len(strings.TrimSpace(u)) < 1 || len(strings.TrimSpace(p)) < 1 {

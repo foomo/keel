@@ -3,6 +3,8 @@ package roundtripware
 import (
 	"net/http"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttpcontext "github.com/foomo/keel/net/http/context"
@@ -42,12 +44,15 @@ func SessionID(opts ...SessionIDOption) RoundTripware {
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("SessionID")
+
 			if value := r.Header.Get(o.Header); value == "" {
 				if value, ok := keelhttpcontext.GetSessionID(r.Context()); ok && value != "" {
+					span.SetAttributes(semconv.SessionID(value))
 					r.Header.Set(o.Header, value)
 				}
 			}
-
 			return next(r)
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -68,15 +69,18 @@ func Logger(opts ...LoggerOption) RoundTripware {
 	}
 
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
+		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Logger")
+
 			start := time.Now()
 			statusCode := http.StatusTeapot
 
 			// extend logger using local instance
-			l := log.WithHTTPRequestOut(l, req)
+			l := log.WithHTTPRequestOut(l, r)
 
 			// execute next handler
-			resp, err := next(req)
+			resp, err := next(r)
 			if err != nil {
 				l = log.WithError(l, err)
 			} else if resp != nil {

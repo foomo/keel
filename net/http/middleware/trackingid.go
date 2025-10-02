@@ -3,9 +3,12 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
@@ -112,6 +115,9 @@ func TrackingID(opts ...TrackingIDOption) Middleware {
 func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("TrackingID")
+
 			var tackingID string
 			if value := r.Header.Get(opts.Header); value != "" {
 				tackingID = value
@@ -130,6 +136,10 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 				return
 			} else {
 				tackingID = c.Value
+			}
+
+			if tackingID != "" {
+				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(opts.Header), tackingID))
 			}
 
 			if tackingID != "" && opts.SetHeader {

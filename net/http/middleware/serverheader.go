@@ -2,7 +2,10 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
@@ -58,6 +61,11 @@ func ServerHeaderWithOptions(opts ServerHeaderOptions) Middleware {
 		}
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("ResponseTime",
+				trace.WithAttributes(semconv.HTTPResponseHeader(strings.ToLower(opts.Header), name)),
+			)
+
 			w.Header().Add(opts.Header, name)
 			next.ServeHTTP(w, r)
 		})

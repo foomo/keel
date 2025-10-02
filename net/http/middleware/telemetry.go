@@ -8,8 +8,8 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -75,12 +75,18 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		}
 
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Telemetry")
+
 			if opts.InjectPropagationHeader {
 				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
 			}
 
 			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				labeler.Add(semconv.HTTPServerNameKey.String(name))
+				labeler.Add(
+					// Deprecated: will be removed
+					attribute.String("http.server_name", name),
+				)
 			}
 
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {

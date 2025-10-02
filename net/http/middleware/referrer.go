@@ -2,8 +2,11 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/foomo/keel/net/http/context"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -54,14 +57,22 @@ func Referer(opts ...RefererOption) Middleware {
 func RefererWithOptions(opts RefererOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var referer string
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Referer")
+
+			var (
+				key     string
+				referer string
+			)
 			for _, value := range opts.RequestHeader {
 				if referer = r.Header.Get(value); referer != "" {
+					key = value
 					break
 				}
 			}
 
 			if referer != "" && opts.SetContext {
+				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(key), referer))
 				r = r.WithContext(context.SetReferer(r.Context(), referer))
 			}
 

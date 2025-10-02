@@ -6,6 +6,7 @@ import (
 
 	jwt2 "github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/jwt"
@@ -141,6 +142,9 @@ func JWT(v *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
 func JWTWithOptions(v *jwt.JWT, contextKey interface{}, opts JWTOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("JWT")
+
 			claims := opts.ClaimsProvider()
 
 			// check existing claims from context

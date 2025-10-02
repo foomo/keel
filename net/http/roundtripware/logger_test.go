@@ -17,179 +17,121 @@ import (
 )
 
 func TestLogger(t *testing.T) {
-	// create logger & validate output
-	l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		assert.Equal(t, zapcore.InfoLevel, entry.Level)
-		assert.Equal(t, "sent request", entry.Message)
-
-		return nil
-	})))
-
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
-
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Logger(),
-		),
-	)
-
-	// create request
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
-
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-
-	defer resp.Body.Close()
-}
-
-func TestLogger_WithMessage(t *testing.T) {
-	testMessage := "my message"
-
-	// create logger & validate output
-	l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		assert.Equal(t, testMessage, entry.Message)
-		return nil
-	})))
-
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
-
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Logger(
-				roundtripware.LoggerWithMessage(testMessage),
-			),
-		),
-	)
-
-	// create request
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
-
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-
-	defer resp.Body.Close()
-}
-
-func TestLogger_WithErrorMessage(t *testing.T) {
-	testErrorMessage := "my error message"
-
-	// create logger & validate output
-	l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		assert.Equal(t, testErrorMessage, entry.Message)
-		return nil
-	})))
-
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
-
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			// trigger an internal error
-			func(l *zap.Logger, next roundtripware.Handler) roundtripware.Handler {
-				return func(r *http.Request) (*http.Response, error) {
-					return nil, errors.New("something went wrong")
-				}
+	tests := []struct {
+		name                string
+		loggerOpts          []roundtripware.LoggerOption
+		expectedLogLevel    zapcore.Level
+		expectedLogMessage  string
+		serverStatusCode    int
+		injectError         bool
+		expectResponseError bool
+	}{
+		{
+			name:                "default logger",
+			loggerOpts:          nil,
+			expectedLogLevel:    zapcore.InfoLevel,
+			expectedLogMessage:  "sent request",
+			serverStatusCode:    http.StatusOK,
+			injectError:         false,
+			expectResponseError: false,
+		},
+		{
+			name: "custom message",
+			loggerOpts: []roundtripware.LoggerOption{
+				roundtripware.LoggerWithMessage("my message"),
 			},
-			roundtripware.Logger(
-				roundtripware.LoggerWithErrorMessage(testErrorMessage),
-			),
-		),
-	)
-
-	// create request
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
-
-	// do request
-	resp, err := client.Do(req)
-	require.Nil(t, resp)
-	require.Error(t, err)
-
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-}
-
-func TestLogger_WithMinWarnCode(t *testing.T) {
-	// create logger & validate output
-	l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		assert.Equal(t, zapcore.WarnLevel, entry.Level)
-		return nil
-	})))
-
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
-
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Logger(
+			expectedLogLevel:    zapcore.InfoLevel,
+			expectedLogMessage:  "my message",
+			serverStatusCode:    http.StatusOK,
+			injectError:         false,
+			expectResponseError: false,
+		},
+		{
+			name: "custom error message",
+			loggerOpts: []roundtripware.LoggerOption{
+				roundtripware.LoggerWithErrorMessage("my error message"),
+			},
+			expectedLogLevel:    zapcore.ErrorLevel,
+			expectedLogMessage:  "my error message",
+			serverStatusCode:    http.StatusOK,
+			injectError:         true,
+			expectResponseError: true,
+		},
+		{
+			name: "min warn code",
+			loggerOpts: []roundtripware.LoggerOption{
 				roundtripware.LoggerWithMinWarnCode(200),
-			),
-		),
-	)
-
-	// create request
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
-
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-
-	defer resp.Body.Close()
-}
-
-func TestLogger_WithMinErrorCode(t *testing.T) {
-	// create logger & validate output
-	l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		assert.Equal(t, zapcore.ErrorLevel, entry.Level)
-		return nil
-	})))
-
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
-
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Logger(
+			},
+			expectedLogLevel:    zapcore.WarnLevel,
+			expectedLogMessage:  "sent request",
+			serverStatusCode:    http.StatusOK,
+			injectError:         false,
+			expectResponseError: false,
+		},
+		{
+			name: "min error code",
+			loggerOpts: []roundtripware.LoggerOption{
 				roundtripware.LoggerWithMinErrorCode(200),
-			),
-		),
-	)
+			},
+			expectedLogLevel:    zapcore.ErrorLevel,
+			expectedLogMessage:  "sent request",
+			serverStatusCode:    http.StatusOK,
+			injectError:         false,
+			expectResponseError: false,
+		},
+	}
 
-	// create request
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// create logger & validate output
+			l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
+				assert.Equal(t, tt.expectedLogLevel, entry.Level)
+				assert.Equal(t, tt.expectedLogMessage, entry.Message)
+				return nil
+			})))
 
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
+			// create http server with handler
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.serverStatusCode)
+			}))
+			defer svr.Close()
 
-	defer resp.Body.Close()
+			// build middleware chain
+			middlewares := []roundtripware.RoundTripware{}
+			if tt.injectError {
+				middlewares = append(middlewares, func(l *zap.Logger, next roundtripware.Handler) roundtripware.Handler {
+					return func(r *http.Request) (*http.Response, error) {
+						return nil, errors.New("something went wrong")
+					}
+				})
+			}
+			middlewares = append(middlewares, roundtripware.Logger(tt.loggerOpts...))
+
+			// create http client
+			client := keelhttp.NewHTTPClient(
+				keelhttp.HTTPClientWithRoundTripware(l, middlewares...),
+			)
+
+			// create request
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
+			require.NoError(t, err)
+
+			// do request
+			resp, err := client.Do(req)
+
+			// validate
+			if tt.expectResponseError {
+				require.Nil(t, resp)
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				defer resp.Body.Close()
+			}
+
+			if resp != nil {
+				defer resp.Body.Close()
+			}
+		})
+	}
 }

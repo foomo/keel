@@ -2,7 +2,10 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttpcontext "github.com/foomo/keel/net/http/context"
@@ -92,15 +95,26 @@ func RequestID(opts ...RequestIDOption) Middleware {
 func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var requestID string
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("RequestID")
+
+			var (
+				key       string
+				requestID string
+			)
 			for _, value := range opts.RequestHeader {
 				if requestID = r.Header.Get(value); requestID != "" {
+					key = value
 					break
 				}
 			}
 
 			if requestID == "" {
 				requestID = opts.Provider()
+			}
+
+			if key != "" && requestID != "" {
+				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(key), requestID))
 			}
 
 			if requestID != "" && opts.SetContext {

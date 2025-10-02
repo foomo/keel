@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/avast/retry-go/v4"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -91,10 +93,18 @@ func Retry(opts ...RetryOption) RoundTripware {
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
-			var resp *http.Response
+			span := trace.SpanFromContext(req.Context())
+			span.AddEvent("Retry")
+
+			var (
+				attempt int
+				resp    *http.Response
+			)
 
 			err := retry.Do(func() error {
+				attempt++
 				var err error
+				span.SetAttributes(semconv.HTTPRetryCountKey.Int(attempt))
 
 				resp, err = next(req) //nolint:bodyclose
 				if err != nil {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -64,6 +65,9 @@ func ResponseTime(opts ...ResponseTimeOption) Middleware {
 func ResponseTimeWithOptions(opts ResponseTimeOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("ResponseTime")
+
 			start := time.Now()
 			rw := WrapResponseWriter(w)
 			rw.SetWriteResponseTimeHeader(opts.SetHeader)

@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
@@ -112,6 +114,9 @@ func SessionID(opts ...SessionIDOption) Middleware {
 func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("SessionID")
+
 			var sessionID string
 			if value := r.Header.Get(opts.Header); value != "" {
 				sessionID = value
@@ -130,6 +135,10 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 				return
 			} else {
 				sessionID = c.Value
+			}
+
+			if sessionID != "" {
+				span.SetAttributes(semconv.SessionID(sessionID))
 			}
 
 			if sessionID != "" && opts.SetHeader {

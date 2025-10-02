@@ -10,6 +10,7 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/klauspost/compress/gzip"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -71,6 +72,9 @@ func GZipWithOptions(opts GZipOptions) Middleware {
 		}
 
 		return wrapper(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("GZip")
+
 			if r.Header.Get(stdhttp.HeaderContentEncoding.String()) != stdhttp.EncodingGzip.String() {
 				next.ServeHTTP(w, r)
 				return

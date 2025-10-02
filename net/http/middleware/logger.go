@@ -5,6 +5,7 @@ import (
 	"time"
 
 	httplog "github.com/foomo/keel/net/http/log"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -75,6 +76,9 @@ func LoggerWithInjectLabeler(v bool) LoggerOption {
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Logger")
+
 			start := time.Now()
 
 			// wrap response write to get access to status & size

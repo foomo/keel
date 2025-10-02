@@ -6,10 +6,11 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
-// Metric returns a RoundTripper which prints out the request & response object
+// Deprecated: use keelhttp.WithTelemetry instead.
 func Metric(meter metric.Meter, name, description string) RoundTripware {
 	histogram, err := meter.Float64Histogram(
 		name,
@@ -21,6 +22,9 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Metric")
+
 			ctx, labeler := LabelerFromContext(r.Context())
 
 			start := time.Now()

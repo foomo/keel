@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -49,6 +50,9 @@ func Recover(opts ...RecoverOption) Middleware {
 func RecoverWithOptions(opts RecoverOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Recover")
+
 			defer func() {
 				if e := recover(); e != nil {
 					err, ok := e.(error)

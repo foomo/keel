@@ -11,6 +11,7 @@ import (
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/klauspost/compress/gzip"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -60,9 +61,12 @@ func GZip(opts ...GZipOption) RoundTripware {
 		}
 		wrapper := gzhttp.Transport(RoundTripperFunc(next))
 
-		return func(req *http.Request) (*http.Response, error) {
+		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("GZip")
+
 			// Check if the request has a body
-			if req.Body != nil && req.Header.Get(stdhttp.HeaderContentEncoding.String()) != stdhttp.EncodingGzip.String() && req.ContentLength >= int64(o.MinSize) {
+			if r.Body != nil && r.Header.Get(stdhttp.HeaderContentEncoding.String()) != stdhttp.EncodingGzip.String() && r.ContentLength >= int64(o.MinSize) {
 				// Create a buffer to store the gzipped data
 				var buf bytes.Buffer
 
@@ -77,7 +81,7 @@ func GZip(opts ...GZipOption) RoundTripware {
 				defer pool.Put(gzipWriter)
 
 				// Copy the request body into the gzip writer
-				_, err := io.Copy(gzipWriter, req.Body)
+				_, err := io.Copy(gzipWriter, r.Body)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to copy body")
 				}
@@ -88,23 +92,23 @@ func GZip(opts ...GZipOption) RoundTripware {
 				}
 
 				// Close the original request body
-				if err := req.Body.Close(); err != nil {
+				if err := r.Body.Close(); err != nil {
 					return nil, errors.Wrap(err, "failed to close request body")
 				}
 
 				// Replace the original body with the gzipped body
-				req.Body = io.NopCloser(&buf)
+				r.Body = io.NopCloser(&buf)
 
 				// Set Content-Encoding header to indicate gzip compression
-				req.Header.Set(stdhttp.HeaderContentEncoding.String(), stdhttp.EncodingGzip.String())
+				r.Header.Set(stdhttp.HeaderContentEncoding.String(), stdhttp.EncodingGzip.String())
 
 				// Optional: Set the Content-Length header
 				cotentLength := buf.Len()
-				req.Header.Set(stdhttp.HeaderContentLength.String(), strconv.Itoa(cotentLength))
-				req.ContentLength = int64(cotentLength)
+				r.Header.Set(stdhttp.HeaderContentLength.String(), strconv.Itoa(cotentLength))
+				r.ContentLength = int64(cotentLength)
 			}
 
-			return wrapper.RoundTrip(req)
+			return wrapper.RoundTrip(r)
 		}
 	}
 }

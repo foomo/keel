@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -47,6 +48,9 @@ func Recover(opts ...RecoverOption) RoundTripware {
 func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Recover")
+
 			defer func() {
 				if e := recover(); e != nil {
 					err, ok := e.(error)
