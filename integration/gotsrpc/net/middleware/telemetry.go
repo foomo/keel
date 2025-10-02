@@ -52,20 +52,7 @@ var (
 		Name:        "process_duration_seconds",
 		Help:        "Specifies the duration of the gotsrpc process in seconds",
 		ConstLabels: nil,
-		Buckets:     []float64{0.05, 0.1, 0.5, 1, 3, 5, 10},
-	}, []string{
-		defaultGOTSRPCFunctionLabel,
-		defaultGOTSRPCServiceLabel,
-		defaultGOTSRPCPackageLabel,
-		defaultGOTSRPCPackageOperation,
-		defaultGOTSRPCError,
-	})
-	// Deprecated: use gotsrpc_process_duration_seconds
-	gotsrpcRequestDurationSummary = promauto.NewSummaryVec(prometheus.SummaryOpts{
-		Namespace:  "gotsrpc",
-		Name:       "request_duration_seconds",
-		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		Help:       "Specifies the duration of gotsrpc request in seconds summary",
+		Buckets:     []float64{0.01, 0.05, 0.1, 0.5, 1, 5, 10},
 	}, []string{
 		defaultGOTSRPCFunctionLabel,
 		defaultGOTSRPCServiceLabel,
@@ -188,7 +175,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				span.SetAttributes(attribute.String("gotsprc.payload", sanitizePayload(r)))
 			}
 
-			next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r.WithContext(ctx))
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
 				span.SetName(fmt.Sprintf("GOTSRPC %s.%s", stats.Service, stats.Func))
@@ -212,15 +199,12 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 				// create custom metics
 				if opts.ObserveMarshalling {
-					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "marshalling")
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "marshalling")
 				}
 				if opts.ObserveUnmarshalling {
-					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "unmarshalling")
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "unmarshalling")
 				}
 				if opts.ObserveExecution {
-					observe(span.SpanContext(), gotsrpcRequestDurationSummary, stats, "execution")
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "execution")
 				}
 
@@ -242,6 +226,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					}
 				}
 			}
+
 			telemetry.End(span, nil)
 		})
 	}
