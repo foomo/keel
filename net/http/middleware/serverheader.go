@@ -26,11 +26,13 @@ func GetDefaultServerHeaderOptions() ServerHeaderOptions {
 // ServerHeader middleware
 func ServerHeader(opts ...ServerHeaderOption) Middleware {
 	options := GetDefaultServerHeaderOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return ServerHeaderWithOptions(options)
 }
 
@@ -54,6 +56,7 @@ func ServerHeaderWithOptions(opts ServerHeaderOptions) Middleware {
 		if opts.Name != "" {
 			name = opts.Name
 		}
+
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add(opts.Header, name)
 			next.ServeHTTP(w, r)

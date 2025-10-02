@@ -46,5 +46,6 @@ func (l Logger) fields(keysAndValues []interface{}) []zap.Field {
 	for i := 0; i < len(keysAndValues); i += 2 {
 		ret = append(ret, zap.Any(fmt.Sprintf("%v", keysAndValues[i]), keysAndValues[i+1]))
 	}
+
 	return ret
 }

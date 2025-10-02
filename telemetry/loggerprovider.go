@@ -25,6 +25,7 @@ func NewZapLoggerProvider(ctx context.Context, logger *zap.Logger) (log.LoggerPr
 	if err != nil {
 		return nil, err
 	}
+
 	return newLoggerProvider(ctx, sdklog.NewSimpleProcessor(exp))
 }
 
@@ -34,6 +35,7 @@ func NewStdOutLoggerProvider(ctx context.Context) (log.LoggerProvider, error) {
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
 		opts = append(opts, stdoutlog.WithPrettyPrint())
 	}
+
 	if !env.GetBool("OTEL_EXPORTER_STDOUT_TIMESTAMPS", true) {
 		opts = append(opts, stdoutlog.WithoutTimestamps())
 	}
@@ -71,10 +73,12 @@ func newLoggerProvider(ctx context.Context, p sdklog.Processor) (log.LoggerProvi
 	if err != nil {
 		return nil, err
 	}
+
 	provider := sdklog.NewLoggerProvider(
 		sdklog.WithResource(resource),
 		sdklog.WithProcessor(p),
 	)
 	global.SetLoggerProvider(provider)
+
 	return provider, nil
 }

@@ -35,11 +35,13 @@ func TokenAuthWithTokenProvider(v TokenProvider) TokenAuthOption {
 // TokenAuth middleware
 func TokenAuth(token string, opts ...TokenAuthOption) Middleware {
 	options := GetDefaultTokenAuthOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TokenAuthWithOptions(token, options)
 }
 
@@ -57,6 +59,7 @@ func TokenAuthWithOptions(token string, opts TokenAuthOptions) Middleware {
 				httputils.UnauthorizedServerError(l, w, r, errors.New("invalid token"))
 				return
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}

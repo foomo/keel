@@ -99,9 +99,11 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 			s.Equal(http.StatusOK, statusCode)
 			s.JSONEq(`{"level":"info","disableCaller":true,"disableStacktrace":true}`, body)
 		}
+
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
+
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/debug"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
@@ -112,9 +114,11 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 			s.Equal(http.StatusOK, statusCode)
 			s.JSONEq(`{"level":"debug","disableCaller":true,"disableStacktrace":true}`, body)
 		}
+
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/info"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
+
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/debug"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
@@ -125,6 +129,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 			s.Equal(http.StatusOK, statusCode)
 			s.JSONEq(`{"level":"debug","disableCaller":false,"disableStacktrace":true}`, body)
 		}
+
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
@@ -135,6 +140,7 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 			s.Equal(http.StatusOK, statusCode)
 			s.JSONEq(`{"level":"debug","disableCaller":false,"disableStacktrace":false}`, body)
 		}
+
 		if statusCode, _, err := s.httpGet("http://localhost:55000/log/error"); s.NoError(err) {
 			s.Equal(http.StatusOK, statusCode)
 		}
@@ -159,12 +165,15 @@ func (s *KeelTestSuite) TestGraceful() {
 		waitChan := make(chan string)
 		go func(waitChan chan string) {
 			waitChan <- "ok"
+
 			s.l.Info("rending request to /sleep")
+
 			if statusCode, _, err := s.httpGet("http://localhost:55000/sleep"); s.NoError(err) {
 				s.l.Info("received response from /sleep")
 				s.Equal(http.StatusOK, statusCode)
 			}
 		}(waitChan)
+
 		s.l.Info("waiting for ")
 		<-waitChan
 	}
@@ -173,11 +182,14 @@ func (s *KeelTestSuite) TestGraceful() {
 		waitChan := make(chan string)
 		go func(waitChan chan string) {
 			waitChan <- "ok"
+
 			time.Sleep(time.Second)
+
 			if s.NoError(syscall.Kill(syscall.Getpid(), syscall.SIGINT)) {
 				s.l.Info("killed myself")
 			}
 		}(waitChan)
+
 		<-waitChan
 	}
 
@@ -194,11 +206,14 @@ func (s *KeelTestSuite) TestGraceful() {
 // runServer helper
 func (s *KeelTestSuite) runServer() {
 	l := s.svr.Logger()
+
 	waitChan := make(chan string)
 	go func(waitChan chan string) {
 		waitChan <- "finished"
+
 		s.svr.Run()
 	}(waitChan)
+
 	l.Debug("waiting for server process to start")
 	<-waitChan
 	time.Sleep(time.Second)

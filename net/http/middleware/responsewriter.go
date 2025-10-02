@@ -23,6 +23,7 @@ func WrapResponseWriter(w http.ResponseWriter) *responseWriter {
 	if wr, ok := w.(*responseWriter); ok {
 		return wr
 	}
+
 	return &responseWriter{
 		ResponseWriter: w,
 		start:          time.Now(),
@@ -41,6 +42,7 @@ func (w *responseWriter) StatusCode() int {
 	if !w.wroteHeader {
 		return http.StatusOK
 	}
+
 	return w.statusCode
 }
 
@@ -52,6 +54,7 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 	if w.writeResponseTimeHeader {
 		w.Header().Set(http2.HeaderXResponseTime, strconv.FormatInt(time.Since(w.start).Microseconds(), 10))
 	}
+
 	w.ResponseWriter.WriteHeader(statusCode)
 	w.statusCode = statusCode
 	w.wroteHeader = true
@@ -60,5 +63,6 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 func (w *responseWriter) Write(b []byte) (int, error) {
 	size, err := w.ResponseWriter.Write(b)
 	w.size += size
+
 	return size, err
 }

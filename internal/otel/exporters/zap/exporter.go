@@ -24,6 +24,7 @@ func New(logger *zap.Logger) (*Exporter, error) {
 	e := Exporter{
 		logger: logger,
 	}
+
 	return &e, nil
 }
 
@@ -41,6 +42,7 @@ func (e *Exporter) Export(ctx context.Context, records []sdklog.Record) error {
 
 		e.export(record)
 	}
+
 	return nil
 }
 
@@ -62,12 +64,15 @@ func (e *Exporter) export(r sdklog.Record) {
 	if v := r.EventName(); v != "" {
 		fields = append(fields, zap.String("eventName", v))
 	}
+
 	if r.TraceID().IsValid() {
 		fields = append(fields, zap.String("traceId", r.TraceID().String()))
 	}
+
 	if r.SpanID().IsValid() {
 		fields = append(fields, zap.String("spanId", r.SpanID().String()))
 	}
+
 	r.WalkAttributes(func(kv log.KeyValue) bool {
 		switch kv.Value.Kind() {
 		case log.KindBool:
@@ -81,6 +86,7 @@ func (e *Exporter) export(r sdklog.Record) {
 		default:
 			fields = append(fields, zap.Any(kv.Key, kv.Value))
 		}
+
 		return true
 	})
 

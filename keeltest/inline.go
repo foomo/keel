@@ -31,6 +31,7 @@ func Inline(t *testing.T, skip int, msgAndArgs ...interface{}) (string, bool) {
 	if err != nil {
 		t.Fatal("failed to read caller file", log.FError(err))
 	}
+
 	fileLines := strings.Split(string(fileBytes), "\n")
 	fileLine := fileLines[line-1]
 	fileLineParts := strings.Split(strings.TrimSpace(fileLine), " // INLINE: ")
@@ -49,8 +50,10 @@ func Inline(t *testing.T, skip int, msgAndArgs ...interface{}) (string, bool) {
 		if err := os.WriteFile(file, []byte(strings.Join(fileLines, "\n")), fileStat.Mode().Perm()); err != nil {
 			t.Fatal("failed to write inline", log.FError(err))
 		}
+
 		t.Errorf("wrote inline for %s:%d", file, line)
 	}
+
 	return "", false
 }
 

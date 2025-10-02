@@ -39,6 +39,7 @@ func DomainProviderWithMappings(v map[string]string) DomainProviderOption {
 
 func NewDomainProvider(opts ...DomainProviderOption) DomainProvider {
 	options := GetDefaultDomainProviderOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)

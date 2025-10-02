@@ -35,11 +35,13 @@ func RecoverWithDisablePrintStack(v bool) RecoverOption {
 // Recover middleware
 func Recover(opts ...RecoverOption) Middleware {
 	options := GetDefaultRecoverOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return RecoverWithOptions(options)
 }
 
@@ -53,6 +55,7 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 					if !ok {
 						err = fmt.Errorf("%v", e)
 					}
+
 					if errors.Is(err, http.ErrAbortHandler) {
 						panic(e)
 					}
@@ -65,6 +68,7 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 					httputils.InternalServerError(ll, w, r, errors.Wrap(err, "recovering from panic"))
 				}
 			}()
+
 			next.ServeHTTP(w, r)
 		})
 	}

@@ -17,12 +17,15 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	if v := os.Getenv("HOSTNAME"); v != "" {
 		tags["pod"] = v
 	}
+
 	if v := os.Getenv("OTEL_SERVICE_GIT_REF"); v != "" {
 		tags["service_git_ref"] = v
 	}
+
 	if v := os.Getenv("OTEL_SERVICE_REPOSITORY"); v != "" {
 		tags["service_repository"] = v
 	}
+
 	if v := os.Getenv("OTEL_SERVICE_ROOT_PATH"); v != "" {
 		tags["service_root_path"] = v
 	}
@@ -35,20 +38,25 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		pyroscope.ProfileInuseObjects,
 		pyroscope.ProfileInuseSpace,
 	}
+
 	if env.GetBool("OTEL_PROFILE_BLOCK_ENABLED", false) {
 		runtime.SetBlockProfileRate(env.GetInt("OTEL_PROFILE_BLOCK_RATE", 5))
+
 		profileTypes = append(profileTypes,
 			pyroscope.ProfileBlockCount,
 			pyroscope.ProfileBlockDuration,
 		)
 	}
+
 	if env.GetBool("OTEL_PROFILE_MUTEX_ENABLED", false) {
 		runtime.SetMutexProfileFraction(env.GetInt("OTEL_PROFILE_MUTEX_FRACTION", 5))
+
 		profileTypes = append(profileTypes,
 			pyroscope.ProfileMutexCount,
 			pyroscope.ProfileMutexDuration,
 		)
 	}
+
 	if env.GetBool("OTEL_PROFILE_GOROUTINES_ENABLED", false) {
 		profileTypes = append(profileTypes,
 			pyroscope.ProfileGoroutines,
@@ -64,6 +72,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		if value.Key == "service.name" {
 			continue
 		}
+
 		tags[strings.ReplaceAll(string(value.Key), ".", "_")] = value.Value.Emit()
 	}
 
@@ -78,5 +87,6 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	}
 
 	otel.SetTracerProvider(otelpyroscope.NewTracerProvider(otel.GetTracerProvider()))
+
 	return p, nil
 }

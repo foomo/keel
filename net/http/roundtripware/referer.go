@@ -32,11 +32,13 @@ func RefererWithHeader(v string) RefererOption {
 // Referer returns a RoundTripper which prints out the request & response object
 func Referer(opts ...RefererOption) RoundTripware {
 	o := GetDefaultRefererOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			if value := r.Header.Get(o.Header); value == "" {
@@ -44,6 +46,7 @@ func Referer(opts ...RefererOption) RoundTripware {
 					r.Header.Set(o.Header, value)
 				}
 			}
+
 			return next(r)
 		}
 	}

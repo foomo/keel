@@ -26,6 +26,7 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 			start := time.Now()
 			resp, err := next(r.WithContext(ctx))
 			duration := time.Since(start)
+
 			if err != nil {
 				return resp, err
 			}

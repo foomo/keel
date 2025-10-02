@@ -25,6 +25,7 @@ func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
 	handler.HandleFunc(path+"/profile", route)
 	handler.HandleFunc(path+"/symbol", route)
 	handler.HandleFunc(path+"/trace", route)
+
 	return NewHTTP(l, name, addr, handler)
 }
 

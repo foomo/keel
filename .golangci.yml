@@ -23,7 +23,6 @@ linters:
     - noinlineerr
     - funcorder
     - godoclint
-    - wsl_v5
     ## Deprected linters
     - wsl
     ## Discouraged linters

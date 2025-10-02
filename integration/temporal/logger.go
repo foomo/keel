@@ -29,6 +29,7 @@ func (t *logger) Info(msg string, keyvals ...interface{}) {
 			return
 		}
 	}
+
 	t.l.Info(msg, t.fields(keyvals...)...)
 }
 
@@ -59,5 +60,6 @@ func (t *logger) fields(keyvals ...interface{}) []zap.Field {
 			fields = append(fields, zap.Any("undefined", keyvals[i]))
 		}
 	}
+
 	return fields
 }

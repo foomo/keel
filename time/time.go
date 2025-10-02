@@ -32,6 +32,7 @@ func static() time.Time {
 func incremental() time.Time {
 	t := time.Unix(0, NowIncrementalNSec)
 	NowIncrementalNSec++
+
 	return t
 }
 

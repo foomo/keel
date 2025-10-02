@@ -25,11 +25,13 @@ func TimeProviderWithOffset(v time.Duration) TimeProviderOption {
 
 func NewTimeProvider(opts ...TimeProviderOption) TimeProvider {
 	options := GetDefaultTimeProviderOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return func() time.Time {
 		return time.Now().Add(options.Offset)
 	}

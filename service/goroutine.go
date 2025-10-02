@@ -74,6 +74,7 @@ func (s *GoRoutine) Healthz() error {
 	if !s.running.Load() {
 		return ErrServiceNotRunning
 	}
+
 	return nil
 }
 
@@ -83,20 +84,26 @@ func (s *GoRoutine) String() string {
 
 func (s *GoRoutine) Start(ctx context.Context) error {
 	s.l.Info("starting keel service")
+
 	ctx, cancel := context.WithCancelCause(ctx)
+
 	s.cancelLock.Lock()
 	s.cancel = cancel
 	s.cancelLock.Unlock()
+
 	for i := range s.parallel {
 		l := log.WithAttributes(s.l, log.KeelServiceInstKey.Int(i))
 		s.wg.Go(func() error {
 			return s.handler(ctx, l)
 		})
 	}
+
 	s.running.Store(true)
+
 	defer func() {
 		s.running.Store(false)
 	}()
+
 	return s.wg.Wait()
 }
 
@@ -105,5 +112,6 @@ func (s *GoRoutine) Close(ctx context.Context) error {
 	s.cancelLock.Lock()
 	s.cancel(ErrServiceShutdown)
 	s.cancelLock.Unlock()
+
 	return s.wg.Wait()
 }

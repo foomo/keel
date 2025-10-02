@@ -27,11 +27,13 @@ func GetDefaultPoweredByHeaderOptions() PoweredByHeaderOptions {
 // PoweredByHeader middleware
 func PoweredByHeader(opts ...PoweredByHeaderOption) Middleware {
 	options := GetDefaultPoweredByHeaderOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return PoweredByHeaderWithOptions(options)
 }
 

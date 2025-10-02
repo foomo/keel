@@ -37,11 +37,13 @@ func BasicAuthWithRealm(v string) BasicAuthOption {
 // BasicAuth middleware
 func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) Middleware {
 	options := GetDefaultBasicAuthOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return BasicAuthWithOptions(username, passwordHash, options)
 }
 
@@ -54,15 +56,18 @@ func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOp
 			if !ok || len(strings.TrimSpace(u)) < 1 || len(strings.TrimSpace(p)) < 1 {
 				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=%s", opts.Realm))
 				httputils.UnauthorizedServerError(l, w, r, errors.New("missing basic auth credentials"))
+
 				return
 			}
 
 			// Compare the username and password hash with the ones in the request
 			userMatch := subtle.ConstantTimeCompare([]byte(u), []byte(username)) == 1
+
 			errP := bcrypt.CompareHashAndPassword(passwordHash, []byte(p))
 			if !userMatch || errP != nil {
 				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=%s", opts.Realm))
 				httputils.UnauthorizedServerError(l, w, r, errors.New("invalid basic auth credentials"))
+
 				return
 			}
 

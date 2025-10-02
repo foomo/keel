@@ -33,11 +33,13 @@ func TrackingIDWithHeader(v string) TrackingIDOption {
 // TrackingID returns a RoundTripper which prints out the request & response object
 func TrackingID(opts ...TrackingIDOption) RoundTripware {
 	o := GetDefaultTrackingIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			if value := r.Header.Get(o.Header); value == "" {
@@ -45,6 +47,7 @@ func TrackingID(opts ...TrackingIDOption) RoundTripware {
 					r.Header.Set(o.Header, value)
 				}
 			}
+
 			return next(r)
 		}
 	}

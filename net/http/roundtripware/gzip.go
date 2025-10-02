@@ -45,11 +45,13 @@ func GZipWithMinSize(v int) GZipOption {
 // GZip returns a RoundTripware which logs all requests
 func GZip(opts ...GZipOption) RoundTripware {
 	o := DefaultGZipOptions
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		pool := sync.Pool{
 			New: func() interface{} {
@@ -57,6 +59,7 @@ func GZip(opts ...GZipOption) RoundTripware {
 			},
 		}
 		wrapper := gzhttp.Transport(RoundTripperFunc(next))
+
 		return func(req *http.Request) (*http.Response, error) {
 			// Check if the request has a body
 			if req.Body != nil && req.Header.Get(stdhttp.HeaderContentEncoding.String()) != stdhttp.EncodingGzip.String() && req.ContentLength >= int64(o.MinSize) {

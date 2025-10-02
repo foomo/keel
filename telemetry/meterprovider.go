@@ -33,6 +33,7 @@ func NewStdOutMeterProvider(ctx context.Context, opts ...stdoutmetric.Option) (m
 		enc.SetIndent("", "  ")
 		opts = append(opts, stdoutmetric.WithEncoder(enc))
 	}
+
 	if !env.GetBool("OTEL_EXPORTER_STDOUT_TIMESTAMP", true) {
 		opts = append(opts, stdoutmetric.WithoutTimestamps())
 	}
@@ -43,6 +44,7 @@ func NewStdOutMeterProvider(ctx context.Context, opts ...stdoutmetric.Option) (m
 	}
 
 	reader := sdkmetric.NewPeriodicReader(exporter)
+
 	return newMeterProvider(ctx, reader)
 }
 
@@ -52,6 +54,7 @@ func NewPrometheusMeterProvider(ctx context.Context) (metric.MeterProvider, erro
 	if err != nil {
 		return nil, err
 	}
+
 	return newMeterProvider(ctx, exporter)
 }
 
@@ -61,6 +64,7 @@ func newMeterProvider(ctx context.Context, r sdkmetric.Reader) (metric.MeterProv
 			return nil, err
 		}
 	}
+
 	if env.GetBool("OTEL_METRICS_RUNTIME_ENABLED", false) {
 		if err := otelruntime.Start(); err != nil {
 			return nil, err
@@ -78,5 +82,6 @@ func newMeterProvider(ctx context.Context, r sdkmetric.Reader) (metric.MeterProv
 	)
 
 	otel.SetMeterProvider(provider)
+
 	return provider, nil
 }

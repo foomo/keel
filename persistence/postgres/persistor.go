@@ -44,7 +44,6 @@ func DefaultOptions() Options {
 
 func New(ctx context.Context, dns string, opts ...Option) (*Persistor, error) {
 	// urlExample := "postgres://username:password@localhost:5432/database_name"
-
 	o := DefaultOptions()
 	for _, opt := range opts {
 		opt(&o)
@@ -85,6 +84,7 @@ func (p *Persistor) TableExists(ctx context.Context, name string) (bool, error) 
 	} else if err != nil {
 		return false, err
 	}
+
 	return true, nil
 }
 

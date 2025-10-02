@@ -13,6 +13,7 @@ var (
 
 func Readme() string {
 	var rows [][]string
+
 	md := &markdown.Markdown{}
 
 	for db, collections := range dbs {
@@ -21,6 +22,7 @@ func Readme() string {
 			if v, ok := indices[db][collection]; ok {
 				i += strings.Join(v, "`, `")
 			}
+
 			rows = append(rows, []string{
 				markdown.Code(db),
 				markdown.Code(collection),

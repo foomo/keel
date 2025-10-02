@@ -257,5 +257,6 @@ func NewHTTPClient(opts ...HTTPClientOption) *http.Client {
 	for _, opt := range opts {
 		opt(inst)
 	}
+
 	return inst
 }

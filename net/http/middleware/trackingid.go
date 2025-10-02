@@ -98,11 +98,13 @@ func TrackingIDWithGenerator(v TrackingIDGenerator) TrackingIDOption {
 // TrackingID middleware
 func TrackingID(opts ...TrackingIDOption) Middleware {
 	options := GetDefaultTrackingIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TrackingIDWithOptions(options)
 }
 
@@ -129,12 +131,15 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 			} else {
 				tackingID = c.Value
 			}
+
 			if tackingID != "" && opts.SetHeader {
 				r.Header.Set(opts.Header, tackingID)
 			}
+
 			if tackingID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetTrackingID(r.Context(), tackingID))
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -145,5 +150,6 @@ func TrackingIDFromContext(ctx context.Context) string {
 	if value, ok := keelhttpcontext.GetTrackingID(ctx); ok {
 		return value
 	}
+
 	return ""
 }

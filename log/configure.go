@@ -14,6 +14,7 @@ func Configure(l *zap.Logger) *Config {
 	if l == nil {
 		l = Logger()
 	}
+
 	return &Config{l: l.With()}
 }
 

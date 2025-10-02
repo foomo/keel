@@ -32,11 +32,14 @@ func NewKey(id string, public *rsa.PublicKey, private *rsa.PrivateKey) Key {
 
 // NewKeyFromFilenames returns a new Key from the given file names
 func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Key, error) {
-	var id string
-	var public *rsa.PublicKey
-	var private *rsa.PrivateKey
+	var (
+		id      string
+		public  *rsa.PublicKey
+		private *rsa.PrivateKey
+	)
 
 	// load private key
+
 	if privateKeyPemFilename != "" {
 		if value, err := os.ReadFile(privateKeyPemFilename); err != nil {
 			return Key{}, errors.Wrap(err, "failed to read private key: "+privateKeyPemFilename)
@@ -72,6 +75,7 @@ func NewDeprecatedKeysFromFilenames(publicKeyPemFilenames []string) ([]Key, erro
 			deprecatedKeys = append(deprecatedKeys, value)
 		}
 	}
+
 	return deprecatedKeys, nil
 }
 
@@ -81,9 +85,11 @@ func NewKeysFromFilenames(publicKeyPemFilename, privateKeyPemFilename string, de
 	if err != nil {
 		return Key{}, nil, err
 	}
+
 	deprecatedKeys, err := NewDeprecatedKeysFromFilenames(deprecatedPublicKeyPemFilenames)
 	if err != nil {
 		return Key{}, nil, err
 	}
+
 	return key, deprecatedKeys, nil
 }

@@ -51,13 +51,16 @@ func (s *ServiceHTTP) URL() string {
 
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
+
 	if value := strings.Split(s.server.Listener.Addr().String(), ":"); len(value) == 2 {
 		ip, port := value[0], value[1]
 		if ip == "" {
 			ip = "0.0.0.0"
 		}
+
 		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
 	}
+
 	s.l.Info("starting http test service", fields...)
 	s.server.Config.BaseContext = func(_ net.Listener) context.Context { return ctx }
 	s.server.Start()
@@ -68,5 +71,6 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 func (s *ServiceHTTP) Close(_ context.Context) error {
 	s.l.Info("stopping http test service")
 	s.server.Close()
+
 	return nil
 }

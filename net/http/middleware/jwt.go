@@ -127,11 +127,13 @@ func JWTWithSetContext(v bool) JWTOption {
 // JWT middleware
 func JWT(v *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
 	options := GetDefaultJWTOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return JWTWithOptions(v, contextKey, options)
 }
 

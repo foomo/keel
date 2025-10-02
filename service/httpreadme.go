@@ -21,15 +21,18 @@ func NewHTTPReadme(l *zap.Logger, name, addr, path string, readmers func() []int
 		case http.MethodGet:
 			w.Header().Add("Content-Type", "text/markdown")
 			w.WriteHeader(http.StatusOK)
+
 			md := &markdown.Markdown{}
 			for _, readmer := range readmers() {
 				md.Print(readmer.Readme())
 			}
+
 			_, _ = w.Write([]byte(md.String()))
 		default:
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
+
 	return NewHTTP(l, name, addr, handler)
 }
 

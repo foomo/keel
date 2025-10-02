@@ -44,5 +44,6 @@ func GetRequestDomain(r *http.Request) string {
 	if portIndex := strings.Index(domain, ":"); portIndex != -1 {
 		domain = domain[:portIndex]
 	}
+
 	return domain
 }

@@ -98,11 +98,13 @@ func SessionIDWithGenerator(v SessionIDGenerator) SessionIDOption {
 // SessionID middleware
 func SessionID(opts ...SessionIDOption) Middleware {
 	options := GetDefaultSessionIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return SessionIDWithOptions(options)
 }
 
@@ -129,12 +131,15 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 			} else {
 				sessionID = c.Value
 			}
+
 			if sessionID != "" && opts.SetHeader {
 				r.Header.Set(opts.Header, sessionID)
 			}
+
 			if sessionID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetSessionID(r.Context(), sessionID))
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -145,5 +150,6 @@ func SessionIDFromContext(ctx context.Context) string {
 	if value, ok := keelhttpcontext.GetSessionID(ctx); ok {
 		return value
 	}
+
 	return ""
 }

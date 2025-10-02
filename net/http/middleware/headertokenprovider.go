@@ -41,11 +41,13 @@ func HeaderTokenProviderWithHeader(v string) HeaderTokenProviderOption {
 
 func HeaderTokenProvider(opts ...HeaderTokenProviderOption) TokenProvider {
 	options := GetDefaultHeaderTokenOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return func(r *http.Request) (string, error) {
 		if value := r.Header.Get(options.Header); value == "" {
 			return "", nil

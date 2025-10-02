@@ -21,6 +21,7 @@ func TestLogger(t *testing.T) {
 	l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
 		assert.Equal(t, zapcore.InfoLevel, entry.Level)
 		assert.Equal(t, "sent request", entry.Message)
+
 		return nil
 	})))
 
@@ -44,6 +45,7 @@ func TestLogger(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 }
 
@@ -78,6 +80,7 @@ func TestLogger_WithMessage(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 }
 
@@ -119,6 +122,7 @@ func TestLogger_WithErrorMessage(t *testing.T) {
 	resp, err := client.Do(req)
 	require.Nil(t, resp)
 	require.Error(t, err)
+
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -153,6 +157,7 @@ func TestLogger_WithMinWarnCode(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 }
 
@@ -185,5 +190,6 @@ func TestLogger_WithMinErrorCode(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 }

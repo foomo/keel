@@ -125,6 +125,7 @@ func (s *Stream) connect() error {
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to nats addr "+s.addr)
 	}
+
 	s.l.Info("nats connected", zap.String("addr", s.addr))
 
 	// create jet stream
@@ -141,6 +142,7 @@ func (s *Stream) connect() error {
 	if err != nil {
 		return err
 	}
+
 	s.l.Info("jetstream created", zap.String("namespace", s.namespace))
 
 	// create / update stream if config exists
@@ -162,6 +164,7 @@ func (s *Stream) connect() error {
 			s.info = info
 		}
 	}
+
 	s.l.Info("jetstream configured")
 
 	s.js = js
@@ -232,6 +235,7 @@ func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 			panic(e)
 		},
 	}
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(stream)
@@ -276,6 +280,7 @@ func (s *Stream) Publisher(subject string, opts ...PublisherOption) *Publisher {
 		namespace: s.namespace,
 		marshal:   json.Marshal,
 	}
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(pub)
@@ -305,6 +310,7 @@ func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscribe
 		namespace: s.namespace,
 		unmarshal: json.Unmarshal,
 	}
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(sub)

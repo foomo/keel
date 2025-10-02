@@ -18,6 +18,7 @@ func With(l *zap.Logger, fields ...zap.Field) *zap.Logger {
 	if l == nil {
 		l = Logger()
 	}
+
 	return l.With(fields...)
 }
 
@@ -25,10 +26,12 @@ func WithAttributes(l *zap.Logger, attrs ...attribute.KeyValue) *zap.Logger {
 	if l == nil {
 		l = Logger()
 	}
+
 	fields := make([]zap.Field, len(attrs))
 	for i, attr := range attrs {
 		fields[i] = zap.Any(strings.ReplaceAll(string(attr.Key), ".", "_"), attr.Value.AsInterface())
 	}
+
 	return l.With(fields...)
 }
 
@@ -44,6 +47,7 @@ func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
 		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
 	}
+
 	return l
 }
 
@@ -122,6 +126,7 @@ func WithHTTPTrackingID(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 	var clientIP string
+
 	if value := r.Header.Get("X-Forwarded-For"); value != "" {
 		if i := strings.IndexAny(value, ", "); i > 0 {
 			clientIP = value[:i]
@@ -135,9 +140,11 @@ func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 	} else {
 		clientIP = r.RemoteAddr
 	}
+
 	if clientIP != "" {
 		return With(l, FHTTPClientIP(clientIP))
 	}
+
 	return l
 }
 
@@ -151,6 +158,7 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPFlavor(l, r)
 	l = WithHTTPClientIP(l, r)
 	l = WithTraceID(l, r.Context())
+
 	return With(l,
 		FHTTPMethod(r.Method),
 		FHTTPTarget(r.RequestURI),
@@ -167,6 +175,7 @@ func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPScheme(l, r)
 	l = WithHTTPFlavor(l, r)
 	l = WithTraceID(l, r.Context())
+
 	return With(l,
 		FHTTPMethod(r.Method),
 		FHTTPTarget(r.URL.Path),

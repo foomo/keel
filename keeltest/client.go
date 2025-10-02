@@ -63,7 +63,9 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 	} else {
 		req = r
 	}
+
 	req.Header.Set("Content-Type", "application/json")
+
 	if resp, err := c.Do(req); err != nil {
 		return nil, 0, err
 	} else if body, err := c.readBody(resp); err != nil {
@@ -75,6 +77,7 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 
 func (c *HTTPClient) readBody(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
+
 	if body, err := io.ReadAll(resp.Body); err != nil {
 		return nil, err
 	} else {

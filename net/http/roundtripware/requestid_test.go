@@ -42,6 +42,7 @@ func TestRequestID(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate
@@ -78,6 +79,7 @@ func TestRequestID_Context(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate
@@ -115,6 +117,7 @@ func TestRequestID_WithProvider(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate
@@ -123,6 +126,7 @@ func TestRequestID_WithProvider(t *testing.T) {
 
 func TestRequestID_WithHeader(t *testing.T) {
 	var testRequestID string
+
 	testHeader := "X-Custom-Header"
 
 	// create logger
@@ -152,6 +156,7 @@ func TestRequestID_WithHeader(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate

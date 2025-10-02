@@ -38,11 +38,13 @@ func GetDefaultTelemetryOptions() TelemetryOptions {
 // Telemetry middleware
 func Telemetry(opts ...TelemetryOption) Middleware {
 	options := GetDefaultTelemetryOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TelemetryWithOptions(options)
 }
 

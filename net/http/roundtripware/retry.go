@@ -25,6 +25,7 @@ func GetDefaultRetryOptions() RetryOptions {
 			if resp.StatusCode != http.StatusOK {
 				return errors.New("status code not ok")
 			}
+
 			return nil
 		},
 	}
@@ -81,22 +82,28 @@ func RetryWithRetryIf(retryIf retry.RetryIfFunc) RetryOption {
 // Retry returns a RoundTripper which retries failed requests
 func Retry(opts ...RetryOption) RoundTripware {
 	o := GetDefaultRetryOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
 			var resp *http.Response
+
 			err := retry.Do(func() error {
 				var err error
+
 				resp, err = next(req) //nolint:bodyclose
 				if err != nil {
 					return err
 				}
+
 				return o.Handler(resp)
 			}, o.retryOptions...)
+
 			return resp, err
 		}
 	}

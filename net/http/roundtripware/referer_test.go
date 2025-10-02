@@ -42,6 +42,7 @@ func TestReferer(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate
@@ -78,6 +79,7 @@ func TestReferer_Context(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate
@@ -117,6 +119,7 @@ func TestReferer_WithHeader(t *testing.T) {
 	// do request
 	resp, err := client.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	// validate

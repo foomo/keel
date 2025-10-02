@@ -43,11 +43,13 @@ func GZipWithMinSize(v int) GZipOption {
 // GZip middleware
 func GZip(opts ...GZipOption) Middleware {
 	options := DefaultGZipOptions
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return GZipWithOptions(options)
 }
 
@@ -59,6 +61,7 @@ func GZipWithOptions(opts GZipOptions) Middleware {
 				return new(gzip.Reader)
 			},
 		}
+
 		wrapper, err := gzhttp.NewWrapper(
 			gzhttp.CompressionLevel(opts.CompressionLevel),
 			gzhttp.MinSize(opts.MinSize),
@@ -66,6 +69,7 @@ func GZipWithOptions(opts GZipOptions) Middleware {
 		if err != nil {
 			panic(err)
 		}
+
 		return wrapper(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get(stdhttp.HeaderContentEncoding.String()) != stdhttp.EncodingGzip.String() {
 				next.ServeHTTP(w, r)

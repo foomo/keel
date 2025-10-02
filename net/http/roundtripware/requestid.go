@@ -43,11 +43,13 @@ func RequestIDWithProvider(v provider.RequestID) RequestIDOption {
 // RequestID returns a RoundTripper which prints out the request & response object
 func RequestID(opts ...RequestIDOption) RoundTripware {
 	o := GetDefaultRequestIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			if value := r.Header.Get(o.Header); value == "" {
@@ -55,13 +57,16 @@ func RequestID(opts ...RequestIDOption) RoundTripware {
 				if value, ok := keelhttpcontext.GetRequestID(r.Context()); ok && value != "" {
 					requestID = value
 				}
+
 				if requestID == "" {
 					requestID = o.Provider()
 				}
+
 				if requestID != "" {
 					r.Header.Set(o.Header, requestID)
 				}
 			}
+
 			return next(r)
 		}
 	}

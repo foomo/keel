@@ -28,6 +28,7 @@ func (e *Error) Is(err error) bool {
 	} else if v, ok := err.(*Error); ok && v != nil {
 		return e.Error() == v.Error()
 	}
+
 	return false
 }
 

@@ -18,6 +18,7 @@ type Labeler struct {
 func (l *Labeler) Add(fields ...zap.Field) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
 	l.fields = append(l.fields, fields...)
 }
 
@@ -25,8 +26,10 @@ func (l *Labeler) Add(fields ...zap.Field) {
 func (l *Labeler) Get() []zap.Field {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
 	ret := make([]zap.Field, len(l.fields))
 	copy(ret, l.fields)
+
 	return ret
 }
 
@@ -39,5 +42,6 @@ func LabelerFromContext(ctx context.Context, key LabelerContextKey) (*Labeler, b
 	if l, ok := ctx.Value(key).(*Labeler); ok {
 		return l, true
 	}
+
 	return nil, false
 }

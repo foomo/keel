@@ -33,11 +33,13 @@ func GetDefaultLoggerOptions() LoggerOptions {
 // Logger middleware
 func Logger(opts ...LoggerOption) Middleware {
 	options := GetDefaultLoggerOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return LoggerWithOptions(options)
 }
 

@@ -65,6 +65,7 @@ func TestGzip(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		// validate response header
@@ -89,6 +90,7 @@ func TestGzip(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		// validate response header
@@ -126,12 +128,14 @@ func TestGZipBadRequest(t *testing.T) {
 	req.Header.Set(stdhttp.HeaderContentEncoding.String(), stdhttp.EncodingGzip.String())
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
+
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	defer resp.Body.Close()
 }
 
 func gzipString(body string) ([]byte, error) {
 	var buf bytes.Buffer
+
 	gz := gzip.NewWriter(&buf)
 
 	_, err := gz.Write([]byte(body))
@@ -154,6 +158,7 @@ func gunzipString(body []byte) ([]byte, error) {
 	defer gr.Close()
 
 	var buf bytes.Buffer
+
 	_, err = io.Copy(&buf, gr)
 	if err != nil {
 		return nil, err

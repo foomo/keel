@@ -8,6 +8,7 @@ import (
 
 func Readme() string {
 	var rows [][]string
+
 	md := &markdown.Markdown{}
 
 	{
@@ -20,6 +21,7 @@ func Readme() string {
 					markdown.Code(fmt.Sprintf("%v", fallback)),
 				})
 			}
+
 			return true
 		})
 
@@ -32,6 +34,7 @@ func Readme() string {
 					"",
 				})
 			}
+
 			return true
 		})
 	}

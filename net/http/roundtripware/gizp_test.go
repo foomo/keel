@@ -27,13 +27,16 @@ func TestGZip(t *testing.T) {
 	// create logger
 	l := zaptest.NewLogger(t)
 
-	var payload string
-	var compressed bool
+	var (
+		payload    string
+		compressed bool
+	)
 
 	// create http server with handler
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// validate request header
 		assert.Equal(t, stdhttp.EncodingGzip.String(), stdhttp.HeaderAcceptEncoding.Get(r.Header))
+
 		if compressed {
 			assert.Equal(t, stdhttp.EncodingGzip.String(), stdhttp.HeaderContentEncoding.Get(r.Header))
 		} else {
@@ -43,6 +46,7 @@ func TestGZip(t *testing.T) {
 		// validate request body
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err)
+
 		defer r.Body.Close()
 
 		if compressed {
@@ -58,6 +62,7 @@ func TestGZip(t *testing.T) {
 		if compressed {
 			w.Header().Set(stdhttp.HeaderContentEncoding.String(), r.Header.Get(stdhttp.HeaderContentEncoding.String()))
 		}
+
 		_, _ = w.Write(body)
 	}))
 	defer svr.Close()
@@ -81,6 +86,7 @@ func TestGZip(t *testing.T) {
 		// do request
 		resp, err := client.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		// validate repsone header
@@ -104,6 +110,7 @@ func TestGZip(t *testing.T) {
 		// do request
 		resp, err := client.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		// validate repsone header
@@ -128,6 +135,7 @@ func gunzipString(body []byte) ([]byte, error) {
 	defer gr.Close()
 
 	var buf bytes.Buffer
+
 	_, err = io.Copy(&buf, gr)
 	if err != nil {
 		return nil, err

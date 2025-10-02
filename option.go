@@ -96,6 +96,7 @@ func WithStdOutTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
+
 			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create std out trace provider")
 		}
@@ -107,6 +108,7 @@ func WithStdOutMeter(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
+
 			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create std out meter provider")
 		}
@@ -118,6 +120,7 @@ func WithOTLPGRPCTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
+
 			inst.traceProvider, err = telemetry.NewOTLPGRPCTraceProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
 		}
@@ -129,6 +132,7 @@ func WithOTLPHTTPTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
+
 			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create otlp http trace provider")
 		}
@@ -140,6 +144,7 @@ func WithPrometheusMeter(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
 			var err error
+
 			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider(inst.ctx)
 			log.Must(inst.l, err, "failed to create prometheus meter provider")
 		}
@@ -155,9 +160,11 @@ func WithPyroscopeService(enabled bool) Option {
 				if err != nil {
 					return err
 				}
+
 				<-ctx.Done()
 				p.Flush(true)
 				l.Info("stopping pyroscope")
+
 				return p.Stop()
 			})
 			inst.initServices = append(inst.initServices, svs)

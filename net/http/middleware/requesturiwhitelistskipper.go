@@ -10,10 +10,12 @@ func RequestURIWhitelistSkipper(uris ...string) Skipper {
 	for _, uri := range uris {
 		urisMap[uri] = true
 	}
+
 	return func(r *http.Request) bool {
 		if _, ok := urisMap[r.RequestURI]; ok {
 			return false
 		}
+
 		return true
 	}
 }

@@ -10,6 +10,7 @@ func DefaultKeyFunc(key Key, deprecatedKeys map[string]Key) jwt.Keyfunc {
 		if token.Method.Alg() != jwt.SigningMethodRS256.Name {
 			return nil, errors.New("unexpected jwt signing method: " + token.Method.Alg())
 		}
+
 		if kid, ok := token.Header["kid"]; !ok {
 			return nil, errors.New("missing key identifier")
 		} else if kidString, ok := kid.(string); !ok {

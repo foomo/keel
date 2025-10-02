@@ -12,6 +12,7 @@ var MaxTimeDifferenceBetweenNodes = time.Second * 30
 
 func NewStandardClaims() jwt.StandardClaims {
 	now := time.Now().Add(-MaxTimeDifferenceBetweenNodes)
+
 	return jwt.StandardClaims{
 		IssuedAt:  now.Unix(),
 		NotBefore: now.Unix(),
@@ -21,5 +22,6 @@ func NewStandardClaims() jwt.StandardClaims {
 func NewStandardClaimsWithLifetime(lifetime time.Duration) jwt.StandardClaims {
 	claims := NewStandardClaims()
 	claims.ExpiresAt = claims.IssuedAt + int64(lifetime.Seconds())
+
 	return claims
 }

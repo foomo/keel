@@ -127,6 +127,7 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	for _, opt := range o.ClientOptions {
 		opt(clientOptions)
 	}
+
 	if clientOptions.LoggerOptions == nil && len(o.ClientLoggerOptions) > 0 {
 		clientOptions.LoggerOptions = options.Logger()
 		for _, opt := range o.ClientLoggerOptions {
@@ -186,11 +187,13 @@ func (p Persistor) HasCollection(ctx context.Context, name string) (bool, error)
 	if err != nil {
 		return false, err
 	}
+
 	for i := range names {
 		if names[i] == name {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 

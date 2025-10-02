@@ -40,11 +40,13 @@ func RefererWithSetContext(v bool) RefererOption {
 // Referer middleware
 func Referer(opts ...RefererOption) Middleware {
 	options := GetDefaultRefererOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return RefererWithOptions(options)
 }
 
@@ -58,9 +60,11 @@ func RefererWithOptions(opts RefererOptions) Middleware {
 					break
 				}
 			}
+
 			if referer != "" && opts.SetContext {
 				r = r.WithContext(context.SetReferer(r.Context(), referer))
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}

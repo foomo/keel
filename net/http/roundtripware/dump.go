@@ -14,6 +14,7 @@ func Dump() RoundTripware {
 			dumpRequest(req)
 			resp, err := next(req)
 			dumpResponse(req, resp)
+
 			return resp, err
 		}
 	}
@@ -35,6 +36,7 @@ func DumpResponse() RoundTripware {
 		return func(req *http.Request) (*http.Response, error) {
 			resp, err := next(req)
 			dumpResponse(req, resp)
+
 			return resp, err
 		}
 	}
@@ -54,6 +56,7 @@ func dumpResponse(req *http.Request, resp *http.Response) {
 		fmt.Println("Response is nil") //nolint:forbidigo
 		return
 	}
+
 	if resp.Header != nil && resp.Header.Get("Content-Type") != "" {
 		var body string
 		if resp.Body, body = readBodyPretty(resp.Header.Get("Content-Type"), resp.Body); body != "" {

@@ -104,6 +104,7 @@ func TestCORS(t *testing.T) {
 			}))
 			r := httptest.NewRequest(tt.method, tt.target, nil)
 			r.Header.Add(keelhttp.HeaderOrigin, tt.origin)
+
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, r)
 			tt.expect(t, r, w)

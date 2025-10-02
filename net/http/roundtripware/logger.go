@@ -60,11 +60,13 @@ func LoggerWithMinErrorCode(v int) LoggerOption {
 // Logger returns a RoundTripware which logs all requests
 func Logger(opts ...LoggerOption) RoundTripware {
 	o := GetDefaultLoggerOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
 			start := time.Now()
@@ -97,6 +99,7 @@ func Logger(opts ...LoggerOption) RoundTripware {
 			default:
 				l.Info(o.Message)
 			}
+
 			return resp, err
 		}
 	}

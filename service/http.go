@@ -70,6 +70,7 @@ func (s *HTTP) Healthz() error {
 	if !s.running.Load() {
 		return ErrServiceNotRunning
 	}
+
 	return nil
 }
 
@@ -79,31 +80,38 @@ func (s *HTTP) String() string {
 
 func (s *HTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
+
 	if value := strings.Split(s.server.Addr, ":"); len(value) == 2 {
 		ip, port := value[0], value[1]
 		if ip == "" {
 			ip = "0.0.0.0"
 		}
+
 		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
 	}
+
 	s.l.Info("starting keel service", fields...)
 	s.server.BaseContext = func(_ net.Listener) context.Context { return ctx }
 	s.server.RegisterOnShutdown(func() {
 		s.running.Store(false)
 	})
 	s.running.Store(true)
+
 	if err := s.server.ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, "failed to start service")
 	}
+
 	return nil
 }
 
 func (s *HTTP) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
+
 	if err := s.server.Shutdown(ctx); err != nil {
 		return errors.Wrap(err, "failed to stop service")
 	}
+
 	return nil
 }

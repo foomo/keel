@@ -32,6 +32,7 @@ func NewStdOutTraceProvider(ctx context.Context) (trace.TracerProvider, error) {
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
 		opts = append(opts, stdouttrace.WithPrettyPrint())
 	}
+
 	if !env.GetBool("OTEL_EXPORTER_STDOUT_TIMESTAMPS", true) {
 		opts = append(opts, stdouttrace.WithoutTimestamps())
 	}
@@ -52,6 +53,7 @@ func NewOTLPHTTPTraceProvider(ctx context.Context, opts ...otlptracehttp.Option)
 	if err != nil {
 		return nil, err
 	}
+
 	return newTracerProvider(ctx, exporter)
 }
 
@@ -63,6 +65,7 @@ func NewOTLPGRPCTraceProvider(ctx context.Context, opts ...otlptracegrpc.Option)
 	if err != nil {
 		return nil, err
 	}
+
 	return newTracerProvider(ctx, exporter)
 }
 
@@ -71,6 +74,7 @@ func newTracerProvider(ctx context.Context, exp sdktrace.SpanExporter) (trace.Tr
 	if err != nil {
 		return nil, err
 	}
+
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithResource(resource),
@@ -82,5 +86,6 @@ func newTracerProvider(ctx context.Context, exp sdktrace.SpanExporter) (trace.Tr
 	)
 
 	otel.SetTracerProvider(tracerProvider)
+
 	return tracerProvider, nil
 }

@@ -9,6 +9,7 @@ import (
 
 func WatchBool(ctx context.Context, fn func() bool, callback func(bool)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -19,6 +20,7 @@ func WatchBool(ctx context.Context, fn func() bool, callback func(bool)) {
 
 func WatchTime(ctx context.Context, fn func() time.Time, callback func(time.Time)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); !value.Equal(current) {
 			current = value
@@ -29,6 +31,7 @@ func WatchTime(ctx context.Context, fn func() time.Time, callback func(time.Time
 
 func WatchDuration(ctx context.Context, fn func() time.Duration, callback func(time.Duration)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -39,6 +42,7 @@ func WatchDuration(ctx context.Context, fn func() time.Duration, callback func(t
 
 func WatchInt(ctx context.Context, fn func() int, callback func(int)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -49,6 +53,7 @@ func WatchInt(ctx context.Context, fn func() int, callback func(int)) {
 
 func WatchInt32(ctx context.Context, fn func() int32, callback func(int32)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -59,6 +64,7 @@ func WatchInt32(ctx context.Context, fn func() int32, callback func(int32)) {
 
 func WatchInt64(ctx context.Context, fn func() int64, callback func(int64)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -69,6 +75,7 @@ func WatchInt64(ctx context.Context, fn func() int64, callback func(int64)) {
 
 func WatchFloat64(ctx context.Context, fn func() float64, callback func(float64)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -79,6 +86,7 @@ func WatchFloat64(ctx context.Context, fn func() float64, callback func(float64)
 
 func WatchString(ctx context.Context, fn func() string, callback func(string)) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -91,6 +99,7 @@ func WatchString(ctx context.Context, fn func() string, callback func(string)) {
 
 func WatchBoolChan(ctx context.Context, fn func() bool, ch chan bool) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -101,6 +110,7 @@ func WatchBoolChan(ctx context.Context, fn func() bool, ch chan bool) {
 
 func WatchTimeChan(ctx context.Context, fn func() time.Time, ch chan time.Time) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); !value.Equal(current) {
 			current = value
@@ -111,6 +121,7 @@ func WatchTimeChan(ctx context.Context, fn func() time.Time, ch chan time.Time) 
 
 func WatchDurationChan(ctx context.Context, fn func() time.Duration, ch chan time.Duration) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -121,6 +132,7 @@ func WatchDurationChan(ctx context.Context, fn func() time.Duration, ch chan tim
 
 func WatchIntChan(ctx context.Context, fn func() int, ch chan int) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -131,6 +143,7 @@ func WatchIntChan(ctx context.Context, fn func() int, ch chan int) {
 
 func WatchInt32Chan(ctx context.Context, fn func() int32, ch chan int32) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -141,6 +154,7 @@ func WatchInt32Chan(ctx context.Context, fn func() int32, ch chan int32) {
 
 func WatchInt64Chan(ctx context.Context, fn func() int64, ch chan int64) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -151,6 +165,7 @@ func WatchInt64Chan(ctx context.Context, fn func() int64, ch chan int64) {
 
 func WatchFloat64Chan(ctx context.Context, fn func() float64, ch chan float64) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value
@@ -161,6 +176,7 @@ func WatchFloat64Chan(ctx context.Context, fn func() float64, ch chan float64) {
 
 func WatchStringChan(ctx context.Context, fn func() string, ch chan string) {
 	current := fn()
+
 	watch(ctx, func() {
 		if value := fn(); value != current {
 			current = value

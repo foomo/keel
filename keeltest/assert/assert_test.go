@@ -51,6 +51,7 @@ func TestEqualInlineJSONEq(t *testing.T) {
 				}{
 					Foo: "bar",
 				}
+
 				return keelassert.InlineJSONEq(t, x) // INLINE: {"foo":"bar"}
 			},
 		},

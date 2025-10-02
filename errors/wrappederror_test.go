@@ -44,6 +44,7 @@ func Test_wrappedError_As(t *testing.T) {
 			error
 		}
 	)
+
 	parentErr := &Parent{error: errors.New("parent")}
 	childErr := &Child{error: errors.New("parent")}
 	wrappedErr := keelerrors.NewWrappedError(parentErr, childErr)
@@ -55,6 +56,7 @@ func Test_wrappedError_As(t *testing.T) {
 	if assert.ErrorAs(t, wrappedErr, &p) {
 		assert.EqualError(t, p, parentErr.Error())
 	}
+
 	if assert.ErrorAs(t, wrappedErr, &c) {
 		assert.EqualError(t, c, childErr.Error())
 	}

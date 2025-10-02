@@ -36,5 +36,6 @@ func (s *Markdown) Table(headers []string, rows [][]string) {
 	if err != nil {
 		panic(err)
 	}
+
 	s.Print(table)
 }

@@ -111,11 +111,13 @@ func TelemetryWithPayloadAttributeDisabled(v bool) TelemetryOption {
 // Telemetry middleware
 func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 	options := DefaultTelemetryOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TelemetryWithOptions(options)
 }
 
@@ -129,7 +131,9 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			operation,
 			strconv.FormatBool(stats.ErrorCode != 0),
 		)
+
 		var duration time.Duration
+
 		switch operation {
 		case "marshalling":
 			duration = stats.Marshalling
@@ -138,12 +142,15 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		case "execution":
 			duration = stats.Execution
 		}
+
 		if exemplarObserver, ok := observer.(prometheus.ExemplarObserver); ok && opts.ExemplarsDisabled && spanCtx.HasTraceID() && spanCtx.IsSampled() {
 			exemplarObserver.ObserveWithExemplar(duration.Seconds(), prometheus.Labels{
 				"traceID": spanCtx.TraceID().String(),
 			})
+
 			return
 		}
+
 		observer.Observe(duration.Seconds())
 	}
 
@@ -151,18 +158,23 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 		if r.Method != http.MethodPost {
 			return ""
 		}
+
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return ""
 		}
+
 		if err := r.Body.Close(); err != nil {
 			return ""
 		}
+
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
+
 		var out bytes.Buffer
 		if err = json.Indent(&out, body, "", "  "); err != nil {
 			return ""
 		}
+
 		return out.String()
 	}
 
@@ -186,13 +198,16 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					attribute.Int64("gotsrpc.marshalling", stats.Marshalling.Milliseconds()),
 					attribute.Int64("gotsrpc.unmarshalling", stats.Unmarshalling.Milliseconds()),
 				)
+
 				if stats.ErrorCode != 0 {
 					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
 				}
+
 				if stats.ErrorType != "" {
 					span.SetAttributes(attribute.String("gotsrpc.error.type", stats.ErrorType))
 				}
+
 				if stats.ErrorMessage != "" {
 					span.SetAttributes(attribute.String("gotsrpc.error.message", stats.ErrorMessage))
 				}
@@ -201,9 +216,11 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				if opts.ObserveMarshalling {
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "marshalling")
 				}
+
 				if opts.ObserveUnmarshalling {
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "unmarshalling")
 				}
+
 				if opts.ObserveExecution {
 					observe(span.SpanContext(), gotsrpcRequestDurationHistogram, stats, "execution")
 				}
@@ -215,12 +232,15 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 						zap.String(defaultGOTSRPCServiceLabel, stats.Service),
 						zap.String(defaultGOTSRPCPackageLabel, stats.Package),
 					)
+
 					if stats.ErrorCode != 0 {
 						labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
 					}
+
 					if stats.ErrorType != "" {
 						labeler.Add(zap.String(defaultGOTSRPCErrorType, stats.ErrorType))
 					}
+
 					if stats.ErrorMessage != "" {
 						labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
 					}

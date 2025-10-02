@@ -11,6 +11,7 @@ import (
 func TestMain(m *testing.M) {
 	_ = os.Setenv("TEST_ENV_INT", "3")
 	_ = os.Setenv("TEST_ENV_STRING", "test")
+
 	m.Run()
 }
 

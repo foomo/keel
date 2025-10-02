@@ -23,6 +23,7 @@ func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 		type errorResponse struct {
 			Error string `json:"error"`
 		}
+
 		type payload struct {
 			Level             *zapcore.Level `json:"level"`
 			DisableCaller     *bool          `json:"disableCaller"`
@@ -55,27 +56,36 @@ func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 				return ""
 			}(); errmess != "" {
 				w.WriteHeader(http.StatusBadRequest)
+
 				_ = enc.Encode(errorResponse{Error: errmess})
+
 				return
 			}
 
 			if req.Level != nil {
 				log.AtomicLevel().SetLevel(*req.Level)
 			}
+
 			if req.DisableCaller != nil {
 				if err := log.SetDisableCaller(*req.DisableCaller); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
+
 					_ = enc.Encode(errorResponse{Error: err.Error()})
+
 					return
 				}
 			}
+
 			if req.DisableStacktrace != nil {
 				if err := log.SetDisableStacktrace(*req.DisableStacktrace); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
+
 					_ = enc.Encode(errorResponse{Error: err.Error()})
+
 					return
 				}
 			}
+
 			current := log.AtomicLevel().Level()
 			disableCaller := log.IsDisableCaller()
 			disableStacktrace := log.IsDisableStacktrace()
@@ -86,11 +96,13 @@ func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 			})
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
+
 			_ = enc.Encode(errorResponse{
 				Error: "Only GET and PUT are supported.",
 			})
 		}
 	})
+
 	return NewHTTP(l, name, addr, handler)
 }
 

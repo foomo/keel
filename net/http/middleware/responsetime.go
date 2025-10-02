@@ -50,11 +50,13 @@ func ResponseTimeWithSetHeader(v bool) ResponseTimeOption {
 // ResponseTime middleware
 func ResponseTime(opts ...ResponseTimeOption) Middleware {
 	options := GetDefaultResponseTimeOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return ResponseTimeWithOptions(options)
 }
 
@@ -66,6 +68,7 @@ func ResponseTimeWithOptions(opts ResponseTimeOptions) Middleware {
 			rw := WrapResponseWriter(w)
 			rw.SetWriteResponseTimeHeader(opts.SetHeader)
 			next.ServeHTTP(rw, r)
+
 			duration := time.Since(start)
 			if opts.MaxDuration > 0 && duration > opts.MaxDuration {
 				l.Warn(opts.MaxDurationMessage, log.FDuration(opts.MaxDuration), log.FValue(duration.Microseconds()))

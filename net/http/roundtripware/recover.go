@@ -33,11 +33,13 @@ func RecoverWithDisablePrintStack(v bool) RecoverOption {
 // Recover returns a RoundTripper which catches any panics
 func Recover(opts ...RecoverOption) RoundTripware {
 	options := GetDefaultRecoverOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return RecoverWithOptions(options)
 }
 
@@ -51,13 +53,16 @@ func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 					if !ok {
 						err = fmt.Errorf("%v", e)
 					}
+
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
 						ll = ll.With(log.FStackSkip(3))
 					}
+
 					ll.Error("recovering from panic")
 				}
 			}()
+
 			return next(r)
 		}
 	}

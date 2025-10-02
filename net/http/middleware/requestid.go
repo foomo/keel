@@ -78,11 +78,13 @@ func RequestIDWithSetContext(v bool) RequestIDOption {
 // RequestID middleware
 func RequestID(opts ...RequestIDOption) Middleware {
 	options := GetDefaultRequestIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return RequestIDWithOptions(options)
 }
 
@@ -96,20 +98,25 @@ func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 					break
 				}
 			}
+
 			if requestID == "" {
 				requestID = opts.Provider()
 			}
+
 			if requestID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetRequestID(r.Context(), requestID))
 			}
+
 			if requestID != "" && opts.SetRequestHeader {
 				r.Header.Set(opts.ResponseHeader, requestID)
 			}
+
 			if requestID != "" && opts.SetResponseHeader {
 				if value := w.Header().Get(opts.ResponseHeader); value == "" {
 					w.Header().Add(opts.ResponseHeader, requestID)
 				}
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}

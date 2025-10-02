@@ -28,6 +28,7 @@ func (s *Subscriber) Subject() string {
 	if s.namespace != "" {
 		return s.namespace + "." + s.subject
 	}
+
 	return s.subject
 }
 

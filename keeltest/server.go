@@ -87,6 +87,7 @@ func (s *Server) AddService(service Service) {
 			return
 		}
 	}
+
 	s.services = append(s.services, service)
 }
 
@@ -94,6 +95,7 @@ func (s *Server) GetService(name string) Service {
 	if v, ok := s.serviceMap[name]; ok {
 		return v
 	}
+
 	return nil
 }
 

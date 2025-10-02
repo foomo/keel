@@ -31,6 +31,7 @@ func FDurationHour(duration time.Duration) zap.Field {
 
 func FDurationFn() func() zap.Field {
 	start := time.Now()
+
 	return func() zap.Field {
 		return FDuration(time.Since(start))
 	}

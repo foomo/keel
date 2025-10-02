@@ -23,7 +23,9 @@ func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP 
 			Key   string      `json:"key"`
 			Value interface{} `json:"value"`
 		}
+
 		enc := json.NewEncoder(w)
+
 		switch r.Method {
 		case http.MethodGet:
 			if err := enc.Encode(c.AllSettings()); err != nil {
@@ -37,12 +39,14 @@ func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP 
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+
 			c.Set(req.Key, req.Value)
 			w.WriteHeader(http.StatusOK)
 		default:
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		}
 	})
+
 	return NewHTTP(l, name, addr, handler)
 }
 
