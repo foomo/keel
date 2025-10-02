@@ -317,6 +317,17 @@ func (s *Server) Healthz() error {
 	return nil
 }
 
+// Readme returns the self-documenting string
+func (s *Server) Readme() string {
+	md := &markdown.Markdown{}
+
+	md.Println(s.readmeServices())
+	md.Println(s.readmeHealthz())
+	md.Print(s.readmeCloser())
+
+	return md.String()
+}
+
 // Run runs the server
 func (s *Server) Run() {
 	s.l.Info("starting keel server")
@@ -383,17 +394,6 @@ func (s *Server) addProbes(typ healthz.Type, v ...interface{}) {
 	defer s.syncProbesLock.Unlock()
 
 	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
-}
-
-// Readme returns the self-documenting string
-func (s *Server) Readme() string {
-	md := &markdown.Markdown{}
-
-	md.Println(s.readmeServices())
-	md.Println(s.readmeHealthz())
-	md.Print(s.readmeCloser())
-
-	return md.String()
 }
 
 // ------------------------------------------------------------------------------------------------

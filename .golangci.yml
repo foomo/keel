@@ -21,7 +21,6 @@ linters:
     - thelper # thelper detects tests helpers which is not start with t.Helper() method. [fast: false, auto-fix: false]
     - tparallel # tparallel detects inappropriate usage of t.Parallel() method in your Go test codes. [fast: false, auto-fix: false]
     - noinlineerr
-    - funcorder
     ## Deprected linters
     - wsl
     ## Discouraged linters
