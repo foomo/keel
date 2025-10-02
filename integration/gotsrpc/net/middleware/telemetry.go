@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/foomo/gotsrpc/v2"
@@ -180,7 +181,9 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, span := telemetry.Start(r.Context(), "GOTSRPC")
+			ctx, span := telemetry.Start(r.Context(), "GOTSRPC",
+				trace.WithSpanKind(trace.SpanKindServer),
+			)
 			*r = *gotsrpc.RequestWithStatsContext(r.WithContext(ctx))
 
 			if !opts.PayloadAttributeDisabled {
@@ -190,7 +193,11 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			next.ServeHTTP(w, r.WithContext(ctx))
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				span.SetName(fmt.Sprintf("GOTSRPC %s.%s", stats.Service, stats.Func))
+				var pkg string
+				if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
+					pkg = parts[len(parts)-1] + "."
+				}
+				span.SetName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
 				span.SetAttributes(
 					attribute.String("gotsrpc.func", stats.Func),
 					attribute.String("gotsrpc.service", stats.Service),

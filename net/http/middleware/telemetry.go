@@ -28,7 +28,7 @@ func GetDefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
 		OtelOpts: []otelhttp.Option{
 			otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-				return fmt.Sprintf("HTTP %s", operation)
+				return fmt.Sprintf("HTTP %s %s", r.Method, operation)
 			}),
 		},
 		InjectPropagationHeader: true,
