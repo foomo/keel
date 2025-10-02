@@ -18,7 +18,6 @@ linters:
     - loggercheck # (logrlint) Checks key value pairs for common logger libraries (kitlog,klog,logr,zap). [fast: false, auto-fix: false]
     - nakedret # Checks that functions with naked returns are not longer than a maximum size (can be zero). [fast: true, auto-fix: false]
     - paralleltest # Detects missing usage of t.Parallel() method in your Go test [fast: false, auto-fix: false]
-    - tparallel # tparallel detects inappropriate usage of t.Parallel() method in your Go test codes. [fast: false, auto-fix: false]
     ## Deprected linters
     - wsl
     ## Discouraged linters
