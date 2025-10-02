@@ -9,6 +9,8 @@ import (
 )
 
 func TestNewResource(t *testing.T) {
+	t.Parallel()
+
 	result, err := telemetry.NewResource(t.Context())
 	require.NoError(t, err)
 	assert.NotNil(t, result)

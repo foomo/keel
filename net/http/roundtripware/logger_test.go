@@ -17,6 +17,8 @@ import (
 )
 
 func TestLogger(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name                string
 		loggerOpts          []roundtripware.LoggerOption
@@ -83,10 +85,13 @@ func TestLogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// create logger & validate output
 			l := zaptest.NewLogger(t, zaptest.WrapOptions(zap.Hooks(func(entry zapcore.Entry) error {
 				assert.Equal(t, tt.expectedLogLevel, entry.Level)
 				assert.Equal(t, tt.expectedLogMessage, entry.Message)
+
 				return nil
 			})))
 
@@ -105,6 +110,7 @@ func TestLogger(t *testing.T) {
 					}
 				})
 			}
+
 			middlewares = append(middlewares, roundtripware.Logger(tt.loggerOpts...))
 
 			// create http client
@@ -125,6 +131,7 @@ func TestLogger(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
+
 				require.NotNil(t, resp)
 				defer resp.Body.Close()
 			}

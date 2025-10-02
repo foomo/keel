@@ -253,5 +253,6 @@ func (s *KeelTestSuite) httpPut(url, data string) (int, string, error) {
 // In order for 'go test' to run this suite, we need to create
 // a normal test function and pass our suite to suite.Run
 func TestKeelTestSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(KeelTestSuite))
 }

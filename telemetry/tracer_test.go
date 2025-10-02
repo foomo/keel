@@ -8,6 +8,8 @@ import (
 )
 
 func TestTracer(t *testing.T) {
+	t.Parallel()
+
 	m := telemetry.Tracer()
 	assert.NotNil(t, m)
 }

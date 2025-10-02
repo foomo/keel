@@ -16,6 +16,8 @@ import (
 )
 
 func TestReferer(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name            string
 		contextReferer  string
@@ -31,6 +33,7 @@ func TestReferer(t *testing.T) {
 			refererOptions: nil,
 			setupContext:   nil,
 			serverAssertion: func(t *testing.T, r *http.Request, expectedHeader string) {
+				t.Helper()
 				assert.Empty(t, r.Header.Get(expectedHeader))
 			},
 		},
@@ -39,10 +42,9 @@ func TestReferer(t *testing.T) {
 			contextReferer: "https://foomo.org/",
 			headerToCheck:  keelhttp.HeaderXReferer,
 			refererOptions: nil,
-			setupContext: func(ctx context.Context, referer string) context.Context {
-				return keelhttpcontext.SetReferer(ctx, referer)
-			},
+			setupContext:   keelhttpcontext.SetReferer,
 			serverAssertion: func(t *testing.T, r *http.Request, expectedHeader string) {
+				t.Helper()
 				assert.Equal(t, "https://foomo.org/", r.Header.Get(expectedHeader))
 			},
 		},
@@ -53,10 +55,9 @@ func TestReferer(t *testing.T) {
 			refererOptions: []roundtripware.RefererOption{
 				roundtripware.RefererWithHeader("X-Custom-Header"),
 			},
-			setupContext: func(ctx context.Context, referer string) context.Context {
-				return keelhttpcontext.SetReferer(ctx, referer)
-			},
+			setupContext: keelhttpcontext.SetReferer,
 			serverAssertion: func(t *testing.T, r *http.Request, expectedHeader string) {
+				t.Helper()
 				assert.Equal(t, "https://foomo.org/", r.Header.Get(expectedHeader))
 			},
 		},
@@ -64,6 +65,8 @@ func TestReferer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// create logger
 			l := zaptest.NewLogger(t)
 
@@ -94,6 +97,7 @@ func TestReferer(t *testing.T) {
 			// do request
 			resp, err := client.Do(req)
 			require.NoError(t, err)
+
 			defer resp.Body.Close()
 
 			// validate

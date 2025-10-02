@@ -47,6 +47,8 @@ var cbSettings = &roundtripware.CircuitBreakerSettings{
 }
 
 func TestCircuitBreaker(t *testing.T) {
+	t.Parallel()
+
 	// create logger
 	l := zaptest.NewLogger(t)
 
@@ -138,6 +140,8 @@ func TestCircuitBreaker(t *testing.T) {
 }
 
 func TestCircuitBreakerCopyBodies(t *testing.T) {
+	t.Parallel()
+
 	requestData := "some request"
 	responseData := "some response"
 
@@ -194,6 +198,8 @@ func TestCircuitBreakerCopyBodies(t *testing.T) {
 }
 
 func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
+	t.Parallel()
+
 	requestData := "some request"
 	responseData := "some response"
 
@@ -274,6 +280,8 @@ func TestCircuitBreakerReadFromNotCopiedBodies(t *testing.T) {
 }
 
 func TestCircuitBreakerInterval(t *testing.T) {
+	t.Parallel()
+
 	// create logger
 	l := zaptest.NewLogger(t)
 
@@ -352,6 +360,8 @@ func TestCircuitBreakerInterval(t *testing.T) {
 }
 
 func TestCircuitBreakerIgnore(t *testing.T) {
+	t.Parallel()
+
 	// create logger
 	l := zaptest.NewLogger(t)
 
@@ -401,6 +411,8 @@ func TestCircuitBreakerIgnore(t *testing.T) {
 }
 
 func TestCircuitBreakerTimeout(t *testing.T) {
+	t.Parallel()
+
 	// create logger
 	l := zaptest.NewLogger(t)
 

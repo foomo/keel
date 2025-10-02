@@ -53,6 +53,7 @@ func SessionID(opts ...SessionIDOption) RoundTripware {
 					r.Header.Set(o.Header, value)
 				}
 			}
+
 			return next(r)
 		}
 	}

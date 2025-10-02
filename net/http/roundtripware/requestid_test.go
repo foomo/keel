@@ -16,6 +16,8 @@ import (
 )
 
 func TestRequestID(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name              string
 		setupContext      func(t *testing.T) context.Context
@@ -28,37 +30,46 @@ func TestRequestID(t *testing.T) {
 		{
 			name: "default behavior",
 			setupContext: func(t *testing.T) context.Context {
+				t.Helper()
 				return t.Context()
 			},
 			requestIDOptions: nil,
 			expectedHeader:   keelhttp.HeaderXRequestID,
 			serverAssertions: func(t *testing.T, r *http.Request, capturedID *string) {
+				t.Helper()
+
 				*capturedID = r.Header.Get(keelhttp.HeaderXRequestID)
 				assert.NotEmpty(t, *capturedID)
 			},
 			requestAssertions: func(t *testing.T, req *http.Request, capturedID string) {
+				t.Helper()
 				assert.Equal(t, capturedID, req.Header.Get(keelhttp.HeaderXRequestID))
 			},
 		},
 		{
 			name: "with context",
 			setupContext: func(t *testing.T) context.Context {
+				t.Helper()
 				return keelhttpcontext.SetRequestID(t.Context(), "123456")
 			},
 			requestIDOptions:  nil,
 			expectedHeader:    keelhttp.HeaderXRequestID,
 			expectedRequestID: "123456",
 			serverAssertions: func(t *testing.T, r *http.Request, capturedID *string) {
+				t.Helper()
+
 				*capturedID = r.Header.Get(keelhttp.HeaderXRequestID)
 				assert.Equal(t, "123456", *capturedID)
 			},
 			requestAssertions: func(t *testing.T, req *http.Request, capturedID string) {
+				t.Helper()
 				assert.Equal(t, "123456", req.Header.Get(keelhttp.HeaderXRequestID))
 			},
 		},
 		{
 			name: "with custom provider",
 			setupContext: func(t *testing.T) context.Context {
+				t.Helper()
 				return t.Context()
 			},
 			requestIDOptions: []roundtripware.RequestIDOption{
@@ -69,16 +80,20 @@ func TestRequestID(t *testing.T) {
 			expectedHeader:    keelhttp.HeaderXRequestID,
 			expectedRequestID: "123456",
 			serverAssertions: func(t *testing.T, r *http.Request, capturedID *string) {
+				t.Helper()
+
 				*capturedID = r.Header.Get(keelhttp.HeaderXRequestID)
 				assert.Equal(t, "123456", *capturedID)
 			},
 			requestAssertions: func(t *testing.T, req *http.Request, capturedID string) {
+				t.Helper()
 				assert.Equal(t, "123456", req.Header.Get(keelhttp.HeaderXRequestID))
 			},
 		},
 		{
 			name: "with custom header",
 			setupContext: func(t *testing.T) context.Context {
+				t.Helper()
 				return t.Context()
 			},
 			requestIDOptions: []roundtripware.RequestIDOption{
@@ -86,10 +101,13 @@ func TestRequestID(t *testing.T) {
 			},
 			expectedHeader: "X-Custom-Header",
 			serverAssertions: func(t *testing.T, r *http.Request, capturedID *string) {
+				t.Helper()
+
 				*capturedID = r.Header.Get("X-Custom-Header")
 				assert.NotEmpty(t, *capturedID)
 			},
 			requestAssertions: func(t *testing.T, req *http.Request, capturedID string) {
+				t.Helper()
 				assert.Equal(t, capturedID, req.Header.Get("X-Custom-Header"))
 			},
 		},
@@ -121,6 +139,7 @@ func TestRequestID(t *testing.T) {
 
 			resp, err := client.Do(req)
 			require.NoError(t, err)
+
 			defer resp.Body.Close()
 
 			tt.requestAssertions(t, req, capturedRequestID)

@@ -9,6 +9,8 @@ import (
 )
 
 func TestNewNoopTraceProvider(t *testing.T) {
+	t.Parallel()
+
 	tp := telemetry.NewNoopTraceProvider()
 	assert.IsType(t, noop.TracerProvider{}, tp)
 }

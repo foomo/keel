@@ -24,18 +24,24 @@ func ExampleNewWrappedError() {
 }
 
 func TestNewWrappedError(t *testing.T) {
+	t.Parallel()
+
 	parentErr := errors.New("parent")
 	childErr := errors.New("child")
 	assert.Error(t, keelerrors.NewWrappedError(parentErr, childErr))
 }
 
 func TestWrapped(t *testing.T) {
+	t.Parallel()
+
 	parentErr := errors.New("parent")
 	childErr := errors.New("child")
 	assert.Error(t, keelerrors.NewWrappedError(parentErr, childErr))
 }
 
 func Test_wrappedError_As(t *testing.T) {
+	t.Parallel()
+
 	type (
 		Parent struct {
 			error
@@ -63,6 +69,8 @@ func Test_wrappedError_As(t *testing.T) {
 }
 
 func Test_wrappedError_Error(t *testing.T) {
+	t.Parallel()
+
 	parentErr := errors.New("parent")
 	childErr := errors.New("child")
 	wrappedErr := keelerrors.NewWrappedError(parentErr, childErr)
@@ -70,6 +78,8 @@ func Test_wrappedError_Error(t *testing.T) {
 }
 
 func Test_wrappedError_Is(t *testing.T) {
+	t.Parallel()
+
 	parentErr := errors.New("parent")
 	childErr := errors.New("child")
 	wrappedErr := keelerrors.NewWrappedError(parentErr, childErr)

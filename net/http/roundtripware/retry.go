@@ -103,7 +103,9 @@ func Retry(opts ...RetryOption) RoundTripware {
 
 			err := retry.Do(func() error {
 				attempt++
+
 				var err error
+
 				span.SetAttributes(semconv.HTTPRetryCountKey.Int(attempt))
 
 				resp, err = next(req) //nolint:bodyclose

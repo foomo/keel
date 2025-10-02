@@ -8,25 +8,34 @@ import (
 )
 
 func TestInline(t *testing.T) {
+	t.Parallel()
+
 	t.Run("read inline", func(t *testing.T) {
+		t.Parallel()
 		value, ok := keeltest.Inline(t, 1) // INLINE: hello world
 		assert.True(t, ok)
 		assert.Equal(t, "hello world", value)
 	})
 
 	t.Run("read inline int", func(t *testing.T) {
+		t.Parallel()
+
 		value, ok := keeltest.InlineInt(t, 1) // INLINE: 1
 		assert.True(t, ok)
 		assert.Equal(t, 1, value)
 	})
 
 	t.Run("read inline float", func(t *testing.T) {
+		t.Parallel()
+
 		value, ok := keeltest.InlineFloat64(t, 1) // INLINE: 1.5
 		assert.True(t, ok)
 		assert.InDelta(t, 1.5, value, 0)
 	})
 
 	t.Run("read inline json", func(t *testing.T) {
+		t.Parallel()
+
 		var x struct {
 			Foo string `json:"foo"`
 		}
@@ -35,6 +44,8 @@ func TestInline(t *testing.T) {
 	})
 
 	t.Run("write inline", func(t *testing.T) {
+		t.Parallel()
+
 		value, ok := keeltest.Inline(t, 1, "hello %s", "world") // INLINE: hello world
 		assert.True(t, ok)
 		assert.Equal(t, "hello world", value)

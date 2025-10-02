@@ -14,7 +14,7 @@ func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) 
 }
 
 func Span(ctx context.Context, handler func(ctx context.Context, span trace.Span) error) (err error) { //nolint:nonamedreturns
-	name := "unkownn"
+	name := "unknown"
 
 	pc, _, _, ok := runtime.Caller(1)
 	if ok {

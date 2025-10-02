@@ -19,6 +19,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
 	testingx.Tags(t, tagx.Skip)
 
 	l := zaptest.NewLogger(t)

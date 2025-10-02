@@ -24,6 +24,8 @@ const (
 )
 
 func TestGZip(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name                     string
 		payload                  string
@@ -46,6 +48,8 @@ func TestGZip(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// create logger
 			l := zaptest.NewLogger(t)
 
@@ -63,6 +67,7 @@ func TestGZip(t *testing.T) {
 				// validate request body
 				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
+
 				defer r.Body.Close()
 
 				if tt.expectRequestCompressed {
@@ -98,10 +103,12 @@ func TestGZip(t *testing.T) {
 			// do request
 			resp, err := client.Do(req)
 			require.NoError(t, err)
+
 			defer resp.Body.Close()
 
 			// validate response header
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
 			if tt.expectResponseCompressed {
 				assert.Equal(t, stdhttp.EncodingGzip.String(), resp.Header.Get(stdhttp.HeaderContentEncoding.String()))
 			} else {
