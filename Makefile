@@ -63,16 +63,18 @@ lint.fix:
 .PHONY: test
 ## Run tests
 test:
+	@echo "〉go test"
 	@GO_TEST_TAGS=-skip go test -coverprofile=coverage.out -tags=safe -race work
 
 .PHONY: outdated
 ## Show outdated direct dependencies
 outdated:
+	@echo "〉go mod outdated"
 	@go list -u -m -json all | go-mod-outdated -update -direct
 
 .PHONY: release
 ## Create release TAG=1.0.0
-release: MODS=$(shell find . -type f -name 'go.mod' -mindepth 2)
+release: MODS=$(shell find . -type f -name 'go.mod' -mindepth 2 -not -path './examples/*')
 release:
 ifndef TAG
 	$(error $(br)$(br)TAG variable is required.$(br)Usage: make release TAG=1.0.0$(br)$(br))

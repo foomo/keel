@@ -9,10 +9,8 @@ run:
 linters:
   default: all
   disable:
-    # TODO: enable linters
+    # Project specific linters
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: false, auto-fix: false]
-    # Deprected linters
-    - wsl
     # Discouraged linters
     - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
     - embeddedstructfieldcheck #  Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
@@ -50,6 +48,8 @@ linters:
     - varnamelen # checks that the length of a variable's name matches its scope [fast: false, auto-fix: false]
     - wrapcheck # Checks that errors returned from external packages are wrapped [fast: false, auto-fix: false]
     - zerologlint # Detects the wrong usage of `zerolog` that a user forgets to dispatch with `Send` or `Msg` [fast: false, auto-fix: false]
+    # Deprected linters
+    - wsl
 
   # https://golangci-lint.run/docs/linters/
   settings:

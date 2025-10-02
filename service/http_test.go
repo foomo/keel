@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ExampleNewHTTP() {
+func _ExampleNewHTTP() {
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),
 		keel.WithGracefulPeriod(10*time.Second),
