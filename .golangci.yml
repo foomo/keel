@@ -13,8 +13,6 @@ linters:
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: false, auto-fix: false]
     - forbidigo # Forbids identifiers [fast: false, auto-fix: false]
     - goconst # Finds repeated strings that could be replaced by a constant [fast: true, auto-fix: false]
-    #- gosmopolitan # Report certain i18n/l10n anti-patterns in your Go codebase [fast: false, auto-fix: false]
-    - inamedparam # reports interfaces with unnamed method parameters [fast: true, auto-fix: false]
     - nakedret # Checks that functions with naked returns are not longer than a maximum size (can be zero). [fast: true, auto-fix: false]
     # Deprected linters
     - wsl

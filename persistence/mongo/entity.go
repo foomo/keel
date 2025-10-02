@@ -3,7 +3,7 @@ package keelmongo
 import "time"
 
 type Entity interface {
-	SetID(string)
+	SetID(id string)
 	GetID() string
 }
 
@@ -13,8 +13,8 @@ type EntityWithVersion interface {
 }
 
 type EntityWithTimestamps interface {
-	SetCreatedAt(time.Time)
+	SetCreatedAt(t time.Time)
 	GetCreatedAt() time.Time
-	SetUpdatedAt(time.Time)
+	SetUpdatedAt(t time.Time)
 	GetUpdatedAt() time.Time
 }
