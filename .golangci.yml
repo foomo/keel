@@ -22,7 +22,6 @@ linters:
     - tparallel # tparallel detects inappropriate usage of t.Parallel() method in your Go test codes. [fast: false, auto-fix: false]
     - noinlineerr
     - funcorder
-    - godoclint
     ## Deprected linters
     - wsl
     ## Discouraged linters
