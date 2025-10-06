@@ -10,20 +10,13 @@ import (
 	otelpyroscope "github.com/grafana/otel-profiling-go"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	tags := map[string]string{}
 	if v := os.Getenv("HOSTNAME"); v != "" {
 		tags["pod"] = v
-	}
-
-	if v := os.Getenv("OTEL_SERVICE_GIT_REF"); v != "" {
-		tags["service_git_ref"] = v
-	}
-
-	if v := os.Getenv("OTEL_SERVICE_REPOSITORY"); v != "" {
-		tags["service_repository"] = v
 	}
 
 	if v := os.Getenv("OTEL_SERVICE_ROOT_PATH"); v != "" {
@@ -68,12 +61,21 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		return nil, err
 	}
 
-	for _, value := range resource.Attributes() {
-		if value.Key == "service.name" {
+	for _, attr := range resource.Attributes() {
+		var (
+			key string
+		)
+		switch attr.Key {
+		case "service.name":
 			continue
+		case semconv.VCSRefHeadRevisionKey:
+			key = "service_git_ref"
+		case semconv.VCSRepositoryURLFullKey:
+			key = "service_repository"
+		default:
+			key = strings.ReplaceAll(string(attr.Key), ".", "_")
 		}
-
-		tags[strings.ReplaceAll(string(value.Key), ".", "_")] = value.Value.Emit()
+		tags[key] = attr.Value.Emit()
 	}
 
 	p, err := pyroscope.Start(pyroscope.Config{

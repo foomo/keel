@@ -2,46 +2,53 @@ package telemetry
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"runtime"
+	"strings"
 
-	"github.com/grafana/pyroscope-go"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Deprecated: use StartFunc instead.
 func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return Tracer().Start(ctx, spanName, opts...) //nolint:spancheck
 }
 
-func Span(ctx context.Context, handler func(ctx context.Context, span trace.Span) error) (err error) { //nolint:nonamedreturns
-	name := "unknown"
-
-	pc, _, _, ok := runtime.Caller(1)
-	if ok {
-		details := runtime.FuncForPC(pc)
-		if details != nil {
-			name = details.Name()
+func StartFunc(ctx context.Context) (context.Context, func(errs ...error)) {
+	name := "FUNC"
+	var attrs []attribute.KeyValue
+	if pc, file, line, ok := runtime.Caller(1); ok {
+		attrs = append(attrs,
+			semconv.CodeLineNumber(line),
+			semconv.CodeFilePath(file),
+		)
+		if details := runtime.FuncForPC(pc); details != nil {
+			funcName := details.Name()
+			attrs = append(attrs, semconv.CodeFunctionName(funcName))
+			lastSlash := strings.LastIndexByte(funcName, '/')
+			if lastSlash < 0 {
+				lastSlash = 0
+			}
+			lastDot := strings.LastIndexByte(funcName[lastSlash:], '.') + lastSlash
+			name += " " + funcName[lastDot+1:]
 		}
 	}
 
-	pyroscope.TagWrapper(ctx, pyroscope.Labels("span_name", name), func(c context.Context) {
-		ctx, span := Tracer().Start(ctx, name)
-
-		defer func() {
-			if err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
-			}
-
-			span.End()
-		}()
-
-		err = handler(ctx, span)
-	})
-
-	return
+	ctx, span := Tracer().Start(ctx, name, trace.WithAttributes(attrs...))
+	span.SetStatus(codes.Ok, "")
+	return ctx, end(span)
 }
 
+func StartFuncRequest(r *http.Request) (*http.Request, func(errs ...error)) {
+	ctx, end := StartFunc(r.Context())
+	return r.WithContext(ctx), end
+}
+
+// Deprecated: use StartFunc instead.
 func End(sp trace.Span, err error) {
 	sp.SetStatus(codes.Ok, "")
 
@@ -51,4 +58,15 @@ func End(sp trace.Span, err error) {
 	}
 
 	sp.End()
+}
+
+func end(span trace.Span) func(errs ...error) {
+	return func(errs ...error) {
+		if len(errs) > 0 {
+			err := errors.Join(errs...)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+		span.End()
+	}
 }
