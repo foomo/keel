@@ -37,6 +37,8 @@ func NewLogger(level, encoding string) *zap.Logger {
 	if encoding == "console" {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
+	config.EncoderConfig.CallerKey = "code_file_path"
+	config.EncoderConfig.FunctionKey = "code_function_name"
 	config.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 
 	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
