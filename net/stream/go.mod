@@ -7,7 +7,7 @@ replace github.com/foomo/keel => ../../
 require (
 	github.com/foomo/go v0.0.3
 	github.com/foomo/keel v0.0.0-00010101000000-000000000000
-	github.com/nats-io/nats.go v1.46.0
+	github.com/nats-io/nats.go v1.46.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/nats v0.39.0
