@@ -18,5 +18,5 @@ func Log(ctx context.Context) *zap.Logger {
 			zap.String("span_id", span.SpanID().String()),
 		)
 	}
-	return log.Logger().WithOptions(zap.WithCaller(true)).With(fields...)
+	return log.Logger().With(fields...)
 }
