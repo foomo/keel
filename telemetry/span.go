@@ -13,15 +13,26 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Deprecated: use StartFunc instead.
+// Deprecated: use StartCode instead.
 func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return Tracer().Start(ctx, spanName, opts...) //nolint:spancheck
 }
 
-func StartFunc(ctx context.Context) (context.Context, func(errs ...error)) {
-	name := "FUNC"
+// Deprecated: use StartCode instead.
+func End(sp trace.Span, err error) {
+	if err != nil {
+		sp.RecordError(err)
+		sp.SetStatus(codes.Error, err.Error())
+	} else {
+		sp.SetStatus(codes.Ok, "")
+	}
+	sp.End()
+}
+
+func startCode(ctx context.Context) (context.Context, func(errs ...error)) {
+	name := "CODE"
 	var attrs []attribute.KeyValue
-	if pc, file, line, ok := runtime.Caller(1); ok {
+	if pc, file, line, ok := runtime.Caller(2); ok {
 		attrs = append(attrs,
 			semconv.CodeLineNumber(line),
 			semconv.CodeFilePath(file),
@@ -39,33 +50,31 @@ func StartFunc(ctx context.Context) (context.Context, func(errs ...error)) {
 	}
 
 	ctx, span := Tracer().Start(ctx, name, trace.WithAttributes(attrs...))
-	span.SetStatus(codes.Ok, "")
 	return ctx, end(span)
 }
 
-func StartFuncRequest(r *http.Request) (*http.Request, func(errs ...error)) {
-	ctx, end := StartFunc(r.Context())
-	return r.WithContext(ctx), end
+func StartCode(ctx context.Context) (context.Context, func(errs ...error)) {
+	return startCode(ctx)
 }
 
-// Deprecated: use StartFunc instead.
-func End(sp trace.Span, err error) {
-	sp.SetStatus(codes.Ok, "")
-
-	if err != nil {
-		sp.RecordError(err)
-		sp.SetStatus(codes.Error, err.Error())
-	}
-
-	sp.End()
+func StartCodeRequest(r *http.Request) (*http.Request, func(errs ...error)) {
+	ctx, end := startCode(r.Context())
+	return r.WithContext(ctx), end
 }
 
 func end(span trace.Span) func(errs ...error) {
 	return func(errs ...error) {
-		if len(errs) > 0 {
-			err := errors.Join(errs...)
+		var err error
+		if len(errs) > 1 {
+			err = errors.Join(errs...)
+		} else if len(errs) == 1 {
+			err = errs[0]
+		}
+		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
+		} else {
+			span.SetStatus(codes.Ok, "")
 		}
 		span.End()
 	}

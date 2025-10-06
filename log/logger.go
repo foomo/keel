@@ -37,10 +37,11 @@ func NewLogger(level, encoding string) *zap.Logger {
 	if encoding == "console" {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
+	config.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 
-	config.DisableCaller = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
+	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
 
-	config.DisableStacktrace = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
+	config.DisableStacktrace = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
 	if value, err := config.Build(); err != nil {
 		panic(err)
 	} else {
