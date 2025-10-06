@@ -18,6 +18,7 @@ endef
 
 # Ensure go.work file
 go.work:
+	@echo "〉initializing go work"
 	@go work init
 	@go work use -r .
 	@go work sync
@@ -91,6 +92,7 @@ endif
 .PHONY: docs
 ## Open go docs
 docs:
+	@echo "〉starting go docs"
 	@go doc -http
 
 .PHONY: help
