@@ -7,10 +7,12 @@ import (
 	"runtime"
 	"strings"
 
+	errors2 "github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 // Deprecated: use StartCode instead.
@@ -27,6 +29,15 @@ func End(sp trace.Span, err error) {
 		sp.SetStatus(codes.Ok, "")
 	}
 	sp.End()
+}
+
+func StartCode(ctx context.Context) (context.Context, func(errs ...error)) {
+	return startCode(ctx)
+}
+
+func StartCodeRequest(r *http.Request) (*http.Request, func(errs ...error)) {
+	ctx, end := startCode(r.Context())
+	return r.WithContext(ctx), end
 }
 
 func startCode(ctx context.Context) (context.Context, func(errs ...error)) {
@@ -53,29 +64,23 @@ func startCode(ctx context.Context) (context.Context, func(errs ...error)) {
 	return ctx, end(span)
 }
 
-func StartCode(ctx context.Context) (context.Context, func(errs ...error)) {
-	return startCode(ctx)
-}
-
-func StartCodeRequest(r *http.Request) (*http.Request, func(errs ...error)) {
-	ctx, end := startCode(r.Context())
-	return r.WithContext(ctx), end
-}
-
 func end(span trace.Span) func(errs ...error) {
 	return func(errs ...error) {
-		var err error
-		if len(errs) > 1 {
-			err = errors.Join(errs...)
-		} else if len(errs) == 1 {
-			err = errs[0]
+		if span.IsRecording() {
+			var err error
+			if len(errs) > 1 {
+				err = errors.Join(errs...)
+			} else if len(errs) == 1 {
+				err = errs[0]
+			}
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				logFromSpanContext(span.SpanContext()).WithOptions(zap.AddCallerSkip(1)).With(zap.Error(err)).Error(errors2.Cause(err).Error())
+			} else {
+				span.SetStatus(codes.Ok, "")
+			}
+			span.End()
 		}
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
-		} else {
-			span.SetStatus(codes.Ok, "")
-		}
-		span.End()
 	}
 }

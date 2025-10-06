@@ -10,12 +10,15 @@ import (
 )
 
 func Log(ctx context.Context) *zap.Logger {
-	span := trace.SpanContextFromContext(ctx)
+	return logFromSpanContext(trace.SpanContextFromContext(ctx))
+}
+
+func logFromSpanContext(ctx trace.SpanContext) *zap.Logger {
 	var fields []zapcore.Field
-	if span.IsValid() {
+	if ctx.IsValid() {
 		fields = append(fields,
-			zap.String("trace_id", span.TraceID().String()),
-			zap.String("span_id", span.SpanID().String()),
+			zap.String("trace_id", ctx.TraceID().String()),
+			zap.String("span_id", ctx.SpanID().String()),
 		)
 	}
 	return log.Logger().With(fields...)
