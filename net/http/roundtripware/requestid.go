@@ -74,6 +74,7 @@ func RequestID(opts ...RequestIDOption) RoundTripware {
 					if span.IsRecording() {
 						span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), requestID))
 					}
+
 					r.Header.Set(o.Header, requestID)
 				}
 			}

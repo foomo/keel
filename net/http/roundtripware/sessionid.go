@@ -54,6 +54,7 @@ func SessionID(opts ...SessionIDOption) RoundTripware {
 					if span.IsRecording() {
 						span.SetAttributes(semconv.SessionID(value))
 					}
+
 					r.Header.Set(o.Header, value)
 				}
 			}

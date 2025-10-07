@@ -54,6 +54,7 @@ func Referer(opts ...RefererOption) RoundTripware {
 					if span.IsRecording() {
 						span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), value))
 					}
+
 					r.Header.Set(o.Header, value)
 				}
 			}

@@ -29,6 +29,7 @@ func DumpRequest() RoundTripware {
 			if span.IsRecording() {
 				span.AddEvent("DumpRequest")
 			}
+
 			dumpRequest(r)
 
 			return next(r)

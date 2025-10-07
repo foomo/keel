@@ -55,6 +55,7 @@ func TrackingID(opts ...TrackingIDOption) RoundTripware {
 					if span.IsRecording() {
 						span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), value))
 					}
+
 					r.Header.Set(o.Header, value)
 				}
 			}
