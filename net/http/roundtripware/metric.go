@@ -23,7 +23,9 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("Metric")
+			if span.IsRecording() {
+				span.AddEvent("Metric")
+			}
 
 			ctx, labeler := LabelerFromContext(r.Context())
 

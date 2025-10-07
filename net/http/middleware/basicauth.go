@@ -53,7 +53,9 @@ func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOp
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("BasicAuth")
+			if span.IsRecording() {
+				span.AddEvent("BasicAuth")
+			}
 
 			// basic auth from request header
 			u, p, ok := r.BasicAuth()

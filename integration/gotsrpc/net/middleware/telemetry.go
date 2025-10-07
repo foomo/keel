@@ -13,7 +13,6 @@ import (
 	"github.com/foomo/gotsrpc/v2"
 	"github.com/foomo/keel/env"
 	httplog "github.com/foomo/keel/net/http/log"
-	"github.com/foomo/keel/telemetry"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.opentelemetry.io/otel/attribute"
@@ -181,18 +180,20 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, span := telemetry.Start(r.Context(), "GOTSRPC",
-				trace.WithSpanKind(trace.SpanKindServer),
-			)
-			*r = *gotsrpc.RequestWithStatsContext(r.WithContext(ctx))
-
-			if !opts.PayloadAttributeDisabled {
-				span.SetAttributes(attribute.String("gotsprc.payload", sanitizePayload(r)))
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("GOTSRCP Telemetry")
 			}
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			*r = *gotsrpc.RequestWithStatsContext(r)
+
+			next.ServeHTTP(w, r)
 
 			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				if !opts.PayloadAttributeDisabled {
+					span.SetAttributes(attribute.String("gotsprc.payload", sanitizePayload(r)))
+				}
+
 				var pkg string
 				if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
 					pkg = parts[len(parts)-1] + "."
@@ -210,6 +211,8 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				if stats.ErrorCode != 0 {
 					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
+				} else {
+					span.SetStatus(codes.Ok, "")
 				}
 
 				if stats.ErrorType != "" {
@@ -254,8 +257,6 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					}
 				}
 			}
-
-			telemetry.End(span, nil)
 		})
 	}
 }

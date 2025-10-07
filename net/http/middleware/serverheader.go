@@ -62,9 +62,11 @@ func ServerHeaderWithOptions(opts ServerHeaderOptions) Middleware {
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("ResponseTime",
-				trace.WithAttributes(semconv.HTTPResponseHeader(strings.ToLower(opts.Header), name)),
-			)
+			if span.IsRecording() {
+				span.AddEvent("ServerHeader",
+					trace.WithAttributes(semconv.HTTPResponseHeader(strings.ToLower(opts.Header), name)),
+				)
+			}
 
 			w.Header().Add(opts.Header, name)
 			next.ServeHTTP(w, r)

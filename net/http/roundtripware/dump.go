@@ -26,7 +26,9 @@ func DumpRequest() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("DumpRequest")
+			if span.IsRecording() {
+				span.AddEvent("DumpRequest")
+			}
 			dumpRequest(r)
 
 			return next(r)
@@ -39,7 +41,9 @@ func DumpResponse() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("DumpResponse")
+			if span.IsRecording() {
+				span.AddEvent("DumpResponse")
+			}
 
 			resp, err := next(r)
 			dumpResponse(r, resp)

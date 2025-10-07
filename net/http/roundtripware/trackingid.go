@@ -46,11 +46,15 @@ func TrackingID(opts ...TrackingIDOption) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("TrackingID")
+			if span.IsRecording() {
+				span.AddEvent("TrackingID")
+			}
 
 			if value := r.Header.Get(o.Header); value == "" {
 				if value, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && value != "" {
-					span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), value))
+					if span.IsRecording() {
+						span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), value))
+					}
 					r.Header.Set(o.Header, value)
 				}
 			}

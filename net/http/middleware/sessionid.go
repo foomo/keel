@@ -115,7 +115,9 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("SessionID")
+			if span.IsRecording() {
+				span.AddEvent("SessionID")
+			}
 
 			var sessionID string
 			if value := r.Header.Get(opts.Header); value != "" {
@@ -137,7 +139,7 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 				sessionID = c.Value
 			}
 
-			if sessionID != "" {
+			if span.IsRecording() && sessionID != "" {
 				span.SetAttributes(semconv.SessionID(sessionID))
 			}
 

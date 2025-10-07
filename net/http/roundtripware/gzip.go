@@ -63,7 +63,9 @@ func GZip(opts ...GZipOption) RoundTripware {
 
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("GZip")
+			if span.IsRecording() {
+				span.AddEvent("GZip")
+			}
 
 			// Check if the request has a body
 			if r.Body != nil && r.Header.Get(stdhttp.HeaderContentEncoding.String()) != stdhttp.EncodingGzip.String() && r.ContentLength >= int64(o.MinSize) {

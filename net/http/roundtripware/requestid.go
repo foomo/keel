@@ -56,7 +56,9 @@ func RequestID(opts ...RequestIDOption) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("RequestID")
+			if span.IsRecording() {
+				span.AddEvent("RequestID")
+			}
 
 			if value := r.Header.Get(o.Header); value == "" {
 				var requestID string
@@ -69,7 +71,9 @@ func RequestID(opts ...RequestIDOption) RoundTripware {
 				}
 
 				if requestID != "" {
-					span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), requestID))
+					if span.IsRecording() {
+						span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), requestID))
+					}
 					r.Header.Set(o.Header, requestID)
 				}
 			}

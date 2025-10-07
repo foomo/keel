@@ -17,7 +17,7 @@ type Context struct {
 }
 
 func (c Context) Log() *zap.Logger {
-	return Log(c.Context).WithOptions(zap.AddCallerSkip(1))
+	return Log(c.Context)
 }
 
 func (c Context) Trace(opts ...trace.SpanStartOption) (Context, trace.Span) {

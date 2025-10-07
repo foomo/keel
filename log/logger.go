@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -40,7 +41,8 @@ func NewLogger(level, encoding string) *zap.Logger {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 
-	config.EncoderConfig.CallerKey = "code_file_path"
+	config.EncoderConfig.CallerKey = string(semconv.CodeFilePathKey)
+	config.EncoderConfig.StacktraceKey = string(semconv.CodeStacktraceKey)
 	config.EncoderConfig.EncodeCaller = func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
 		encoder.AppendString(caller.File)
 	}

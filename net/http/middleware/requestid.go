@@ -96,7 +96,9 @@ func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("RequestID")
+			if span.IsRecording() {
+				span.AddEvent("RequestID")
+			}
 
 			var (
 				key       string
@@ -113,7 +115,7 @@ func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 				requestID = opts.Provider()
 			}
 
-			if key != "" && requestID != "" {
+			if span.IsRecording() && key != "" && requestID != "" {
 				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(key), requestID))
 			}
 

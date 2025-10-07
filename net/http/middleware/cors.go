@@ -106,7 +106,9 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("CORS")
+			if span.IsRecording() {
+				span.AddEvent("CORS")
+			}
 
 			origin := r.Header.Get(keelhttp.HeaderOrigin)
 			allowOrigin := ""

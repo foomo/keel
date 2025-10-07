@@ -45,11 +45,15 @@ func SessionID(opts ...SessionIDOption) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("SessionID")
+			if span.IsRecording() {
+				span.AddEvent("SessionID")
+			}
 
 			if value := r.Header.Get(o.Header); value == "" {
 				if value, ok := keelhttpcontext.GetSessionID(r.Context()); ok && value != "" {
-					span.SetAttributes(semconv.SessionID(value))
+					if span.IsRecording() {
+						span.SetAttributes(semconv.SessionID(value))
+					}
 					r.Header.Set(o.Header, value)
 				}
 			}

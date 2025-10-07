@@ -76,8 +76,9 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("Telemetry")
-			fmt.Println("telemetry:", span.SpanContext().SpanID())
+			if span.IsRecording() {
+				span.AddEvent("Telemetry")
+			}
 
 			if opts.InjectPropagationHeader {
 				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))

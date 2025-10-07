@@ -58,7 +58,9 @@ func RefererWithOptions(opts RefererOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("Referer")
+			if span.IsRecording() {
+				span.AddEvent("Referer")
+			}
 
 			var (
 				key     string
@@ -71,8 +73,11 @@ func RefererWithOptions(opts RefererOptions) Middleware {
 				}
 			}
 
-			if referer != "" && opts.SetContext {
+			if span.IsRecording() && referer != "" {
 				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(key), referer))
+			}
+
+			if referer != "" && opts.SetContext {
 				r = r.WithContext(context.SetReferer(r.Context(), referer))
 			}
 

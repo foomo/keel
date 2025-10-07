@@ -116,7 +116,9 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("TrackingID")
+			if span.IsRecording() {
+				span.AddEvent("TrackingID")
+			}
 
 			var tackingID string
 			if value := r.Header.Get(opts.Header); value != "" {
@@ -138,7 +140,7 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 				tackingID = c.Value
 			}
 
-			if tackingID != "" {
+			if span.IsRecording() && tackingID != "" {
 				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(opts.Header), tackingID))
 			}
 

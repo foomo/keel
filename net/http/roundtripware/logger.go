@@ -71,7 +71,9 @@ func Logger(opts ...LoggerOption) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("Logger")
+			if span.IsRecording() {
+				span.AddEvent("Logger")
+			}
 
 			start := time.Now()
 			statusCode := http.StatusTeapot

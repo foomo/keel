@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	jwt2 "github.com/golang-jwt/jwt"
@@ -144,8 +143,9 @@ func JWTWithOptions(v *jwt.JWT, contextKey interface{}, opts JWTOptions) Middlew
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("JWT")
-			fmt.Println("jwt:", span.SpanContext().SpanID())
+			if span.IsRecording() {
+				span.AddEvent("JWT")
+			}
 
 			claims := opts.ClaimsProvider()
 

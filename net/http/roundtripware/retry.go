@@ -94,7 +94,9 @@ func Retry(opts ...RetryOption) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(req *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(req.Context())
-			span.AddEvent("Retry")
+			if span.IsRecording() {
+				span.AddEvent("Retry")
+			}
 
 			var (
 				attempt int
@@ -106,7 +108,9 @@ func Retry(opts ...RetryOption) RoundTripware {
 
 				var err error
 
-				span.SetAttributes(semconv.HTTPRetryCountKey.Int(attempt))
+				if span.IsRecording() {
+					span.SetAttributes(semconv.HTTPRetryCountKey.Int(attempt))
+				}
 
 				resp, err = next(req) //nolint:bodyclose
 				if err != nil {

@@ -49,7 +49,9 @@ func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
 			span := trace.SpanFromContext(r.Context())
-			span.AddEvent("Recover")
+			if span.IsRecording() {
+				span.AddEvent("Recover")
+			}
 
 			defer func() {
 				if e := recover(); e != nil {
