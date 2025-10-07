@@ -61,6 +61,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		var (
 			key string
 		)
+
 		switch attr.Key {
 		case "service.name":
 			continue
@@ -73,6 +74,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		default:
 			key = strings.ReplaceAll(string(attr.Key), ".", "_")
 		}
+
 		tags[key] = attr.Value.Emit()
 	}
 

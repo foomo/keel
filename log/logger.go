@@ -39,6 +39,7 @@ func NewLogger(level, encoding string) *zap.Logger {
 	if encoding == "console" {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
+
 	config.EncoderConfig.CallerKey = "code_file_path"
 	config.EncoderConfig.EncodeCaller = func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
 		encoder.AppendString(caller.File)

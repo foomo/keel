@@ -20,5 +20,6 @@ func End(sp trace.Span, err error) {
 	} else {
 		sp.SetStatus(codes.Ok, "")
 	}
+
 	sp.End()
 }

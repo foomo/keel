@@ -20,5 +20,6 @@ func logFromSpanContext(ctx trace.SpanContext) *zap.Logger {
 			zap.String("span_id", ctx.SpanID().String()),
 		)
 	}
+
 	return zap.L().With(fields...)
 }

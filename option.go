@@ -107,6 +107,7 @@ func WithStdOutTracer(enabled bool) Option {
 func WithStdOutLogger(enabled bool) Option {
 	return func(inst *Server) {
 		var err error
+
 		_, err = telemetry.NewStdOutLoggerProvider(inst.ctx)
 		log.Must(inst.l, err, "failed to create stdOut logger provider")
 	}
