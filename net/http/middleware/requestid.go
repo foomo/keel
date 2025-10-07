@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -97,6 +98,7 @@ func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
 			span.AddEvent("RequestID")
+			fmt.Println("requestid:", span.SpanContext().SpanID())
 
 			var (
 				key       string
@@ -114,6 +116,7 @@ func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 			}
 
 			if key != "" && requestID != "" {
+				fmt.Println("setting attribute")
 				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(key), requestID))
 			}
 

@@ -98,8 +98,17 @@ func WithStdOutTracer(enabled bool) Option {
 			var err error
 
 			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create std out trace provider")
+			log.Must(inst.l, err, "failed to create stdOut trace provider")
 		}
+	}
+}
+
+// WithStdOutLogger option with default value
+func WithStdOutLogger(enabled bool) Option {
+	return func(inst *Server) {
+		var err error
+		_, err = telemetry.NewStdOutLoggerProvider(inst.ctx)
+		log.Must(inst.l, err, "failed to create stdOut logger provider")
 	}
 }
 
@@ -110,7 +119,7 @@ func WithStdOutMeter(enabled bool) Option {
 			var err error
 
 			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create std out meter provider")
+			log.Must(inst.l, err, "failed to create stdOut meter provider")
 		}
 	}
 }

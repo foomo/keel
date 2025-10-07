@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 
-	"github.com/foomo/keel/log"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -21,5 +20,5 @@ func logFromSpanContext(ctx trace.SpanContext) *zap.Logger {
 			zap.String("span_id", ctx.SpanID().String()),
 		)
 	}
-	return log.Logger().With(fields...)
+	return zap.L().With(fields...)
 }

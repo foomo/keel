@@ -25,7 +25,9 @@ func init() {
 func NewLogger(level, encoding string) *zap.Logger {
 	config = zap.NewProductionConfig()
 
-	if value, err := zapcore.ParseLevel(level); err == nil {
+	if value, err := zapcore.ParseLevel(level); err != nil {
+		panic(err)
+	} else {
 		atomicLevel.SetLevel(value)
 	}
 
@@ -38,17 +40,19 @@ func NewLogger(level, encoding string) *zap.Logger {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 	config.EncoderConfig.CallerKey = "code_file_path"
-	config.EncoderConfig.FunctionKey = "code_function_name"
-	config.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
-
-	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
-
-	config.DisableStacktrace = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
-	if value, err := config.Build(); err != nil {
-		panic(err)
-	} else {
-		return value
+	config.EncoderConfig.EncodeCaller = func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
+		encoder.AppendString(caller.File)
 	}
+
+	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", config.Level.Enabled(zap.DebugLevel))
+	config.DisableStacktrace = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
+
+	logger, err := config.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	return logger
 }
 
 // Logger return the logger instance

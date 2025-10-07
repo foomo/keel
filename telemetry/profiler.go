@@ -19,10 +19,6 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		tags["pod"] = v
 	}
 
-	if v := os.Getenv("OTEL_SERVICE_ROOT_PATH"); v != "" {
-		tags["service_root_path"] = v
-	}
-
 	profileTypes := []pyroscope.ProfileType{
 		// Default
 		pyroscope.ProfileCPU,
@@ -72,6 +68,8 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 			key = "service_git_ref"
 		case semconv.VCSRepositoryURLFullKey:
 			key = "service_repository"
+		case "vcs_root_path":
+			key = "service_root_path"
 		default:
 			key = strings.ReplaceAll(string(attr.Key), ".", "_")
 		}
