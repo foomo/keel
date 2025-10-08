@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -86,10 +87,10 @@ func Logger(opts ...LoggerOption) RoundTripware {
 			if err != nil {
 				l = log.WithError(l, err)
 			} else if resp != nil {
-				l = log.With(l,
-					log.FHTTPStatusCode(resp.StatusCode),
-					log.FHTTPRequestContentLength(resp.ContentLength),
-				)
+				l = log.With(l, log.Attributes(
+					semconv.HTTPResponseStatusCode(resp.StatusCode),
+					semconv.HTTPResponseBodySizeKey.Int64(resp.ContentLength),
+				)...)
 				statusCode = resp.StatusCode
 			}
 

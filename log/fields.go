@@ -18,22 +18,22 @@ const (
 	JSONKey = "json"
 )
 
-// FNum - returns zap field
+// FNum creates a zap.Field with a given number under the key "num".
 func FNum(num int) zap.Field {
 	return zap.Int(NumKey, num)
 }
 
-// FName - returns zap field
+// FName creates a zap.Field with a given string under the key "name".
 func FName(name string) zap.Field {
 	return zap.String(NameKey, name)
 }
 
-// FValue - returns zap field
+// FValue creates a zap.Field with a given value under the key "value".
 func FValue(value interface{}) zap.Field {
 	return zap.String(ValueKey, fmt.Sprintf("%v", value))
 }
 
-// FJSON - returns zap field
+// FJSON creates a zap.Field with a given value under the key "json".
 func FJSON(v interface{}) zap.Field {
 	if out, err := json.Marshal(v); err != nil {
 		return zap.String(JSONKey+"_error", err.Error())

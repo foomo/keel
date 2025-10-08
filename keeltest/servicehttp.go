@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -58,7 +59,7 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 			ip = "0.0.0.0"
 		}
 
-		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
+		fields = append(fields, log.Attributes(semconv.ServerAddress(ip), semconv.ServerPortKey.String(port))...)
 	}
 
 	s.l.Info("starting http test service", fields...)

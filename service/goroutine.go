@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/foomo/keel/semconv"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 
@@ -34,8 +35,8 @@ func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn, opts ...GoRou
 	}
 	// enrich the log
 	l = log.WithAttributes(l,
-		log.KeelServiceTypeKey.String("goroutine"),
-		log.KeelServiceNameKey.String(name),
+		semconv.KeelServiceType("goroutine"),
+		semconv.KeelServiceType(name),
 	)
 
 	inst := &GoRoutine{
@@ -92,7 +93,7 @@ func (s *GoRoutine) Start(ctx context.Context) error {
 	s.cancelLock.Unlock()
 
 	for i := range s.parallel {
-		l := log.WithAttributes(s.l, log.KeelServiceInstKey.Int(i))
+		l := log.WithAttributes(s.l, semconv.KeelServiceInst(i))
 		s.wg.Go(func() error {
 			return s.handler(ctx, l)
 		})

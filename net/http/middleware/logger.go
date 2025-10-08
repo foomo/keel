@@ -5,6 +5,7 @@ import (
 	"time"
 
 	httplog "github.com/foomo/keel/net/http/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -98,8 +99,8 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			l = l.With(
 				log.FDuration(time.Since(start)),
-				log.FHTTPStatusCode(wr.StatusCode()),
-				log.FHTTPWroteBytes(int64(wr.Size())),
+				log.Attribute(semconv.HTTPResponseStatusCode(wr.StatusCode())),
+				log.Attribute(semconv.HTTPResponseSize(wr.Size())),
 			)
 
 			if labeler != nil {

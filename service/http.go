@@ -9,7 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -34,8 +36,8 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 	}
 	// enrich the log
 	l = log.WithAttributes(l,
-		log.KeelServiceTypeKey.String("http"),
-		log.KeelServiceNameKey.String(name),
+		keelsemconv.KeelServiceType("http"),
+		keelsemconv.KeelServiceName(name),
 	)
 
 	return &HTTP{
@@ -87,7 +89,7 @@ func (s *HTTP) Start(ctx context.Context) error {
 			ip = "0.0.0.0"
 		}
 
-		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
+		fields = append(fields, log.Attributes(semconv.ServerAddress(ip), semconv.ServerPortKey.String(port))...)
 	}
 
 	s.l.Info("starting keel service", fields...)

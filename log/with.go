@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	keelsemconv "github.com/foomo/keel/semconv"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -40,7 +42,7 @@ func WithError(l *zap.Logger, err error) *zap.Logger {
 }
 
 func WithServiceName(l *zap.Logger, name string) *zap.Logger {
-	return With(l, FServiceName(name))
+	return With(l, Attribute(semconv.ServiceName(name)))
 }
 
 func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
@@ -56,29 +58,22 @@ func WithHTTPServerName(l *zap.Logger, name string) *zap.Logger {
 }
 
 func WithHTTPFlavor(l *zap.Logger, r *http.Request) *zap.Logger {
-	switch r.ProtoMajor {
-	case 1:
-		return With(l, FHTTPFlavor(fmt.Sprintf("1.%d", r.ProtoMinor)))
-	case 2:
-		return With(l, FHTTPFlavor("2"))
-	default:
-		return l
-	}
+	return With(l, Attributes(semconv.NetworkProtocolName("HTTP"), semconv.NetworkProtocolVersion(fmt.Sprintf("%d.%d", r.ProtoMajor, r.ProtoMinor)))...)
 }
 
 func WithHTTPScheme(l *zap.Logger, r *http.Request) *zap.Logger {
 	if r.TLS != nil {
-		return With(l, FHTTPScheme("https"))
+		return With(l, Attribute(semconv.URLScheme("https")))
 	} else {
-		return With(l, FHTTPScheme("http"))
+		return With(l, Attribute(semconv.URLScheme("http")))
 	}
 }
 
 func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get("X-Session-Id"); id != "" {
-		return With(l, FHTTPSessionID(id))
+		return With(l, Attribute(semconv.SessionID(id)))
 	} else if id, ok := keelhttpcontext.GetSessionID(r.Context()); ok && id != "" {
-		return With(l, FHTTPSessionID(id))
+		return With(l, Attribute(semconv.SessionID(id)))
 	} else {
 		return l
 	}
@@ -86,9 +81,9 @@ func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get("X-Request-Id"); id != "" {
-		return With(l, FHTTPRequestID(id))
+		return With(l, Attribute(keelsemconv.HTTPXRequestID(id)))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
-		return With(l, FHTTPRequestID(id))
+		return With(l, Attribute(keelsemconv.HTTPXRequestID(id)))
 	} else {
 		return l
 	}
@@ -96,9 +91,9 @@ func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
 	if value := r.Header.Get("X-Referer"); value != "" {
-		return With(l, FHTTPReferer(value))
+		return With(l, Attribute(keelsemconv.HTTPXRequestReferer(value)))
 	} else if value := r.Referer(); value != "" {
-		return With(l, FHTTPReferer(value))
+		return With(l, Attribute(keelsemconv.HTTPXRequestReferer(value)))
 	} else {
 		return l
 	}
@@ -106,19 +101,19 @@ func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPHost(l *zap.Logger, r *http.Request) *zap.Logger {
 	if value := r.Header.Get("X-Forwarded-Host"); value != "" {
-		return With(l, FHTTPHost(value))
+		return With(l, Attribute(semconv.HostName(value)))
 	} else if !r.URL.IsAbs() {
-		return With(l, FHTTPHost(r.Host))
+		return With(l, Attribute(semconv.HostName(r.Host)))
 	} else {
-		return With(l, FHTTPHost(r.URL.Host))
+		return With(l, Attribute(semconv.HostName(r.URL.Host)))
 	}
 }
 
 func WithHTTPTrackingID(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get("X-Tracking-Id"); id != "" {
-		return With(l, FHTTPTrackingID(id))
+		return With(l, Attribute(keelsemconv.TrackingID(id)))
 	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
-		return With(l, FHTTPTrackingID(id))
+		return With(l, Attribute(keelsemconv.TrackingID(id)))
 	} else {
 		return l
 	}
@@ -142,7 +137,7 @@ func WithHTTPClientIP(l *zap.Logger, r *http.Request) *zap.Logger {
 	}
 
 	if clientIP != "" {
-		return With(l, FHTTPClientIP(clientIP))
+		return With(l, Attribute(semconv.ClientAddress(clientIP)))
 	}
 
 	return l
@@ -159,12 +154,12 @@ func WithHTTPRequest(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPClientIP(l, r)
 	l = WithTraceID(l, r.Context())
 
-	return With(l,
-		FHTTPMethod(r.Method),
-		FHTTPTarget(r.RequestURI),
-		FHTTPUserAgent(r.UserAgent()),
-		FHTTPRequestContentLength(r.ContentLength),
-	)
+	return With(l, Attributes(
+		semconv.URLPath(r.URL.Path),
+		semconv.UserAgentName(r.UserAgent()),
+		semconv.HTTPRequestMethodKey.String(r.Method),
+		semconv.HTTPRequestSizeKey.Int64(r.ContentLength),
+	)...)
 }
 
 func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
@@ -176,9 +171,10 @@ func WithHTTPRequestOut(l *zap.Logger, r *http.Request) *zap.Logger {
 	l = WithHTTPFlavor(l, r)
 	l = WithTraceID(l, r.Context())
 
-	return With(l,
-		FHTTPMethod(r.Method),
-		FHTTPTarget(r.URL.Path),
-		FHTTPWroteBytes(r.ContentLength),
-	)
+	return With(l, Attributes(
+		semconv.URLPath(r.URL.Path),
+		semconv.UserAgentName(r.UserAgent()),
+		semconv.HTTPRequestMethodKey.String(r.Method),
+		semconv.HTTPRequestSizeKey.Int64(r.ContentLength),
+	)...)
 }

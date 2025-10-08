@@ -16,6 +16,10 @@ type Context struct {
 	context.Context
 }
 
+func Ctx(ctx context.Context) Context {
+	return Context{ctx}
+}
+
 func (c Context) Log() *zap.Logger {
 	return Log(c.Context)
 }
@@ -53,8 +57,4 @@ func (c Context) Profile(handler func(ctx Context), labels ...string) {
 	pyroscope.TagWrapper(c.Context, pyroscope.Labels(labels...), func(ctx context.Context) {
 		handler(Ctx(ctx))
 	})
-}
-
-func Ctx(ctx context.Context) Context {
-	return Context{ctx}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -122,7 +123,7 @@ func SubscriberWithUnmarshal(unmarshal UnmarshalFn) SubscriberOption {
 func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	stream := &Stream{
 		l: l.With(
-			log.FMessagingSystem("jetstream"),
+			log.Attribute(semconv.MessagingSystemKey.String("jetstream")),
 			log.FName(name),
 		),
 		name: name,
@@ -294,7 +295,11 @@ func (s *Stream) connect() error {
 func (s *Stream) initNatsOptions() {
 	natsOpts := append([]nats.Option{
 		nats.ErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-			s.l.Error("nats error", log.FError(err), log.FStreamQueue(subscription.Queue), log.FStreamSubject(subscription.Subject))
+			s.l.Error("nats error",
+				log.FError(err),
+				log.Attribute(semconv.MessagingDestinationName(subscription.Queue)),
+				log.Attribute(semconv.MessagingDestinationSubscriptionName(subscription.Subject)),
+			)
 		}),
 		nats.ClosedHandler(func(conn *nats.Conn) {
 			if err := conn.LastError(); err != nil {

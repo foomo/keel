@@ -8,6 +8,7 @@ import (
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
 	"github.com/foomo/keel/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 
 	unavailable := func(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
 		if err != nil {
-			log.WithError(l, err).With(log.FHTTPTarget(r.RequestURI)).Debug("healthz probe failed")
+			log.WithError(l, err).With(log.Attribute(semconv.URLFull(r.RequestURI))).Debug("healthz probe failed")
 			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		}
 	}
