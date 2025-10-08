@@ -211,8 +211,6 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 				if stats.ErrorCode != 0 {
 					span.SetStatus(codes.Error, fmt.Sprintf("%s: %s", stats.ErrorType, stats.ErrorMessage))
 					span.SetAttributes(attribute.Int("gotsrpc.error.code", stats.ErrorCode))
-				} else {
-					span.SetStatus(codes.Ok, "")
 				}
 
 				if stats.ErrorType != "" {
