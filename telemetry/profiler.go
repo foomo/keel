@@ -18,6 +18,9 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	if v := os.Getenv("HOSTNAME"); v != "" {
 		tags["pod"] = v
 	}
+	if v := os.Getenv("OTEL_SERVICE_NAMESPACE"); v != "" {
+		tags["service_namespace"] = v
+	}
 
 	profileTypes := []pyroscope.ProfileType{
 		// Default
@@ -57,19 +60,19 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 		return nil, err
 	}
 
+	name := env.Get("OTEL_SERVICE_NAME", DefaultServiceName)
 	for _, attr := range resource.Attributes() {
-		var (
-			key string
-		)
+		var key string
 
 		switch attr.Key {
 		case "service.name":
+			name = attr.Value.Emit()
 			continue
 		case semconv.VCSRefHeadRevisionKey:
 			key = "service_git_ref"
 		case semconv.VCSRepositoryURLFullKey:
 			key = "service_repository"
-		case "vcs_root_path":
+		case "vcs_repository_path":
 			key = "service_root_path"
 		default:
 			key = strings.ReplaceAll(string(attr.Key), ".", "_")
@@ -79,7 +82,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	}
 
 	p, err := pyroscope.Start(pyroscope.Config{
-		ApplicationName: env.Get("OTEL_SERVICE_NAME", DefaultServiceName),
+		ApplicationName: name,
 		// Logger:          internalpyroscope.NewLogger(),
 		ProfileTypes: profileTypes,
 		Tags:         tags,

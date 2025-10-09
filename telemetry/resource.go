@@ -22,7 +22,7 @@ func NewResource(ctx context.Context) (*resource.Resource, error) {
 		semconv.VCSRefHeadNameKey:       {"GIT_BRANCH", "OTEL_VCS_HEAD_NAME"},
 		semconv.VCSRefHeadRevisionKey:   {"GIT_COMMIT", "GIT_COMMIT_HASH", "OTEL_VCS_HEAD_REVSION"},
 		semconv.VCSRefHeadTypeKey:       {"GIT_TYPE", "OTEL_VCS_HEAD_TYPE"},
-		"vcs_root_path":                 {"REPO_PATH", "REPOSITORY_PATH", "GIT_REPOSITORY_PATH", "OTEL_VCS_ROOT_PATH"},
+		"vcs.repository.path":           {"REPO_PATH", "REPOSITORY_PATH", "GIT_REPOSITORY_PATH", "OTEL_VCS_ROOT_PATH"},
 	}
 	for k, keys := range envs {
 		for _, key := range keys {
