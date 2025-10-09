@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/foomo/keel/log"
@@ -95,6 +96,15 @@ func (c Context) SetSpanStatusError(description string) Context {
 	return c
 }
 
+// SetSpanName sets the name of the span.
+func (c Context) SetSpanName(name string) Context {
+	sp := c.Span()
+	if sp.IsRecording() {
+		sp.SetName(name)
+	}
+	return c
+}
+
 // SetSpanAttributes sets the attributes of the span.
 func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) Context {
 	sp := c.Span()
@@ -140,19 +150,23 @@ func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
 	return ctx
 }
 
-// StartProfile starts a profile span.
-func (c Context) StartProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
+// StartSpanWithProfile starts a span and profiles the handler.
+func (c Context) StartSpanWithProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
 	ctx, span := c.startSpan("PROFILE", 2, trace.WithAttributes(kv...))
 	defer span.End()
+	ctx.StartProfile(handler, kv...)
+}
 
-	var labels []string
-	for _, value := range kv {
-		labels = append(labels, string(value.Key), value.Value.AsString())
-	}
-
-	pyroscope.TagWrapper(ctx, pyroscope.Labels(labels...), func(ctx context.Context) {
+// StartProfile starts a profile for the handler.
+func (c Context) StartProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
+	pyroscope.TagWrapper(c.Context, PyroscopeLabels(kv...), func(ctx context.Context) {
 		handler(Ctx(ctx))
 	})
+}
+
+// SetProfileAttributes sets the labels for the profile.
+func (c Context) SetProfileAttributes(kv ...attribute.KeyValue) Context {
+	return Ctx(pprof.WithLabels(c.Context, PyroscopeLabels(kv...)))
 }
 
 // IntHistogram creates and returns a Int64Histogram metric instrument with the specified name and optional settings.

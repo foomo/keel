@@ -8,15 +8,20 @@ import (
 )
 
 func Attributes(attrs ...attribute.KeyValue) []zap.Field {
-	ret := make([]zap.Field, len(attrs))
-	for i, attr := range attrs {
-		ret[i] = Attribute(attr)
+	ret := make([]zap.Field, 0, len(attrs))
+	for _, attr := range attrs {
+		if attr.Valid() {
+			ret = append(ret, Attribute(attr))
+		}
 	}
 
 	return ret
 }
 
 func Attribute(attr attribute.KeyValue) zap.Field {
+	if !attr.Valid() {
+		return zap.Skip()
+	}
 	switch attr.Value.Type() {
 	case attribute.BOOL:
 		return zap.Bool(AttributeKey(attr.Key), attr.Value.AsBool())

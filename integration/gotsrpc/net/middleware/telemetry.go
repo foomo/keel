@@ -10,26 +10,16 @@ import (
 
 	"github.com/foomo/gotsrpc/v2"
 	"github.com/foomo/keel/env"
+	"github.com/foomo/keel/log"
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/foomo/keel/net/http/middleware"
 	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/foomo/keel/semconv/gotsrpcconv"
 	"github.com/foomo/keel/telemetry"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-)
-
-// Prometheus Metrics
-const (
-	defaultGOTSRPCFunctionLabel = "gotsrpc_func"
-	defaultGOTSRPCServiceLabel  = "gotsrpc_service"
-	defaultGOTSRPCPackageLabel  = "gotsrpc_package"
-	defaultGOTSRPCErrorCode     = "gotsrpc_error_code"
-	defaultGOTSRPCErrorType     = "gotsrpc_error_type"
-	defaultGOTSRPCErrorMessage  = "gotsrpc_error_message"
 )
 
 type (
@@ -137,76 +127,76 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			span := trace.SpanFromContext(r.Context())
-			if span.IsRecording() {
-				span.AddEvent("GOTSRCP Telemetry")
-			}
+			ctx := telemetry.Ctx(r.Context())
+			ctx.AddSpanEvent("GOTSRCP Telemetry")
 
 			*r = *gotsrpc.RequestWithStatsContext(r)
 
-			next.ServeHTTP(w, r)
+			ctx.StartProfile(func(ctx telemetry.Context) {
+				next.ServeHTTP(w, r.WithContext(ctx))
 
-			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-				if !opts.PayloadAttributeDisabled {
-					span.SetAttributes(keelsemconv.GoTSRPCPayload(sanitizePayload(r)))
-				}
+				if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+					if !opts.PayloadAttributeDisabled {
+						ctx.SetSpanAttributes(keelsemconv.GoTSRPCPayload(sanitizePayload(r)))
+					}
 
-				var pkg string
-				if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
-					pkg = parts[len(parts)-1] + "."
-				}
+					var pkg string
+					if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
+						pkg = parts[len(parts)-1] + "."
+					}
 
-				span.SetName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
-				span.SetAttributes(
-					keelsemconv.GoTSRPCFunc(stats.Func),
-					keelsemconv.GoTSRPCService(stats.Service),
-					keelsemconv.GoTSRPCPackage(stats.Package),
-					keelsemconv.GoTSRPCMarshalling(stats.Marshalling.Milliseconds()),
-					keelsemconv.GoTSRPCUnmarshalling(stats.Unmarshalling.Milliseconds()),
-				)
-
-				if stats.ErrorCode != 0 {
-					span.SetStatus(codes.Error, stats.ErrorMessage)
-					span.SetAttributes(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode))
-				}
-
-				if stats.ErrorType != "" {
-					span.SetAttributes(keelsemconv.GoTSRPCErrorType(stats.ErrorType))
-				}
-
-				if stats.ErrorMessage != "" {
-					span.SetAttributes(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage))
-				}
-
-				m.Record(r.Context(),
-					stats.Execution.Seconds(),
-					stats.Package,
-					stats.Service,
-					stats.Func,
-					m.AttrError(stats.ErrorCode != 0),
-				)
-
-				// enrich logger
-				if labeler, ok := httplog.LabelerFromRequest(r); ok {
-					labeler.Add(
-						zap.String(defaultGOTSRPCFunctionLabel, stats.Func),
-						zap.String(defaultGOTSRPCServiceLabel, stats.Service),
-						zap.String(defaultGOTSRPCPackageLabel, stats.Package),
-					)
+					ctx.SetSpanName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
+					attrs := []attribute.KeyValue{
+						keelsemconv.GoTSRPCFunc(stats.Func),
+						keelsemconv.GoTSRPCService(stats.Service),
+						keelsemconv.GoTSRPCPackage(stats.Package),
+					}
+					ctx.SetSpanAttributes(append(attrs,
+						keelsemconv.GoTSRPCMarshalling(stats.Marshalling.Milliseconds()),
+						keelsemconv.GoTSRPCUnmarshalling(stats.Unmarshalling.Milliseconds()),
+					)...)
+					ctx.SetProfileAttributes(attrs...)
 
 					if stats.ErrorCode != 0 {
-						labeler.Add(zap.Int(defaultGOTSRPCErrorCode, stats.ErrorCode))
+						ctx.SetSpanStatusError(stats.ErrorMessage)
+						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode))
 					}
 
 					if stats.ErrorType != "" {
-						labeler.Add(zap.String(defaultGOTSRPCErrorType, stats.ErrorType))
+						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorType(stats.ErrorType))
 					}
 
 					if stats.ErrorMessage != "" {
-						labeler.Add(zap.String(defaultGOTSRPCErrorMessage, stats.ErrorMessage))
+						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage))
+					}
+
+					m.Record(r.Context(),
+						stats.Execution.Seconds(),
+						stats.Package,
+						stats.Service,
+						stats.Func,
+						m.AttrError(stats.ErrorCode != 0),
+					)
+
+					// enrich logger
+					if labeler, ok := httplog.LabelerFromRequest(r); ok {
+						labeler.Add(log.Attributes(attrs...)...)
+
+						if stats.ErrorCode != 0 {
+							labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode)))
+						}
+
+						if stats.ErrorType != "" {
+							labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorType(stats.ErrorType)))
+						}
+
+						if stats.ErrorMessage != "" {
+							labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage)))
+						}
 					}
 				}
-			}
+			})
+
 		})
 	}
 }
