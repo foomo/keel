@@ -13,8 +13,9 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/foomo/keel/net/http/middleware"
 	keelsemconv "github.com/foomo/keel/semconv"
-	gotsrpcconv "github.com/foomo/keel/semconv/gotsrpc"
+	"github.com/foomo/keel/semconv/gotsrpcconv"
 	"github.com/foomo/keel/telemetry"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -34,6 +35,7 @@ const (
 type (
 	TelemetryOptions struct {
 		meter                    metric.Meter
+		bucketBoundries          []float64
 		PayloadAttributeDisabled bool
 	}
 	TelemetryOption func(*TelemetryOptions)
@@ -43,6 +45,7 @@ type (
 func DefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
 		meter:                    telemetry.Meter(),
+		bucketBoundries:          []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10},
 		PayloadAttributeDisabled: env.GetBool("OTEL_GOTSRPC_PAYLOAD_ATTRIBUTE_DISABLED", true),
 	}
 }
@@ -71,6 +74,13 @@ func TelemetryWithObserveUnmarshalling(v bool) TelemetryOption {
 	}
 }
 
+// TelemetryWithBucketBoundries middleware option
+func TelemetryWithBucketBoundries(v []float64) TelemetryOption {
+	return func(o *TelemetryOptions) {
+		o.bucketBoundries = v
+	}
+}
+
 // TelemetryWithPayloadAttributeDisabled middleware option
 func TelemetryWithPayloadAttributeDisabled(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
@@ -93,9 +103,12 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 
 // TelemetryWithOptions middleware
 func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
-	m, err := gotsrpcconv.NewServerRequestDuration(opts.meter)
+	m, err := gotsrpcconv.NewExecutionDuration(
+		opts.meter,
+		metric.WithExplicitBucketBoundaries(opts.bucketBoundries...),
+	)
 	if err != nil {
-		panic(err)
+		otel.Handle(err)
 	}
 
 	sanitizePayload := func(r *http.Request) string {

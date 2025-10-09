@@ -1,4 +1,4 @@
-package gotsrpc
+package gotsrpcconv
 
 import (
 	"context"
@@ -14,66 +14,66 @@ var (
 	recOptPool = &sync.Pool{New: func() any { return &[]metric.RecordOption{} }}
 )
 
-// ServerRequestDuration is an instrument used to record metric values conforming
-// to the "http.server.request.duration" semantic conventions. It represents the
+// ExecutionDuration is an instrument used to record metric values conforming
+// to the "gotsrpc.execution.duration" semantic conventions. It represents the
 // duration of HTTP server requests.
-type ServerRequestDuration struct {
+type ExecutionDuration struct {
 	metric.Float64Histogram
 }
 
-var newServerRequestDurationOpts = []metric.Float64HistogramOption{
-	metric.WithDescription("Duration of GOTSRPC server requests."),
+var newExecutionDurationOpts = []metric.Float64HistogramOption{
+	metric.WithDescription("Duration of GOTSRPC execution."),
 	metric.WithUnit("s"),
 }
 
-// NewServerRequestDuration returns a new ServerRequestDuration instrument.
-func NewServerRequestDuration(
+// NewExecutionDuration returns a new ExecutionDuration instrument.
+func NewExecutionDuration(
 	m metric.Meter,
 	opt ...metric.Float64HistogramOption,
-) (ServerRequestDuration, error) {
+) (ExecutionDuration, error) {
 	// Check if the meter is nil.
 	if m == nil {
-		return ServerRequestDuration{noop.Float64Histogram{}}, nil
+		return ExecutionDuration{noop.Float64Histogram{}}, nil
 	}
 
 	if len(opt) == 0 {
-		opt = newServerRequestDurationOpts
+		opt = newExecutionDurationOpts
 	} else {
-		opt = append(opt, newServerRequestDurationOpts...)
+		opt = append(opt, newExecutionDurationOpts...)
 	}
 
 	i, err := m.Float64Histogram(
-		"gotsrpc.server.request.duration",
+		"gotsrpc.execution.duration",
 		opt...,
 	)
 	if err != nil {
-		return ServerRequestDuration{noop.Float64Histogram{}}, err
+		return ExecutionDuration{noop.Float64Histogram{}}, err
 	}
 
-	return ServerRequestDuration{i}, nil
+	return ExecutionDuration{i}, nil
 }
 
 // Inst returns the underlying metric instrument.
-func (m ServerRequestDuration) Inst() metric.Float64Histogram {
+func (m ExecutionDuration) Inst() metric.Float64Histogram {
 	return m.Float64Histogram
 }
 
 // Name returns the semantic convention name of the instrument.
-func (ServerRequestDuration) Name() string {
-	return "gotsrpc.server.request.duration"
+func (ExecutionDuration) Name() string {
+	return "gotsrpc.execution.duration"
 }
 
 // Unit returns the semantic convention unit of the instrument
-func (ServerRequestDuration) Unit() string {
+func (ExecutionDuration) Unit() string {
 	return "s"
 }
 
 // Description returns the semantic convention description of the instrument
-func (ServerRequestDuration) Description() string {
-	return "Duration of GOTSRPC server requests."
+func (ExecutionDuration) Description() string {
+	return "Duration of GOTSRPC execution."
 }
 
-func (m ServerRequestDuration) Record(
+func (m ExecutionDuration) Record(
 	ctx context.Context,
 	val float64,
 	pkg string,
@@ -109,7 +109,7 @@ func (m ServerRequestDuration) Record(
 }
 
 // RecordSet records val to the current distribution for set.
-func (m ServerRequestDuration) RecordSet(ctx context.Context, val float64, set attribute.Set) {
+func (m ExecutionDuration) RecordSet(ctx context.Context, val float64, set attribute.Set) {
 	if set.Len() == 0 {
 		m.Float64Histogram.Record(ctx, val)
 	}
@@ -125,6 +125,6 @@ func (m ServerRequestDuration) RecordSet(ctx context.Context, val float64, set a
 	m.Float64Histogram.Record(ctx, val, *o...)
 }
 
-func (ServerRequestDuration) AttrError(val bool) attribute.KeyValue {
+func (ExecutionDuration) AttrError(val bool) attribute.KeyValue {
 	return attribute.Bool("gotsprc.error", val)
 }
