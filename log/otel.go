@@ -22,6 +22,7 @@ func Attribute(attr attribute.KeyValue) zap.Field {
 	if !attr.Valid() {
 		return zap.Skip()
 	}
+
 	switch attr.Value.Type() {
 	case attribute.BOOL:
 		return zap.Bool(AttributeKey(attr.Key), attr.Value.AsBool())

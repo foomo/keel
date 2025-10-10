@@ -25,7 +25,7 @@ import (
 type (
 	TelemetryOptions struct {
 		meter                    metric.Meter
-		bucketBoundries          []float64
+		bucketBoundaries         []float64
 		PayloadAttributeDisabled bool
 	}
 	TelemetryOption func(*TelemetryOptions)
@@ -35,7 +35,7 @@ type (
 func DefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
 		meter:                    telemetry.Meter(),
-		bucketBoundries:          []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10},
+		bucketBoundaries:         []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10},
 		PayloadAttributeDisabled: env.GetBool("OTEL_GOTSRPC_PAYLOAD_ATTRIBUTE_DISABLED", true),
 	}
 }
@@ -67,7 +67,7 @@ func TelemetryWithObserveUnmarshalling(v bool) TelemetryOption {
 // TelemetryWithBucketBoundries middleware option
 func TelemetryWithBucketBoundries(v []float64) TelemetryOption {
 	return func(o *TelemetryOptions) {
-		o.bucketBoundries = v
+		o.bucketBoundaries = v
 	}
 }
 
@@ -95,7 +95,7 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 	m, err := gotsrpcconv.NewExecutionDuration(
 		opts.meter,
-		metric.WithExplicitBucketBoundaries(opts.bucketBoundries...),
+		metric.WithExplicitBucketBoundaries(opts.bucketBoundaries...),
 	)
 	if err != nil {
 		otel.Handle(err)
@@ -127,13 +127,15 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			*r = *gotsrpc.RequestWithStatsContext(r)
+
 			ctx := telemetry.Ctx(r.Context())
 			ctx.AddSpanEvent("GOTSRCP Telemetry")
 
-			*r = *gotsrpc.RequestWithStatsContext(r)
-
 			ctx.StartProfile(func(ctx telemetry.Context) {
-				next.ServeHTTP(w, r.WithContext(ctx))
+				r = r.WithContext(ctx)
+
+				next.ServeHTTP(w, r)
 
 				if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
 					if !opts.PayloadAttributeDisabled {
@@ -196,7 +198,6 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					}
 				}
 			})
-
 		})
 	}
 }

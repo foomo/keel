@@ -18,6 +18,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	if v := os.Getenv("HOSTNAME"); v != "" {
 		tags["pod"] = v
 	}
+
 	if v := os.Getenv("OTEL_SERVICE_NAMESPACE"); v != "" {
 		tags["service_namespace"] = v
 	}
@@ -61,6 +62,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	}
 
 	name := env.Get("OTEL_SERVICE_NAME", DefaultServiceName)
+
 	for _, attr := range resource.Attributes() {
 		var key string
 

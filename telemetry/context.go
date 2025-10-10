@@ -77,71 +77,58 @@ func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 }
 
 // SetSpanStatusOK sets the status of the span to ok.
-func (c Context) SetSpanStatusOK() Context {
+func (c Context) SetSpanStatusOK() {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.SetStatus(codes.Ok, "")
 	}
-
-	return c
 }
 
 // SetSpanStatusError sets the status of the span to error.
-func (c Context) SetSpanStatusError(description string) Context {
+func (c Context) SetSpanStatusError(description string) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.SetStatus(codes.Error, description)
 	}
-
-	return c
 }
 
 // SetSpanName sets the name of the span.
-func (c Context) SetSpanName(name string) Context {
+func (c Context) SetSpanName(name string) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.SetName(name)
 	}
-	return c
 }
 
 // SetSpanAttributes sets the attributes of the span.
-func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) Context {
+func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.SetAttributes(kv...)
 	}
-
-	return c
 }
 
 // RecordError records an error on the span and logs it.
-func (c Context) RecordError(err error, kv ...attribute.KeyValue) Context {
+func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	c.RecordSpanError(err, trace.WithAttributes(kv...))
 	c.SetSpanStatusError(errors.Cause(err).Error())
 	c.Log().With(append(log.Attributes(kv...), zap.Error(err))...).Error(errors.Cause(err).Error())
-
-	return c
 }
 
 // RecordSpanError records an error on the span.
-func (c Context) RecordSpanError(err error, opts ...trace.EventOption) Context {
+func (c Context) RecordSpanError(err error, opts ...trace.EventOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.RecordError(err, append(opts, trace.WithStackTrace(true))...)
 	}
-
-	return c
 }
 
 // AddSpanEvent adds an event to the span.
-func (c Context) AddSpanEvent(name string, opts ...trace.EventOption) Context {
+func (c Context) AddSpanEvent(name string, opts ...trace.EventOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.AddEvent(name, opts...)
 	}
-
-	return c
 }
 
 // StartSpan starts a span.
@@ -154,6 +141,7 @@ func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
 func (c Context) StartSpanWithProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
 	ctx, span := c.startSpan("PROFILE", 2, trace.WithAttributes(kv...))
 	defer span.End()
+
 	ctx.StartProfile(handler, kv...)
 }
 
@@ -166,7 +154,10 @@ func (c Context) StartProfile(handler func(ctx Context), kv ...attribute.KeyValu
 
 // SetProfileAttributes sets the labels for the profile.
 func (c Context) SetProfileAttributes(kv ...attribute.KeyValue) Context {
-	return Ctx(pprof.WithLabels(c.Context, PyroscopeLabels(kv...)))
+	ctx := pprof.WithLabels(c.Context, PyroscopeLabels(kv...))
+	pprof.SetGoroutineLabels(ctx)
+
+	return Ctx(ctx)
 }
 
 // IntHistogram creates and returns a Int64Histogram metric instrument with the specified name and optional settings.
