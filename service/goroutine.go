@@ -36,7 +36,7 @@ func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn, opts ...GoRou
 	// enrich the log
 	l = log.WithAttributes(l,
 		semconv.KeelServiceType("goroutine"),
-		semconv.KeelServiceType(name),
+		semconv.KeelServiceName(name),
 	)
 
 	inst := &GoRoutine{
