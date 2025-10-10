@@ -24,6 +24,7 @@ var envAttributes = map[attribute.Key][]string{
 
 func EnvAttributes() []attribute.KeyValue {
 	var attrs []attribute.KeyValue
+
 	for k, keys := range envAttributes {
 		for _, key := range keys {
 			if v := os.Getenv(key); v != "" {
@@ -32,6 +33,7 @@ func EnvAttributes() []attribute.KeyValue {
 			}
 		}
 	}
+
 	return attrs
 }
 
