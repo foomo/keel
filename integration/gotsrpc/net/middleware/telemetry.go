@@ -202,7 +202,6 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 					}
 				}
 			}, keelsemconv.ProfileName("gotsrpc"))
-
 		})
 	}
 }
