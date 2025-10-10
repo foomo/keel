@@ -147,17 +147,21 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 						pkg = parts[len(parts)-1] + "."
 					}
 
+					// override span name
 					ctx.SetSpanName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
+
+					// define default attributes
 					attrs := []attribute.KeyValue{
 						keelsemconv.GoTSRPCFunc(stats.Func),
 						keelsemconv.GoTSRPCService(stats.Service),
 						keelsemconv.GoTSRPCPackage(stats.Package),
 					}
+
+					// add trace attributes
 					ctx.SetSpanAttributes(append(attrs,
 						keelsemconv.GoTSRPCMarshalling(stats.Marshalling.Milliseconds()),
 						keelsemconv.GoTSRPCUnmarshalling(stats.Unmarshalling.Milliseconds()),
 					)...)
-					ctx.SetProfileAttributes(attrs...)
 
 					if stats.ErrorCode != 0 {
 						ctx.SetSpanStatusError(stats.ErrorMessage)
@@ -197,7 +201,8 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 						}
 					}
 				}
-			})
+			}, keelsemconv.ProfileName("gotsrpc"))
+
 		})
 	}
 }
