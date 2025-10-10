@@ -1,4 +1,4 @@
-name: Test
+name: Test Branch
 
 on:
   push:
@@ -27,19 +27,13 @@ jobs:
           check-latest: true
           go-version-file: 'go.mod'
 
-      - name: Setup golangci cache
+      - name: Setup golangci-lint cache
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/golangci-lint
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/*.go') }}
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-lint-${{ hashFiles('**/go.mod') }}
           restore-keys: |
-            ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/*.go') }}
-            ${{ runner.os }}-go-${{ hashFiles('**/go.mod') }}-
-            ${{ runner.os }}-go-
-
-      - name: Setup golangci cache status
-        run: golangci-lint cache status
+            ${{ runner.os }}-golangci-lint-
 
       - name: Run tidy
         run: make tidy && git diff --exit-code

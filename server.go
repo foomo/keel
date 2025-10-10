@@ -330,7 +330,7 @@ func (s *Server) Readme() string {
 
 // Run runs the server
 func (s *Server) Run() {
-	s.l.Info("starting keel server")
+	s.l.With(log.Attributes(telemetry.EnvAttributes()...)...).Info("starting keel server")
 	defer s.cancel()
 
 	// start services

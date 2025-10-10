@@ -2,7 +2,6 @@ package log
 
 import (
 	"fmt"
-	"strings"
 
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
@@ -42,13 +41,11 @@ func NewLogger(level, encoding string) *zap.Logger {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
 
-	config.EncoderConfig.CallerKey = strings.ReplaceAll(string(semconv.CodeFilePathKey), ".", "_")
-	config.EncoderConfig.StacktraceKey = strings.ReplaceAll(string(semconv.CodeStacktraceKey), ".", "_")
-	config.EncoderConfig.EncodeCaller = func(caller zapcore.EntryCaller, encoder zapcore.PrimitiveArrayEncoder) {
-		encoder.AppendString(caller.File)
-	}
+	config.EncoderConfig.CallerKey = AttributeKey(semconv.CodeFilePathKey)
+	config.EncoderConfig.StacktraceKey = AttributeKey(semconv.CodeStacktraceKey)
+	config.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
 
-	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", config.Level.Enabled(zap.DebugLevel))
+	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
 	config.DisableStacktrace = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
 
 	logger, err := config.Build()
