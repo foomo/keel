@@ -7,8 +7,11 @@ import (
 )
 
 func Readme() string {
-	var configRows [][]string
-	var remoteRows [][]string
+	var (
+		configRows [][]string
+		remoteRows [][]string
+	)
+
 	c := Config()
 	md := &markdown.Markdown{}
 
@@ -19,6 +22,7 @@ func Readme() string {
 			if v, ok := defaults[key]; ok {
 				fallback = v
 			}
+
 			configRows = append(configRows, []string{
 				markdown.Code(key),
 				markdown.Code(TypeOf(key)),

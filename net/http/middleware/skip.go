@@ -9,6 +9,7 @@ import (
 func Skip(mw Middleware, skippers ...Skipper) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		wrapped := mw(l, name, next)
+
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			for _, skipper := range skippers {
 				if skipper(r) {
@@ -16,6 +17,7 @@ func Skip(mw Middleware, skippers ...Skipper) Middleware {
 					return
 				}
 			}
+
 			wrapped.ServeHTTP(w, r)
 		})
 	}

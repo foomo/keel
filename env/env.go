@@ -25,6 +25,7 @@ func MustExists(key string) {
 	if !Exists(key) {
 		panic(fmt.Sprintf("required environment variable `%s` does not exist", key))
 	}
+
 	if _, ok := requiredKeys.Load(key); !ok {
 		requiredKeys.Store(key, true)
 	}
@@ -33,12 +34,15 @@ func MustExists(key string) {
 // Get env var or fallback
 func Get(key, fallback string) string {
 	defaults.Store(key, fallback)
+
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "string")
 	}
+
 	if v, ok := os.LookupEnv(key); ok {
 		return v
 	}
+
 	return fallback
 }
 
@@ -53,9 +57,11 @@ func GetInt(key string, fallback int) int {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "int")
 	}
+
 	if value, err := strconv.Atoi(Get(key, "")); err == nil {
 		return value
 	}
+
 	return fallback
 }
 
@@ -70,9 +76,11 @@ func GetInt64(key string, fallback int64) int64 {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "int64")
 	}
+
 	if value, err := strconv.ParseInt(Get(key, ""), 10, 64); err == nil {
 		return value
 	}
+
 	return fallback
 }
 
@@ -87,9 +95,11 @@ func GetFloat64(key string, fallback float64) float64 {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "float64")
 	}
+
 	if value, err := strconv.ParseFloat(Get(key, ""), 64); err == nil {
 		return value
 	}
+
 	return fallback
 }
 
@@ -104,9 +114,11 @@ func GetBool(key string, fallback bool) bool {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "bool")
 	}
+
 	if val, err := strconv.ParseBool(Get(key, "")); err == nil {
 		return val
 	}
+
 	return fallback
 }
 
@@ -121,9 +133,11 @@ func GetStringSlice(key string, fallback []string) []string {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "[]string")
 	}
+
 	if v := Get(key, ""); v != "" {
 		return strings.Split(v, ",")
 	}
+
 	return fallback
 }
 
@@ -138,17 +152,21 @@ func GetIntSlice(key string, fallback []int) []int {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "[]int")
 	}
+
 	if v := Get(key, ""); v != "" {
 		elements := strings.Split(v, ",")
+
 		ret := make([]int, len(elements))
 		for i, stringVal := range elements {
 			intVal, err := strconv.Atoi(stringVal)
 			if err != nil {
 				return fallback
 			}
+
 			ret[i] = intVal
 		}
 	}
+
 	return fallback
 }
 
@@ -160,36 +178,45 @@ func MustGetGetIntSlice(key string) []int {
 
 func RequiredKeys() []string {
 	var ret []string
+
 	requiredKeys.Range(func(key, value interface{}) bool {
 		if v, ok := key.(string); ok {
 			ret = append(ret, v)
 		}
+
 		return true
 	})
+
 	return ret
 }
 
 func Defaults() map[string]interface{} {
 	ret := map[string]interface{}{}
+
 	defaults.Range(func(key, value interface{}) bool {
 		if k, ok := key.(string); ok {
 			ret[k] = value
 		}
+
 		return true
 	})
+
 	return ret
 }
 
 func Types() map[string]string {
 	ret := map[string]string{}
+
 	types.Range(func(key, value interface{}) bool {
 		if v, ok := value.(string); ok {
 			if k, ok := key.(string); ok {
 				ret[k] = v
 			}
 		}
+
 		return true
 	})
+
 	return ret
 }
 
@@ -198,7 +225,9 @@ func TypeOf(key string) string {
 		if s, ok := v.(string); ok {
 			return s
 		}
+
 		return ""
 	}
+
 	return ""
 }

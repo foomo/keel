@@ -13,8 +13,11 @@ import (
 )
 
 func readBodyPretty(contentType string, original io.ReadCloser) (io.ReadCloser, string) {
-	var bs bytes.Buffer
-	var body string
+	var (
+		bs   bytes.Buffer
+		body string
+	)
+
 	defer func() {
 		_ = original.Close()
 	}()
@@ -33,8 +36,11 @@ func readBodyPretty(contentType string, original io.ReadCloser) (io.ReadCloser, 
 			body = prettyJSON.String()
 		}
 	case strings.HasPrefix(contentType, "application/msgpack"):
-		var prettyJSON bytes.Buffer
-		var out bytes.Buffer
+		var (
+			prettyJSON bytes.Buffer
+			out        bytes.Buffer
+		)
+
 		if _, err := msgp.UnmarshalAsJSON(&out, bs.Bytes()); err == nil {
 			if err := json.Indent(&prettyJSON, out.Bytes(), "", "  "); err == nil {
 				body = prettyJSON.String()
@@ -81,6 +87,7 @@ func copyRequest(req *http.Request, body bool) (*http.Request, error) {
 		out.Body = nil
 	} else {
 		var err error
+
 		out.Body, req.Body, err = drainBody(req.Body)
 		if err != nil {
 			return nil, err
@@ -109,6 +116,7 @@ func copyResponse(resp *http.Response, body bool) (*http.Response, error) {
 		out.Body = nil
 	} else {
 		var err error
+
 		out.Body, resp.Body, err = drainBody(resp.Body)
 		if err != nil {
 			return nil, err
@@ -121,16 +129,20 @@ func copyResponse(resp *http.Response, body bool) (*http.Response, error) {
 // copied from httputil
 func drainBody(b io.ReadCloser) (io.ReadCloser, io.ReadCloser, error) {
 	var err error
+
 	if b == nil || b == http.NoBody {
 		// No copying needed. Preserve the magic sentinel meaning of NoBody.
 		return http.NoBody, http.NoBody, nil
 	}
+
 	var buf bytes.Buffer
 	if _, err = buf.ReadFrom(b); err != nil {
 		return nil, b, err
 	}
+
 	if err = b.Close(); err != nil {
 		return nil, b, err
 	}
+
 	return io.NopCloser(&buf), io.NopCloser(bytes.NewReader(buf.Bytes())), nil
 }

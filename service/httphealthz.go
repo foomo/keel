@@ -8,6 +8,7 @@ import (
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
 	"github.com/foomo/keel/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 
 	unavailable := func(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
 		if err != nil {
-			log.WithError(l, err).With(log.FHTTPTarget(r.RequestURI)).Debug("healthz probe failed")
+			log.WithError(l, err).With(log.Attribute(semconv.URLFull(r.RequestURI))).Debug("healthz probe failed")
 			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		}
 	}
@@ -59,6 +60,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 			if typ == healthz.TypeStartup {
 				continue
 			}
+
 			for _, p := range values {
 				if ok, err := call(r.Context(), p); err != nil {
 					unavailable(l, w, r, err)
@@ -69,6 +71,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 				}
 			}
 		}
+
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -78,9 +81,11 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
+
 		if p, ok := probes[healthz.TypeLiveness]; ok {
 			ps = append(ps, p...)
 		}
+
 		for _, p := range ps {
 			if ok, err := call(r.Context(), p); err != nil {
 				unavailable(l, w, r, err)
@@ -90,6 +95,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 				return
 			}
 		}
+
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -99,9 +105,11 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
+
 		if p, ok := probes[healthz.TypeReadiness]; ok {
 			ps = append(ps, p...)
 		}
+
 		for _, p := range ps {
 			if ok, err := call(r.Context(), p); err != nil {
 				unavailable(l, w, r, err)
@@ -111,6 +119,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 				return
 			}
 		}
+
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -120,9 +129,11 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
+
 		if p, ok := probes[healthz.TypeStartup]; ok {
 			ps = append(ps, p...)
 		}
+
 		for _, p := range ps {
 			if ok, err := call(r.Context(), p); err != nil {
 				unavailable(l, w, r, err)
@@ -132,9 +143,11 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 				return
 			}
 		}
+
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
+
 	return NewHTTP(l, name, addr, handler)
 }
 

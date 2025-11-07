@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -51,13 +52,16 @@ func (s *ServiceHTTP) URL() string {
 
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
+
 	if value := strings.Split(s.server.Listener.Addr().String(), ":"); len(value) == 2 {
 		ip, port := value[0], value[1]
 		if ip == "" {
 			ip = "0.0.0.0"
 		}
-		fields = append(fields, log.FNetHostIP(ip), log.FNetHostPort(port))
+
+		fields = append(fields, log.Attributes(semconv.ServerAddress(ip), semconv.ServerPortKey.String(port))...)
 	}
+
 	s.l.Info("starting http test service", fields...)
 	s.server.Config.BaseContext = func(_ net.Listener) context.Context { return ctx }
 	s.server.Start()
@@ -68,5 +72,6 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 func (s *ServiceHTTP) Close(_ context.Context) error {
 	s.l.Info("stopping http test service")
 	s.server.Close()
+
 	return nil
 }

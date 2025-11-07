@@ -17,6 +17,7 @@ func IsErrorType(err error, errorType string) bool {
 	if applicationErr := AsApplicationError(err); applicationErr != nil && applicationErr.Type() == errorType {
 		return true
 	}
+
 	return false
 }
 
@@ -33,6 +34,7 @@ func AsApplicationError(err error) *temporal.ApplicationError {
 	if err != nil && errors.As(err, &applicationErr) {
 		return applicationErr
 	}
+
 	return nil
 }
 
@@ -45,6 +47,7 @@ func AsCanceledError(err error) *temporal.CanceledError {
 	if err != nil && errors.As(err, &canceledErr) {
 		return canceledErr
 	}
+
 	return nil
 }
 
@@ -57,6 +60,7 @@ func AsTimeoutError(err error) *temporal.TimeoutError {
 	if err != nil && errors.As(err, &timeoutErr) {
 		return timeoutErr
 	}
+
 	return nil
 }
 
@@ -69,5 +73,6 @@ func AsPanicError(err error) *temporal.PanicError {
 	if err != nil && errors.As(err, &panicErr) {
 		return panicErr
 	}
+
 	return nil
 }

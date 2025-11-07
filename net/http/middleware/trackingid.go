@@ -3,9 +3,12 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
@@ -98,11 +101,13 @@ func TrackingIDWithGenerator(v TrackingIDGenerator) TrackingIDOption {
 // TrackingID middleware
 func TrackingID(opts ...TrackingIDOption) Middleware {
 	options := GetDefaultTrackingIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TrackingIDWithOptions(options)
 }
 
@@ -110,6 +115,11 @@ func TrackingID(opts ...TrackingIDOption) Middleware {
 func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("TrackingID")
+			}
+
 			var tackingID string
 			if value := r.Header.Get(opts.Header); value != "" {
 				tackingID = value
@@ -129,12 +139,19 @@ func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
 			} else {
 				tackingID = c.Value
 			}
+
+			if span.IsRecording() && tackingID != "" {
+				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(opts.Header), tackingID))
+			}
+
 			if tackingID != "" && opts.SetHeader {
 				r.Header.Set(opts.Header, tackingID)
 			}
+
 			if tackingID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetTrackingID(r.Context(), tackingID))
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -145,5 +162,6 @@ func TrackingIDFromContext(ctx context.Context) string {
 	if value, ok := keelhttpcontext.GetTrackingID(ctx); ok {
 		return value
 	}
+
 	return ""
 }

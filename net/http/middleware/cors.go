@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
@@ -76,11 +77,13 @@ func CORSWithMaxAge(v int) CORSOption {
 // CORS middleware
 func CORS(opts ...CORSOption) Middleware {
 	options := GetDefaultCORSOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return CORSWithOptions(options)
 }
 
@@ -102,6 +105,11 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("CORS")
+			}
+
 			origin := r.Header.Get(keelhttp.HeaderOrigin)
 			allowOrigin := ""
 
@@ -115,7 +123,9 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 					next.ServeHTTP(w, r)
 					return
 				}
+
 				w.WriteHeader(http.StatusNoContent)
+
 				return
 			}
 
@@ -125,10 +135,12 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 					allowOrigin = origin
 					break
 				}
+
 				if value == "*" || value == origin {
 					allowOrigin = value
 					break
 				}
+
 				if matchSubdomain(origin, value) {
 					allowOrigin = origin
 					break
@@ -166,13 +178,17 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 			// Simple request
 			if !preflight {
 				w.Header().Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
+
 				if opts.AllowCredentials {
 					w.Header().Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
 				}
+
 				if exposeHeaders != "" {
 					w.Header().Set(keelhttp.HeaderAccessControlExposeHeaders, exposeHeaders)
 				}
+
 				next.ServeHTTP(w, r)
+
 				return
 			}
 
@@ -181,17 +197,21 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 			w.Header().Add(keelhttp.HeaderVary, keelhttp.HeaderAccessControlRequestHeaders)
 			w.Header().Set(keelhttp.HeaderAccessControlAllowOrigin, allowOrigin)
 			w.Header().Set(keelhttp.HeaderAccessControlAllowMethods, allowMethods)
+
 			if opts.AllowCredentials {
 				w.Header().Set(keelhttp.HeaderAccessControlAllowCredentials, "true")
 			}
+
 			if allowHeaders != "" {
 				w.Header().Set(keelhttp.HeaderAccessControlAllowHeaders, allowHeaders)
 			} else if h := r.Header.Get(keelhttp.HeaderAccessControlRequestHeaders); h != "" {
 				w.Header().Set(keelhttp.HeaderAccessControlAllowHeaders, h)
 			}
+
 			if opts.MaxAge > 0 {
 				w.Header().Set(keelhttp.HeaderAccessControlMaxAge, maxAge)
 			}
+
 			w.WriteHeader(http.StatusNoContent)
 		})
 	}
@@ -200,6 +220,7 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 func matchScheme(domain, pattern string) bool {
 	didx := strings.Index(domain, ":")
 	pidx := strings.Index(pattern, ":")
+
 	return didx != -1 && pidx != -1 && domain[:didx] == pattern[:pidx]
 }
 
@@ -208,24 +229,30 @@ func matchSubdomain(domain, pattern string) bool {
 	if !matchScheme(domain, pattern) {
 		return false
 	}
+
 	didx := strings.Index(domain, "://")
+
 	pidx := strings.Index(pattern, "://")
 	if didx == -1 || pidx == -1 {
 		return false
 	}
+
 	domAuth := domain[didx+3:]
 	// to avoid long loop by invalid long domain
 	if len(domAuth) > 253 {
 		return false
 	}
+
 	patAuth := pattern[pidx+3:]
 
 	domComp := strings.Split(domAuth, ".")
 	patComp := strings.Split(patAuth, ".")
+
 	for i := len(domComp)/2 - 1; i >= 0; i-- {
 		opp := len(domComp) - 1 - i
 		domComp[i], domComp[opp] = domComp[opp], domComp[i]
 	}
+
 	for i := len(patComp)/2 - 1; i >= 0; i-- {
 		opp := len(patComp) - 1 - i
 		patComp[i], patComp[opp] = patComp[opp], patComp[i]
@@ -235,13 +262,16 @@ func matchSubdomain(domain, pattern string) bool {
 		if len(patComp) <= i {
 			return false
 		}
+
 		p := patComp[i]
 		if p == "*" {
 			return true
 		}
+
 		if p != v {
 			return false
 		}
 	}
+
 	return false
 }

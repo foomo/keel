@@ -19,7 +19,7 @@ type (
 
 func HTTPClientWithCookieJar(v *cookiejar.Jar) HTTPClientOption {
 	return func(c *HTTPClient) {
-		c.Client.Jar = v
+		c.Jar = v
 	}
 }
 
@@ -45,7 +45,7 @@ func NewHTTPClient(opts ...HTTPClientOption) *HTTPClient {
 func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) {
 	if req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil); err != nil {
 		return nil, 0, err
-	} else if resp, err := c.Client.Do(req); err != nil {
+	} else if resp, err := c.Do(req); err != nil {
 		return nil, 0, err
 	} else if body, err := c.readBody(resp); err != nil {
 		return nil, 0, err
@@ -56,6 +56,7 @@ func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) 
 
 func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([]byte, int, error) {
 	var req *http.Request
+
 	if v, err := json.Marshal(data); err != nil {
 		return nil, 0, err
 	} else if r, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+path, bytes.NewBuffer(v)); err != nil {
@@ -63,8 +64,10 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 	} else {
 		req = r
 	}
+
 	req.Header.Set("Content-Type", "application/json")
-	if resp, err := c.Client.Do(req); err != nil {
+
+	if resp, err := c.Do(req); err != nil {
 		return nil, 0, err
 	} else if body, err := c.readBody(resp); err != nil {
 		return nil, 0, err
@@ -75,6 +78,7 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 
 func (c *HTTPClient) readBody(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
+
 	if body, err := io.ReadAll(resp.Body); err != nil {
 		return nil, err
 	} else {

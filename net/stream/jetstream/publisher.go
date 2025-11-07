@@ -24,6 +24,7 @@ func (s *Publisher) Subject() string {
 	if s.namespace != "" {
 		return s.namespace + "." + s.subject
 	}
+
 	return s.subject
 }
 
@@ -32,11 +33,13 @@ func (s *Publisher) NewMsg(v interface{}) (*nats.Msg, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	msg := &nats.Msg{
 		Subject: s.Subject(),
 		Header:  s.header,
 		Data:    data,
 	}
+
 	return msg, nil
 }
 

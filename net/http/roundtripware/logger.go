@@ -2,11 +2,13 @@ package roundtripware
 
 import (
 	"net/http"
+	"time"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -60,32 +62,39 @@ func LoggerWithMinErrorCode(v int) LoggerOption {
 // Logger returns a RoundTripware which logs all requests
 func Logger(opts ...LoggerOption) RoundTripware {
 	o := GetDefaultLoggerOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
-			start := keeltime.Now()
+		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("Logger")
+			}
+
+			start := time.Now()
 			statusCode := http.StatusTeapot
 
 			// extend logger using local instance
-			l := log.WithHTTPRequestOut(l, req)
+			l := log.WithHTTPRequestOut(l, r)
 
 			// execute next handler
-			resp, err := next(req)
+			resp, err := next(r)
 			if err != nil {
 				l = log.WithError(l, err)
 			} else if resp != nil {
-				l = log.With(l,
-					log.FHTTPStatusCode(resp.StatusCode),
-					log.FHTTPRequestContentLength(resp.ContentLength),
-				)
+				l = log.With(l, log.Attributes(
+					semconv.HTTPResponseStatusCode(resp.StatusCode),
+					semconv.HTTPResponseBodySizeKey.Int64(resp.ContentLength),
+				)...)
 				statusCode = resp.StatusCode
 			}
 
-			l = l.With(log.FDuration(keeltime.Now().Sub(start)))
+			l = l.With(log.FDuration(time.Since(start)))
 
 			switch {
 			case err != nil:
@@ -97,6 +106,7 @@ func Logger(opts ...LoggerOption) RoundTripware {
 			default:
 				l.Info(o.Message)
 			}
+
 			return resp, err
 		}
 	}

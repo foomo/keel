@@ -2,7 +2,10 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttpcontext "github.com/foomo/keel/net/http/context"
@@ -78,11 +81,13 @@ func RequestIDWithSetContext(v bool) RequestIDOption {
 // RequestID middleware
 func RequestID(opts ...RequestIDOption) Middleware {
 	options := GetDefaultRequestIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return RequestIDWithOptions(options)
 }
 
@@ -90,26 +95,44 @@ func RequestID(opts ...RequestIDOption) Middleware {
 func RequestIDWithOptions(opts RequestIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var requestID string
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("RequestID")
+			}
+
+			var (
+				key       string
+				requestID string
+			)
 			for _, value := range opts.RequestHeader {
 				if requestID = r.Header.Get(value); requestID != "" {
+					key = value
 					break
 				}
 			}
+
 			if requestID == "" {
 				requestID = opts.Provider()
 			}
+
+			if span.IsRecording() && key != "" && requestID != "" {
+				span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(key), requestID))
+			}
+
 			if requestID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetRequestID(r.Context(), requestID))
 			}
+
 			if requestID != "" && opts.SetRequestHeader {
 				r.Header.Set(opts.ResponseHeader, requestID)
 			}
+
 			if requestID != "" && opts.SetResponseHeader {
 				if value := w.Header().Get(opts.ResponseHeader); value == "" {
 					w.Header().Add(opts.ResponseHeader, requestID)
 				}
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}

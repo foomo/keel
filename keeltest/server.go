@@ -35,11 +35,10 @@ func NewServer(opts ...Option) *Server {
 
 	{
 		inst.meterProvider = noop.NewMeterProvider()
-		inst.meter = inst.meterProvider.Meter("github.com/foomo/keel")
-		traceProfiver, err := telemetry.NewNoopTraceProvider()
-		log.Must(inst.l, err, "failed to create noop trace provider")
-		inst.traceProvider = traceProfiver
-		inst.tracer = inst.traceProvider.Tracer("github.com/foomo/keel")
+		inst.meter = telemetry.Meter()
+
+		inst.traceProvider = telemetry.NewNoopTraceProvider()
+		inst.tracer = telemetry.Tracer()
 	}
 
 	for _, opt := range opts {
@@ -88,6 +87,7 @@ func (s *Server) AddService(service Service) {
 			return
 		}
 	}
+
 	s.services = append(s.services, service)
 }
 
@@ -95,6 +95,7 @@ func (s *Server) GetService(name string) Service {
 	if v, ok := s.serviceMap[name]; ok {
 		return v
 	}
+
 	return nil
 }
 

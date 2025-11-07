@@ -22,6 +22,7 @@ func ExampleLogger() {
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
+
 		fmt.Println("ok")
 	})
 
@@ -35,6 +36,7 @@ func ExampleLogger() {
 
 	resp, err := http.Get(svr.GetService("demo").URL() + "/") //nolint:noctx
 	log.Must(l, err)
+
 	defer resp.Body.Close()
 
 	// Output: ok
@@ -51,6 +53,7 @@ func ExampleLoggerWithInjectLabeler() {
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
+
 		fmt.Println("ok")
 	})
 
@@ -61,6 +64,7 @@ func ExampleLoggerWithInjectLabeler() {
 					if labeler, ok := httplog.LabelerFromRequest(r); ok {
 						labeler.Add(zap.String("injected", "message"))
 					}
+
 					next.ServeHTTP(w, r)
 				})
 			},
@@ -74,6 +78,7 @@ func ExampleLoggerWithInjectLabeler() {
 
 	resp, err := http.Get(svr.GetService("demo").URL() + "/") //nolint:noctx
 	log.Must(l, err)
+
 	defer resp.Body.Close()
 
 	// Output: ok

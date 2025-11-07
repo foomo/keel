@@ -2,8 +2,6 @@ package cookie
 
 import (
 	"time"
-
-	keeltime "github.com/foomo/keel/time"
 )
 
 type TimeProvider func() time.Time
@@ -27,12 +25,14 @@ func TimeProviderWithOffset(v time.Duration) TimeProviderOption {
 
 func NewTimeProvider(opts ...TimeProviderOption) TimeProvider {
 	options := GetDefaultTimeProviderOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return func() time.Time {
-		return keeltime.Now().Add(options.Offset)
+		return time.Now().Add(options.Offset)
 	}
 }

@@ -24,100 +24,111 @@ const (
 )
 
 func TestGZip(t *testing.T) {
-	// create logger
-	l := zaptest.NewLogger(t)
+	t.Parallel()
 
-	var payload string
-	var compressed bool
+	tests := []struct {
+		name                     string
+		payload                  string
+		expectRequestCompressed  bool
+		expectResponseCompressed bool
+	}{
+		{
+			name:                     "<1024",
+			payload:                  gzipPayload1023,
+			expectRequestCompressed:  false,
+			expectResponseCompressed: false,
+		},
+		{
+			name:                     ">=1024",
+			payload:                  gzipPayload1024,
+			expectRequestCompressed:  true,
+			expectResponseCompressed: true,
+		},
+	}
 
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// validate request header
-		assert.Equal(t, stdhttp.EncodingGzip.String(), stdhttp.HeaderAcceptEncoding.Get(r.Header))
-		if compressed {
-			assert.Equal(t, stdhttp.EncodingGzip.String(), stdhttp.HeaderContentEncoding.Get(r.Header))
-		} else {
-			assert.Empty(t, stdhttp.HeaderContentEncoding.Get(r.Header))
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		// validate request body
-		body, err := io.ReadAll(r.Body)
-		assert.NoError(t, err)
-		defer r.Body.Close()
+			// create logger
+			l := zaptest.NewLogger(t)
 
-		if compressed {
-			assert.NotEqual(t, payload, string(body))
-			decomppressed, err := gunzipString(body)
-			assert.NoError(t, err)
-			assert.Equal(t, payload, string(decomppressed))
-		} else {
-			assert.Equal(t, payload, string(body))
-		}
+			// create http server with handler
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// validate request header
+				assert.Equal(t, stdhttp.EncodingGzip.String(), stdhttp.HeaderAcceptEncoding.Get(r.Header))
 
-		// send response
-		if compressed {
-			w.Header().Set(stdhttp.HeaderContentEncoding.String(), r.Header.Get(stdhttp.HeaderContentEncoding.String()))
-		}
-		_, _ = w.Write(body)
-	}))
-	defer svr.Close()
+				if tt.expectRequestCompressed {
+					assert.Equal(t, stdhttp.EncodingGzip.String(), stdhttp.HeaderContentEncoding.Get(r.Header))
+				} else {
+					assert.Empty(t, stdhttp.HeaderContentEncoding.Get(r.Header))
+				}
 
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.GZip(),
-		),
-	)
+				// validate request body
+				body, err := io.ReadAll(r.Body)
+				assert.NoError(t, err)
 
-	t.Run("<1024", func(t *testing.T) {
-		payload = gzipPayload1023
-		compressed = false
+				defer r.Body.Close()
 
-		// create request
-		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, svr.URL, strings.NewReader(payload))
-		req.Header.Set(stdhttp.HeaderAcceptEncoding.String(), stdhttp.EncodingGzip.String())
-		require.NoError(t, err)
+				if tt.expectRequestCompressed {
+					assert.NotEqual(t, tt.payload, string(body))
+					decompressed, err := gunzipString(body)
+					assert.NoError(t, err)
+					assert.Equal(t, tt.payload, string(decompressed))
+				} else {
+					assert.Equal(t, tt.payload, string(body))
+				}
 
-		// do request
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
+				// send response
+				if tt.expectRequestCompressed {
+					w.Header().Set(stdhttp.HeaderContentEncoding.String(), r.Header.Get(stdhttp.HeaderContentEncoding.String()))
+				}
 
-		// validate repsone header
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		assert.Empty(t, resp.Header.Get(stdhttp.HeaderContentEncoding.String()))
-		// validate repsone body
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		assert.Equal(t, payload, string(body))
-	})
+				_, _ = w.Write(body)
+			}))
+			defer svr.Close()
 
-	t.Run(">=1024", func(t *testing.T) {
-		payload = gzipPayload1024
-		compressed = true
+			// create http client
+			client := keelhttp.NewHTTPClient(
+				keelhttp.HTTPClientWithRoundTripware(l,
+					roundtripware.GZip(),
+				),
+			)
 
-		// create request
-		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, svr.URL, strings.NewReader(payload))
-		req.Header.Set(stdhttp.HeaderAcceptEncoding.String(), stdhttp.EncodingGzip.String())
-		require.NoError(t, err)
+			// create request
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, svr.URL, strings.NewReader(tt.payload))
+			req.Header.Set(stdhttp.HeaderAcceptEncoding.String(), stdhttp.EncodingGzip.String())
+			require.NoError(t, err)
 
-		// do request
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
+			// do request
+			resp, err := client.Do(req)
+			require.NoError(t, err)
 
-		// validate repsone header
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		assert.Equal(t, stdhttp.EncodingGzip.String(), resp.Header.Get(stdhttp.HeaderContentEncoding.String()))
-		// validate repsone body
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		assert.NotEqual(t, payload, string(body))
+			defer resp.Body.Close()
 
-		decompressedBody, err := gunzipString(body)
-		require.NoError(t, err)
-		assert.Equal(t, payload, string(decompressedBody))
-	})
+			// validate response header
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+			if tt.expectResponseCompressed {
+				assert.Equal(t, stdhttp.EncodingGzip.String(), resp.Header.Get(stdhttp.HeaderContentEncoding.String()))
+			} else {
+				assert.Empty(t, resp.Header.Get(stdhttp.HeaderContentEncoding.String()))
+			}
+
+			// validate response body
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			if tt.expectResponseCompressed {
+				assert.NotEqual(t, tt.payload, string(body))
+				decompressedBody, err := gunzipString(body)
+				require.NoError(t, err)
+				assert.Equal(t, tt.payload, string(decompressedBody))
+			} else {
+				assert.Equal(t, tt.payload, string(body))
+			}
+		})
+	}
 }
 
 func gunzipString(body []byte) ([]byte, error) {
@@ -128,7 +139,8 @@ func gunzipString(body []byte) ([]byte, error) {
 	defer gr.Close()
 
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, gr) //nolint:gosec
+
+	_, err = io.Copy(&buf, gr)
 	if err != nil {
 		return nil, err
 	}

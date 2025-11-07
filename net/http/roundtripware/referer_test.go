@@ -1,6 +1,7 @@
 package roundtripware_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,110 +16,94 @@ import (
 )
 
 func TestReferer(t *testing.T) {
-	var testReferer string
+	t.Parallel()
 
-	// create logger
-	l := zaptest.NewLogger(t)
+	tests := []struct {
+		name            string
+		contextReferer  string
+		headerToCheck   string
+		refererOptions  []roundtripware.RefererOption
+		setupContext    func(context.Context, string) context.Context
+		serverAssertion func(*testing.T, *http.Request, string)
+	}{
+		{
+			name:           "empty referer",
+			contextReferer: "",
+			headerToCheck:  keelhttp.HeaderXReferer,
+			refererOptions: nil,
+			setupContext:   nil,
+			serverAssertion: func(t *testing.T, r *http.Request, expectedHeader string) {
+				t.Helper()
+				assert.Empty(t, r.Header.Get(expectedHeader))
+			},
+		},
+		{
+			name:           "referer from context",
+			contextReferer: "https://foomo.org/",
+			headerToCheck:  keelhttp.HeaderXReferer,
+			refererOptions: nil,
+			setupContext:   keelhttpcontext.SetReferer,
+			serverAssertion: func(t *testing.T, r *http.Request, expectedHeader string) {
+				t.Helper()
+				assert.Equal(t, "https://foomo.org/", r.Header.Get(expectedHeader))
+			},
+		},
+		{
+			name:           "custom header",
+			contextReferer: "https://foomo.org/",
+			headerToCheck:  "X-Custom-Header",
+			refererOptions: []roundtripware.RefererOption{
+				roundtripware.RefererWithHeader("X-Custom-Header"),
+			},
+			setupContext: keelhttpcontext.SetReferer,
+			serverAssertion: func(t *testing.T, r *http.Request, expectedHeader string) {
+				t.Helper()
+				assert.Equal(t, "https://foomo.org/", r.Header.Get(expectedHeader))
+			},
+		},
+	}
 
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testReferer = r.Header.Get(keelhttp.HeaderXReferer)
-		assert.Empty(t, testReferer)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Referer(),
-		),
-	)
+			// create logger
+			l := zaptest.NewLogger(t)
 
-	// create request
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
+			// create http server with handler
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				tt.serverAssertion(t, r, tt.headerToCheck)
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer svr.Close()
 
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+			// create http client
+			client := keelhttp.NewHTTPClient(
+				keelhttp.HTTPClientWithRoundTripware(l,
+					roundtripware.Referer(tt.refererOptions...),
+				),
+			)
 
-	// validate
-	assert.Equal(t, testReferer, req.Header.Get(keelhttp.HeaderXReferer))
-}
+			// setup context
+			ctx := t.Context()
+			if tt.setupContext != nil {
+				ctx = tt.setupContext(ctx, tt.contextReferer)
+			}
 
-func TestReferer_Context(t *testing.T) {
-	testReferer := "https://foomo.org/"
+			// create request
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
+			require.NoError(t, err)
 
-	// create logger
-	l := zaptest.NewLogger(t)
+			// do request
+			resp, err := client.Do(req)
+			require.NoError(t, err)
 
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, testReferer, r.Header.Get(keelhttp.HeaderXReferer))
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
+			defer resp.Body.Close()
 
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Referer(),
-		),
-	)
-
-	// set request id on context
-	ctx := keelhttpcontext.SetReferer(t.Context(), testReferer)
-
-	// create request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
-
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	// validate
-	assert.Equal(t, testReferer, req.Header.Get(keelhttp.HeaderXReferer))
-}
-
-func TestReferer_WithHeader(t *testing.T) {
-	testReferer := "https://foomo.org/"
-	testHeader := "X-Custom-Header"
-
-	// create logger
-	l := zaptest.NewLogger(t)
-
-	// create http server with handler
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, testReferer, r.Header.Get(testHeader))
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer svr.Close()
-
-	// create http client
-	client := keelhttp.NewHTTPClient(
-		keelhttp.HTTPClientWithRoundTripware(l,
-			roundtripware.Referer(
-				roundtripware.RefererWithHeader(testHeader),
-			),
-		),
-	)
-
-	// set request id on context
-	ctx := keelhttpcontext.SetReferer(t.Context(), testReferer)
-
-	// create request
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, svr.URL, nil)
-	require.NoError(t, err)
-
-	// do request
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	// validate
-	assert.Equal(t, testReferer, req.Header.Get(testHeader))
+			// validate
+			if tt.contextReferer != "" {
+				assert.Equal(t, tt.contextReferer, req.Header.Get(tt.headerToCheck))
+			}
+		})
+	}
 }

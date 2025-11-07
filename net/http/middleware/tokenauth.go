@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	httputils "github.com/foomo/keel/utils/net/http"
@@ -35,11 +36,13 @@ func TokenAuthWithTokenProvider(v TokenProvider) TokenAuthOption {
 // TokenAuth middleware
 func TokenAuth(token string, opts ...TokenAuthOption) Middleware {
 	options := GetDefaultTokenAuthOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TokenAuthWithOptions(token, options)
 }
 
@@ -47,6 +50,11 @@ func TokenAuth(token string, opts ...TokenAuthOption) Middleware {
 func TokenAuthWithOptions(token string, opts TokenAuthOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("TokenAuth")
+			}
+
 			if value, err := opts.TokenProvider(r); err != nil {
 				httputils.UnauthorizedServerError(l, w, r, errors.Wrap(err, "failed to retrieve token"))
 				return
@@ -57,6 +65,7 @@ func TokenAuthWithOptions(token string, opts TokenAuthOptions) Middleware {
 				httputils.UnauthorizedServerError(l, w, r, errors.New("invalid token"))
 				return
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}

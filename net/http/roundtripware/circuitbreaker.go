@@ -154,6 +154,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					attribute.String("previous_state", fromState.String()),
 					attribute.Bool("state_change", fromState != toState),
 				}
+
 				if err != nil {
 					if o.Counter != nil {
 						attributes := append(attributes, attribute.Bool("error", true))
@@ -167,6 +168,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 			// clone the request and the body if wanted
 			var errCopy error
+
 			reqCopy, errCopy := copyRequest(r, o.CopyReqBody)
 			if errCopy != nil {
 				l.Error("unable to copy request", log.FError(errCopy))
@@ -187,6 +189,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 					log.FError(err),
 					zap.String("state", fromState.String()),
 				)
+
 				return nil, err
 			}
 

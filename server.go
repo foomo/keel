@@ -18,6 +18,7 @@ import (
 	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/healthz"
 	"github.com/foomo/keel/interfaces"
+	internalotel "github.com/foomo/keel/internal/otel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
 	"github.com/foomo/keel/metrics"
@@ -25,8 +26,6 @@ import (
 	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
-	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
-	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
@@ -39,9 +38,7 @@ import (
 type Server struct {
 	services        []Service
 	initServices    []Service
-	meter           metric.Meter
 	meterProvider   metric.MeterProvider
-	tracer          trace.Tracer
 	traceProvider   trace.TracerProvider
 	shutdown        atomic.Bool
 	shutdownSignals []os.Signal
@@ -84,6 +81,7 @@ func NewServer(opts ...Option) *Server {
 			if inst.shutdown.Load() {
 				return ErrServerShutdown
 			}
+
 			return nil
 		}))
 
@@ -95,6 +93,7 @@ func NewServer(opts ...Option) *Server {
 		inst.g.Go(func() error {
 			<-inst.gracefulCtx.Done()
 			inst.shutdown.Store(true)
+
 			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
 			defer timeoutCancel()
 
@@ -106,8 +105,10 @@ func NewServer(opts ...Option) *Server {
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
 			inst.l.Info("keel graceful shutdown: closers")
+
 			for _, closer := range closers {
 				var err error
+
 				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
 				switch c := closer.(type) {
 				case interfaces.Closer:
@@ -143,6 +144,7 @@ func NewServer(opts ...Option) *Server {
 				case interfaces.ErrorUnsubscriberWithContext:
 					err = c.Unsubscribe(timeoutCtx)
 				}
+
 				if err != nil {
 					l.Warn("keel graceful shutdown: closer failed", zap.Error(err))
 				} else {
@@ -157,29 +159,17 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	{ // setup telemetry
-		var err error
-		otel.SetLogger(logr.New(telemetry.NewLogger(inst.l)))
-		otel.SetErrorHandler(telemetry.NewErrorHandler(inst.l))
+		otel.SetLogger(logr.New(internalotel.NewLogger(inst.l)))
+		otel.SetErrorHandler(internalotel.NewErrorHandler(inst.l))
 		otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 		if inst.meterProvider == nil {
-			inst.meterProvider, err = telemetry.NewNoopMeterProvider()
-			log.Must(inst.l, err, "failed to create meter provider")
-		} else if env.GetBool("OTEL_ENABLED", false) {
-			if env.GetBool("OTEL_METRICS_HOST_ENABLED", false) {
-				log.Must(inst.l, otelhost.Start(), "failed to start otel host metrics")
-			}
-			if env.GetBool("OTEL_METRICS_RUNTIME_ENABLED", false) {
-				log.Must(inst.l, otelruntime.Start(), "failed to start otel runtime metrics")
-			}
+			inst.meterProvider = telemetry.NewNoopMeterProvider()
 		}
-		inst.meter = telemetry.Meter()
 
 		if inst.traceProvider == nil {
-			inst.traceProvider, err = telemetry.NewNoopTraceProvider()
-			log.Must(inst.l, err, "failed to create tracer provider")
+			inst.traceProvider = telemetry.NewNoopTraceProvider()
 		}
-		inst.tracer = telemetry.Tracer()
 	}
 
 	// add probe
@@ -204,12 +194,12 @@ func (s *Server) Logger() *zap.Logger {
 
 // Meter returns the implementation meter
 func (s *Server) Meter() metric.Meter {
-	return s.meter
+	return telemetry.Meter()
 }
 
 // Tracer returns the implementation tracer
 func (s *Server) Tracer() trace.Tracer {
-	return s.tracer
+	return telemetry.Tracer()
 }
 
 // Config returns server config
@@ -255,6 +245,7 @@ func (s *Server) AddCloser(closer interface{}) {
 			return
 		}
 	}
+
 	if IsCloser(closer) {
 		s.addClosers(closer)
 	} else {
@@ -322,68 +313,8 @@ func (s *Server) Healthz() error {
 	if !s.running.Load() {
 		return ErrServerNotRunning
 	}
+
 	return nil
-}
-
-// Run runs the server
-func (s *Server) Run() {
-	s.l.Info("starting keel server")
-	defer s.cancel()
-
-	// start services
-	s.startService(s.services...)
-
-	// add init services to closers
-	for _, initService := range s.initServices {
-		s.AddClosers(initService)
-	}
-
-	// set running
-	defer s.running.Store(false)
-	s.running.Store(true)
-
-	// wait for shutdown
-	if err := s.g.Wait(); errors.Is(err, ErrServerShutdown) {
-		s.l.Info("keel server stopped")
-	} else if err != nil {
-		log.WithError(s.l, err).Error("keel server failed")
-	}
-}
-
-func (s *Server) closers() []interface{} {
-	s.syncClosersLock.RLock()
-	defer s.syncClosersLock.RUnlock()
-	return s.syncClosers
-}
-
-func (s *Server) addClosers(v ...interface{}) {
-	s.syncClosersLock.Lock()
-	defer s.syncClosersLock.Unlock()
-	s.syncClosers = append(s.syncClosers, v...)
-}
-
-func (s *Server) readmers() []interfaces.Readmer {
-	s.syncReadmersLock.RLock()
-	defer s.syncReadmersLock.RUnlock()
-	return s.syncReadmers
-}
-
-func (s *Server) addReadmers(v ...interfaces.Readmer) {
-	s.syncReadmersLock.Lock()
-	defer s.syncReadmersLock.Unlock()
-	s.syncReadmers = append(s.syncReadmers, v...)
-}
-
-func (s *Server) probes() map[healthz.Type][]interface{} {
-	s.syncProbesLock.RLock()
-	defer s.syncProbesLock.RUnlock()
-	return s.syncProbes
-}
-
-func (s *Server) addProbes(typ healthz.Type, v ...interface{}) {
-	s.syncProbesLock.Lock()
-	defer s.syncProbesLock.Unlock()
-	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
 }
 
 // Readme returns the self-documenting string
@@ -397,6 +328,74 @@ func (s *Server) Readme() string {
 	return md.String()
 }
 
+// Run runs the server
+func (s *Server) Run() {
+	s.l.With(log.Attributes(telemetry.EnvAttributes()...)...).Info("starting keel server")
+	defer s.cancel()
+
+	// start services
+	s.startService(s.services...)
+
+	// add init services to closers
+	for _, initService := range s.initServices {
+		s.AddClosers(initService)
+	}
+
+	// set running
+	defer s.running.Store(false)
+
+	s.running.Store(true)
+
+	// wait for shutdown
+	if err := s.g.Wait(); errors.Is(err, ErrServerShutdown) {
+		s.l.Info("keel server stopped")
+	} else if err != nil {
+		log.WithError(s.l, err).Error("keel server failed")
+	}
+}
+
+func (s *Server) closers() []interface{} {
+	s.syncClosersLock.RLock()
+	defer s.syncClosersLock.RUnlock()
+
+	return s.syncClosers
+}
+
+func (s *Server) addClosers(v ...interface{}) {
+	s.syncClosersLock.Lock()
+	defer s.syncClosersLock.Unlock()
+
+	s.syncClosers = append(s.syncClosers, v...)
+}
+
+func (s *Server) readmers() []interfaces.Readmer {
+	s.syncReadmersLock.RLock()
+	defer s.syncReadmersLock.RUnlock()
+
+	return s.syncReadmers
+}
+
+func (s *Server) addReadmers(v ...interfaces.Readmer) {
+	s.syncReadmersLock.Lock()
+	defer s.syncReadmersLock.Unlock()
+
+	s.syncReadmers = append(s.syncReadmers, v...)
+}
+
+func (s *Server) probes() map[healthz.Type][]interface{} {
+	s.syncProbesLock.RLock()
+	defer s.syncProbesLock.RUnlock()
+
+	return s.syncProbes
+}
+
+func (s *Server) addProbes(typ healthz.Type, v ...interface{}) {
+	s.syncProbesLock.Lock()
+	defer s.syncProbesLock.Unlock()
+
+	s.syncProbes[typ] = append(s.syncProbes[typ], v...)
+}
+
 // ------------------------------------------------------------------------------------------------
 // ~ Private methods
 // ------------------------------------------------------------------------------------------------
@@ -404,29 +403,36 @@ func (s *Server) Readme() string {
 // startService starts the given services
 func (s *Server) startService(services ...Service) {
 	c := make(chan struct{}, 1)
+
 	for _, value := range services {
 		s.g.Go(func() error {
 			c <- struct{}{}
+
 			if err := value.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Debug("server has closed")
 			} else if err != nil {
 				log.WithError(s.l, err).Error("failed to start service")
 				return err
 			}
+
 			return nil
 		})
 		<-c
 	}
+
 	close(c)
 }
 
 func (s *Server) readmeCloser() string {
 	md := &markdown.Markdown{}
 	closers := s.closers()
+
 	rows := make([][]string, 0, len(closers))
 	for _, value := range closers {
 		t := reflect.TypeOf(value)
+
 		var closer string
+
 		switch value.(type) {
 		case interfaces.Closer:
 			closer = "Closer"
@@ -461,6 +467,7 @@ func (s *Server) readmeCloser() string {
 		case interfaces.ErrorUnsubscriberWithContext:
 			closer = "ErrorUnsubscriberWithContext"
 		}
+
 		rows = append(rows, []string{
 			markdown.Code(markdown.Name(value)),
 			markdown.Code(t.String()),
@@ -468,6 +475,7 @@ func (s *Server) readmeCloser() string {
 			markdown.String(value),
 		})
 	}
+
 	if len(rows) > 0 {
 		md.Println("### Closers")
 		md.Println("")
@@ -482,6 +490,7 @@ func (s *Server) readmeCloser() string {
 
 func (s *Server) readmeHealthz() string {
 	var rows [][]string
+
 	md := &markdown.Markdown{}
 
 	for k, probes := range s.probes() {
@@ -495,6 +504,7 @@ func (s *Server) readmeHealthz() string {
 			})
 		}
 	}
+
 	if len(rows) > 0 {
 		md.Println("### Health probes")
 		md.Println("")
@@ -511,6 +521,7 @@ func (s *Server) readmeServices() string {
 
 	{
 		var rows [][]string
+
 		for _, value := range s.initServices {
 			if v, ok := value.(*service.HTTP); ok {
 				t := reflect.TypeOf(v)
@@ -521,6 +532,7 @@ func (s *Server) readmeServices() string {
 				})
 			}
 		}
+
 		if len(rows) > 0 {
 			md.Println("### Init Services")
 			md.Println("")
@@ -534,6 +546,7 @@ func (s *Server) readmeServices() string {
 
 	{
 		var rows [][]string
+
 		for _, value := range s.services {
 			t := reflect.TypeOf(value)
 			rows = append(rows, []string{
@@ -542,6 +555,7 @@ func (s *Server) readmeServices() string {
 				markdown.String(value),
 			})
 		}
+
 		if len(rows) > 0 {
 			md.Println("### Runtime Services")
 			md.Println("")

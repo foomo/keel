@@ -40,5 +40,6 @@ func LoggerWith(l tlog.Logger, fields ...zap.Field) tlog.Logger {
 	for i, field := range fields {
 		v[i] = field
 	}
+
 	return tlog.With(l, v...)
 }

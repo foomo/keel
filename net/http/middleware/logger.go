@@ -5,10 +5,11 @@ import (
 	"time"
 
 	httplog "github.com/foomo/keel/net/http/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -34,11 +35,13 @@ func GetDefaultLoggerOptions() LoggerOptions {
 // Logger middleware
 func Logger(opts ...LoggerOption) Middleware {
 	options := GetDefaultLoggerOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return LoggerWithOptions(options)
 }
 
@@ -74,7 +77,12 @@ func LoggerWithInjectLabeler(v bool) LoggerOption {
 func LoggerWithOptions(opts LoggerOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := keeltime.Now()
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("Logger")
+			}
+
+			start := time.Now()
 
 			// wrap response write to get access to status & size
 			wr := WrapResponseWriter(w)
@@ -91,8 +99,8 @@ func LoggerWithOptions(opts LoggerOptions) Middleware {
 
 			l = l.With(
 				log.FDuration(time.Since(start)),
-				log.FHTTPStatusCode(wr.StatusCode()),
-				log.FHTTPWroteBytes(int64(wr.Size())),
+				log.Attribute(semconv.HTTPResponseStatusCode(wr.StatusCode())),
+				log.Attribute(semconv.HTTPResponseSize(wr.Size())),
 			)
 
 			if labeler != nil {

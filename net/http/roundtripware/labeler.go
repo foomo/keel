@@ -24,5 +24,6 @@ func LabelerFromContext(ctx context.Context) (context.Context, *otelhttp.Labeler
 		l = &otelhttp.Labeler{}
 		ctx = injectLabeler(ctx, l)
 	}
+
 	return ctx, l
 }

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -228,7 +229,11 @@ func HTTPClientWithRoundTripware(l *zap.Logger, roundTripware ...roundtripware.R
 
 func HTTPClientWithTelemetry(opts ...otelhttp.Option) HTTPClientOption {
 	return func(v *http.Client) {
-		v.Transport = otelhttp.NewTransport(v.Transport, opts...)
+		v.Transport = otelhttp.NewTransport(v.Transport, append(opts,
+			otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+				return fmt.Sprintf("HTTP %s %s", r.Method, r.URL.Host)
+			}),
+		)...)
 	}
 }
 
@@ -257,5 +262,6 @@ func NewHTTPClient(opts ...HTTPClientOption) *http.Client {
 	for _, opt := range opts {
 		opt(inst)
 	}
+
 	return inst
 }

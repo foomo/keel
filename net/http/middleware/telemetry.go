@@ -8,8 +8,8 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -28,7 +28,7 @@ func GetDefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
 		OtelOpts: []otelhttp.Option{
 			otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-				return fmt.Sprintf("HTTP %s", operation)
+				return fmt.Sprintf("HTTP %s %s", r.Method, operation)
 			}),
 		},
 		InjectPropagationHeader: true,
@@ -38,11 +38,13 @@ func GetDefaultTelemetryOptions() TelemetryOptions {
 // Telemetry middleware
 func Telemetry(opts ...TelemetryOption) Middleware {
 	options := GetDefaultTelemetryOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return TelemetryWithOptions(options)
 }
 
@@ -73,12 +75,20 @@ func TelemetryWithOptions(opts TelemetryOptions) Middleware {
 		}
 
 		return otelhttp.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("Telemetry")
+			}
+
 			if opts.InjectPropagationHeader {
 				otel.GetTextMapPropagator().Inject(r.Context(), propagation.HeaderCarrier(w.Header()))
 			}
 
 			if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-				labeler.Add(semconv.HTTPServerNameKey.String(name))
+				labeler.Add(
+					// Deprecated: will be removed
+					attribute.String("http.server_name", name),
+				)
 			}
 
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {

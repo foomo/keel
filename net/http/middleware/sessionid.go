@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttp "github.com/foomo/keel/net/http"
@@ -98,11 +100,13 @@ func SessionIDWithGenerator(v SessionIDGenerator) SessionIDOption {
 // SessionID middleware
 func SessionID(opts ...SessionIDOption) Middleware {
 	options := GetDefaultSessionIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return SessionIDWithOptions(options)
 }
 
@@ -110,6 +114,11 @@ func SessionID(opts ...SessionIDOption) Middleware {
 func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("SessionID")
+			}
+
 			var sessionID string
 			if value := r.Header.Get(opts.Header); value != "" {
 				sessionID = value
@@ -129,12 +138,19 @@ func SessionIDWithOptions(opts SessionIDOptions) Middleware {
 			} else {
 				sessionID = c.Value
 			}
+
+			if span.IsRecording() && sessionID != "" {
+				span.SetAttributes(semconv.SessionID(sessionID))
+			}
+
 			if sessionID != "" && opts.SetHeader {
 				r.Header.Set(opts.Header, sessionID)
 			}
+
 			if sessionID != "" && opts.SetContext {
 				r = r.WithContext(keelhttpcontext.SetSessionID(r.Context(), sessionID))
 			}
+
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -145,5 +161,6 @@ func SessionIDFromContext(ctx context.Context) string {
 	if value, ok := keelhttpcontext.GetSessionID(ctx); ok {
 		return value
 	}
+
 	return ""
 }

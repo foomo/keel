@@ -1,11 +1,6 @@
 package telemetry
 
-const (
-	DefaultServiceName = "service"
-	DefaultTracerName  = "github.com/foomo/keel/telemetry"
-)
-
 var (
-	TracerName  = DefaultTracerName
-	ServiceName = DefaultServiceName
+	Name               = "github.com/foomo/keel"
+	DefaultServiceName = "undefined"
 )

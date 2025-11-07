@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	keeltime "github.com/foomo/keel/time"
 )
 
 type (
@@ -51,11 +51,13 @@ func ResponseTimeWithSetHeader(v bool) ResponseTimeOption {
 // ResponseTime middleware
 func ResponseTime(opts ...ResponseTimeOption) Middleware {
 	options := GetDefaultResponseTimeOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return ResponseTimeWithOptions(options)
 }
 
@@ -63,10 +65,16 @@ func ResponseTime(opts ...ResponseTimeOption) Middleware {
 func ResponseTimeWithOptions(opts ResponseTimeOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := keeltime.Now()
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("ResponseTime")
+			}
+
+			start := time.Now()
 			rw := WrapResponseWriter(w)
 			rw.SetWriteResponseTimeHeader(opts.SetHeader)
 			next.ServeHTTP(rw, r)
+
 			duration := time.Since(start)
 			if opts.MaxDuration > 0 && duration > opts.MaxDuration {
 				l.Warn(opts.MaxDurationMessage, log.FDuration(opts.MaxDuration), log.FValue(duration.Microseconds()))

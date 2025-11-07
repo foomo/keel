@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 // Dump returns a RoundTripper which prints out the request & response object
 func Dump() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
-			dumpRequest(req)
-			resp, err := next(req)
-			dumpResponse(req, resp)
+		return func(r *http.Request) (*http.Response, error) {
+			dumpRequest(r)
+			resp, err := next(r)
+			dumpResponse(r, resp)
+
 			return resp, err
 		}
 	}
@@ -22,9 +24,15 @@ func Dump() RoundTripware {
 // DumpRequest returns a RoundTripper which prints out the request object
 func DumpRequest() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
-			dumpRequest(req)
-			return next(req)
+		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("DumpRequest")
+			}
+
+			dumpRequest(r)
+
+			return next(r)
 		}
 	}
 }
@@ -32,9 +40,15 @@ func DumpRequest() RoundTripware {
 // DumpResponse returns a RoundTripper which prints out the response object
 func DumpResponse() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
-		return func(req *http.Request) (*http.Response, error) {
-			resp, err := next(req)
-			dumpResponse(req, resp)
+		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("DumpResponse")
+			}
+
+			resp, err := next(r)
+			dumpResponse(r, resp)
+
 			return resp, err
 		}
 	}
@@ -54,6 +68,7 @@ func dumpResponse(req *http.Request, resp *http.Response) {
 		fmt.Println("Response is nil") //nolint:forbidigo
 		return
 	}
+
 	if resp.Header != nil && resp.Header.Get("Content-Type") != "" {
 		var body string
 		if resp.Body, body = readBodyPretty(resp.Header.Get("Content-Type"), resp.Body); body != "" {

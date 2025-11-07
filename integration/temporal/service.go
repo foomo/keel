@@ -21,6 +21,7 @@ func NewService(l *zap.Logger, name string, w worker.Worker) *service {
 	}
 	// enrich the log
 	l = log.WithHTTPServerName(l, name)
+
 	return &service{l: l, name: name, w: w}
 }
 
@@ -36,5 +37,6 @@ func (s *service) Start(ctx context.Context) error {
 func (s *service) Close(ctx context.Context) error {
 	s.l.Info("stopping temporal worker")
 	s.w.Stop()
+
 	return nil
 }

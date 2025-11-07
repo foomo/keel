@@ -24,6 +24,7 @@ func (m metricsHandler) WithTags(tags map[string]string) client.MetricsHandler {
 	for k, v := range tags {
 		attr = append(attr, attribute.String(k, v))
 	}
+
 	return metricsHandler{meter: m.meter, attr: attr}
 }
 
@@ -41,6 +42,7 @@ func (m metricsHandler) Counter(name string) client.MetricsCounter {
 	if err != nil {
 		otel.Handle(err)
 	}
+
 	return &counter{
 		attr: m.attr,
 		inst: c,
@@ -61,9 +63,11 @@ func (m metricsHandler) Gauge(name string) client.MetricsGauge {
 	if err != nil {
 		otel.Handle(err)
 	}
+
 	inst := &gauge{
 		inst: c,
 	}
+
 	_, err = m.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
 		o.ObserveFloat64(c, inst.value, metric.WithAttributes(m.attr...))
 		return nil
@@ -71,6 +75,7 @@ func (m metricsHandler) Gauge(name string) client.MetricsGauge {
 	if err != nil {
 		otel.Handle(err)
 	}
+
 	return inst
 }
 
@@ -88,6 +93,7 @@ func (m metricsHandler) Timer(name string) client.MetricsTimer {
 	if err != nil {
 		otel.Handle(err)
 	}
+
 	return &timer{
 		inst: c,
 		attr: m.attr,

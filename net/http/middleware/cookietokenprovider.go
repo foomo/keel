@@ -18,11 +18,13 @@ func GetDefaultCookieTokenOptions() CookieTokenProviderOptions {
 
 func CookieTokenProvider(cookieName string, opts ...CookieTokenProviderOption) TokenProvider {
 	options := GetDefaultCookieTokenOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return func(r *http.Request) (string, error) {
 		if cookie, err := r.Cookie(cookieName); errors.Is(err, http.ErrNoCookie) {
 			return "", nil

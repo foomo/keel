@@ -7,7 +7,6 @@ import (
 
 	keelerrors "github.com/foomo/keel/errors"
 	keelpersistence "github.com/foomo/keel/persistence"
-	keeltime "github.com/foomo/keel/time"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
@@ -52,25 +51,25 @@ func DefaultCollectionOptions() CollectionOptions {
 
 func CollectionWithReadConcern(v *readconcern.ReadConcern) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetReadConcern(v)
+		o.SetReadConcern(v)
 	}
 }
 
 func CollectionWithWriteConcern(v *writeconcern.WriteConcern) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetWriteConcern(v)
+		o.SetWriteConcern(v)
 	}
 }
 
 func CollectionWithReadPreference(v *readpref.ReadPref) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetReadPreference(v)
+		o.SetReadPreference(v)
 	}
 }
 
 func CollectionWithRegistry(v *bsoncodec.Registry) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CollectionOptions.SetRegistry(v)
+		o.SetRegistry(v)
 	}
 }
 
@@ -82,31 +81,31 @@ func CollectionWithIndexes(v ...mongo.IndexModel) CollectionOption {
 
 func CollectionWithIndexesMaxTime(v time.Duration) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetMaxTime(v)
+		o.SetMaxTime(v)
 	}
 }
 
 func CollectionWithIndexesContext(v int32) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumInt(v)
+		o.SetCommitQuorumInt(v)
 	}
 }
 
 func CollectionWithIndexesQuorumMajority() CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumMajority()
+		o.SetCommitQuorumMajority()
 	}
 }
 
 func CollectionWithIndexesCommitQuorumString(v string) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumString(v)
+		o.SetCommitQuorumString(v)
 	}
 }
 
 func CollectionWithIndexesCommitQuorumVotingMembers(v context.Context) CollectionOption {
 	return func(o *CollectionOptions) {
-		o.CreateIndexesOptions.SetCommitQuorumVotingMembers()
+		o.SetCommitQuorumVotingMembers()
 	}
 }
 
@@ -129,9 +128,11 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 		if _, err := col.Indexes().CreateMany(o.IndexesContext, o.Indexes, o.CreateIndexesOptions); err != nil {
 			return nil, err
 		}
+
 		if _, ok := indices[db.Name()]; !ok {
 			indices[db.Name()] = map[string][]string{}
 		}
+
 		for _, index := range o.Indexes {
 			if index.Options != nil && index.Options.Name != nil {
 				indices[db.Name()][name] = append(indices[db.Name()][name], *index.Options.Name)
@@ -165,6 +166,7 @@ func (c *Collection) Get(ctx context.Context, id string, result interface{}, opt
 	if id == "" {
 		return keelpersistence.ErrNotFound
 	}
+
 	return c.FindOne(ctx, bson.M{"id": id}, result, opts...)
 }
 
@@ -172,7 +174,9 @@ func (c *Collection) Exists(ctx context.Context, id string) (bool, error) {
 	if id == "" {
 		return false, nil
 	}
+
 	ret, err := c.collection.CountDocuments(ctx, bson.M{"id": id})
+
 	return ret > 0, err
 }
 
@@ -184,10 +188,11 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	}
 
 	if v, ok := entity.(EntityWithTimestamps); ok {
-		now := keeltime.Now()
+		now := time.Now()
 		if ct := v.GetCreatedAt(); ct.IsZero() {
 			v.SetCreatedAt(now)
 		}
+
 		v.SetUpdatedAt(now)
 	}
 
@@ -223,8 +228,10 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 
 // UpsertMany - NOTE: upsert many does NOT through an explicit error on dirty write so we can only assume it.
 func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
-	var versionUpserts int64
-	var operations []mongo.WriteModel
+	var (
+		versionUpserts int64
+		operations     []mongo.WriteModel
+	)
 
 	for _, entity := range entities {
 		if entity == nil {
@@ -234,10 +241,11 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 		}
 
 		if v, ok := entity.(EntityWithTimestamps); ok {
-			now := keeltime.Now()
+			now := time.Now()
 			if ct := v.GetCreatedAt(); ct.IsZero() {
 				v.SetCreatedAt(now)
 			}
+
 			v.SetUpdatedAt(now)
 		}
 
@@ -252,6 +260,7 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 				)
 			} else {
 				versionUpserts++
+
 				operations = append(operations,
 					mongo.NewUpdateOneModel().
 						SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}, bson.E{Key: "version", Value: currentVersion}}).
@@ -299,10 +308,11 @@ func (c *Collection) Insert(ctx context.Context, entity Entity) error {
 	}
 
 	if v, ok := entity.(EntityWithTimestamps); ok {
-		now := keeltime.Now()
+		now := time.Now()
 		if ct := v.GetCreatedAt(); ct.IsZero() {
 			v.SetCreatedAt(now)
 		}
+
 		v.SetUpdatedAt(now)
 	}
 
@@ -314,6 +324,7 @@ func (c *Collection) Insert(ctx context.Context, entity Entity) error {
 	if _, err := c.collection.InsertOne(ctx, entity); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -327,10 +338,11 @@ func (c *Collection) InsertMany(ctx context.Context, entities []Entity) error {
 		}
 
 		if v, ok := entity.(EntityWithTimestamps); ok {
-			now := keeltime.Now()
+			now := time.Now()
 			if ct := v.GetCreatedAt(); ct.IsZero() {
 				v.SetCreatedAt(now)
 			}
+
 			v.SetUpdatedAt(now)
 		}
 
@@ -345,6 +357,7 @@ func (c *Collection) InsertMany(ctx context.Context, entities []Entity) error {
 	if _, err := c.collection.InsertMany(ctx, inserts); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -352,11 +365,13 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 	if id == "" {
 		return keelpersistence.ErrNotFound
 	}
+
 	if err := c.collection.FindOneAndDelete(ctx, bson.M{"id": id}).Err(); errors.Is(err, mongo.ErrNoDocuments) {
 		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
 	} else if err != nil {
 		return err
 	}
+
 	return nil
 }
 

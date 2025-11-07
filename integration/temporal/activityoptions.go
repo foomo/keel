@@ -64,5 +64,6 @@ func WithActivityOptions(ctx workflow.Context, opts ...ActivityOption) workflow.
 	for _, opt := range opts {
 		opt(&o)
 	}
+
 	return workflow.WithActivityOptions(ctx, o)
 }

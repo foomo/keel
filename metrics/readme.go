@@ -7,6 +7,7 @@ import (
 
 func Readme() string {
 	md := markdown.Markdown{}
+
 	var rows [][]string
 
 	if gatherer, err := prometheus.DefaultGatherer.Gather(); err == nil {

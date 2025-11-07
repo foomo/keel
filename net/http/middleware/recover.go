@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -35,11 +36,13 @@ func RecoverWithDisablePrintStack(v bool) RecoverOption {
 // Recover middleware
 func Recover(opts ...RecoverOption) Middleware {
 	options := GetDefaultRecoverOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&options)
 		}
 	}
+
 	return RecoverWithOptions(options)
 }
 
@@ -47,12 +50,16 @@ func Recover(opts ...RecoverOption) Middleware {
 func RecoverWithOptions(opts RecoverOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			span := trace.SpanFromContext(r.Context())
+			span.AddEvent("Recover")
+
 			defer func() {
 				if e := recover(); e != nil {
 					err, ok := e.(error)
 					if !ok {
-						err = fmt.Errorf("%v", e) //nolint:goerr113
+						err = fmt.Errorf("%v", e)
 					}
+
 					if errors.Is(err, http.ErrAbortHandler) {
 						panic(e)
 					}
@@ -65,6 +72,7 @@ func RecoverWithOptions(opts RecoverOptions) Middleware {
 					httputils.InternalServerError(ll, w, r, errors.Wrap(err, "recovering from panic"))
 				}
 			}()
+
 			next.ServeHTTP(w, r)
 		})
 	}

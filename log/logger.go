@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -24,23 +25,35 @@ func init() {
 // NewLogger return a new logger instance
 func NewLogger(level, encoding string) *zap.Logger {
 	config = zap.NewProductionConfig()
-	if value, err := zapcore.ParseLevel(level); err == nil {
+
+	if value, err := zapcore.ParseLevel(level); err != nil {
+		panic(err)
+	} else {
 		atomicLevel.SetLevel(value)
 	}
+
 	config.Encoding = encoding
 	config.Level = atomicLevel
 	config.EncoderConfig.TimeKey = "time"
+
 	config.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
 	if encoding == "console" {
 		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
-	config.DisableCaller = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
-	config.DisableStacktrace = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
-	if value, err := config.Build(); err != nil {
+
+	config.EncoderConfig.CallerKey = AttributeKey(semconv.CodeFilePathKey)
+	config.EncoderConfig.StacktraceKey = AttributeKey(semconv.CodeStacktraceKey)
+	config.EncoderConfig.EncodeCaller = zapcore.FullCallerEncoder
+
+	config.DisableCaller = env.GetBool("LOG_DISABLE_CALLER", !config.Level.Enabled(zap.DebugLevel))
+	config.DisableStacktrace = env.GetBool("LOG_DISABLE_STACKTRACE", !config.Level.Enabled(zap.DebugLevel))
+
+	logger, err := config.Build()
+	if err != nil {
 		panic(err)
-	} else {
-		return value
 	}
+
+	return logger
 }
 
 // Logger return the logger instance
@@ -68,12 +81,16 @@ func SetDisableCaller(value bool) error {
 	if value == config.DisableCaller {
 		return nil
 	}
+
 	config.DisableCaller = value
+
 	l, err := config.Build()
 	if err != nil {
 		return err
 	}
+
 	zap.ReplaceGlobals(l)
+
 	return nil
 }
 
@@ -82,12 +99,16 @@ func SetDisableStacktrace(value bool) error {
 	if value == config.DisableStacktrace {
 		return nil
 	}
+
 	config.DisableStacktrace = value
+
 	l, err := config.Build()
 	if err != nil {
 		return err
 	}
+
 	zap.ReplaceGlobals(l)
+
 	return nil
 }
 
@@ -97,10 +118,12 @@ func Must(l *zap.Logger, err error, msgAndArgs ...interface{}) {
 		if l == nil {
 			l = Logger()
 		}
+
 		var msg = "Must"
 		if len(msgAndArgs) > 0 {
 			msg, msgAndArgs = fmt.Sprintf("%v", msgAndArgs[0]), msgAndArgs[1:]
 		}
+
 		l.WithOptions(zap.AddCallerSkip(1)).Fatal(fmt.Sprintf(msg, msgAndArgs...), FError(err))
 	}
 }

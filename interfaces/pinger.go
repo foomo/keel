@@ -9,5 +9,5 @@ type ErrorPinger interface {
 
 // ErrorPingerWithContext interface
 type ErrorPingerWithContext interface {
-	Ping(context.Context) error
+	Ping(ctx context.Context) error
 }

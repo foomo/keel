@@ -2,7 +2,10 @@ package roundtripware
 
 import (
 	"net/http"
+	"strings"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	keelhttpcontext "github.com/foomo/keel/net/http/context"
@@ -43,25 +46,39 @@ func RequestIDWithProvider(v provider.RequestID) RequestIDOption {
 // RequestID returns a RoundTripper which prints out the request & response object
 func RequestID(opts ...RequestIDOption) RoundTripware {
 	o := GetDefaultRequestIDOptions()
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&o)
 		}
 	}
+
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
+			span := trace.SpanFromContext(r.Context())
+			if span.IsRecording() {
+				span.AddEvent("RequestID")
+			}
+
 			if value := r.Header.Get(o.Header); value == "" {
 				var requestID string
 				if value, ok := keelhttpcontext.GetRequestID(r.Context()); ok && value != "" {
 					requestID = value
 				}
+
 				if requestID == "" {
 					requestID = o.Provider()
 				}
+
 				if requestID != "" {
+					if span.IsRecording() {
+						span.SetAttributes(semconv.HTTPRequestHeader(strings.ToLower(o.Header), requestID))
+					}
+
 					r.Header.Set(o.Header, requestID)
 				}
 			}
+
 			return next(r)
 		}
 	}

@@ -8,6 +8,8 @@ import (
 )
 
 func TestEqualInline(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		when func(t *testing.T) bool
@@ -33,12 +35,15 @@ func TestEqualInline(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			assert.True(t, tt.when(t))
 		})
 	}
 }
 
 func TestEqualInlineJSONEq(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		when func(t *testing.T) bool
@@ -51,12 +56,14 @@ func TestEqualInlineJSONEq(t *testing.T) {
 				}{
 					Foo: "bar",
 				}
+
 				return keelassert.InlineJSONEq(t, x) // INLINE: {"foo":"bar"}
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			assert.True(t, tt.when(t))
 		})
 	}

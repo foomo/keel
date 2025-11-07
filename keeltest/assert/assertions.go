@@ -26,6 +26,7 @@ func New(t *testing.T) *Assertions { //nolint:thelper
 
 func (a *Assertions) InlineEqual(actual interface{}, msgAndArgs ...interface{}) bool {
 	a.t.Helper()
+
 	expected, ok := keeltest.Inline(a.t, 2, "%v", actual)
 	if ok {
 		return assert.Equal(a.t, expected, fmt.Sprintf("%v", actual), msgAndArgs...)

@@ -19,6 +19,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
 	testingx.Tags(t, tagx.Skip)
 
 	l := zaptest.NewLogger(t)
@@ -49,17 +50,21 @@ func TestNew(t *testing.T) {
 
 	// create publisher
 	l.Info("sending message #1")
+
 	pub := js.Publisher("demo")
 	_, err = pub.PublishMsg("Hello World #1")
 	require.NoError(t, err)
 
 	// create receiver
 	l.Info("creating receiver")
+
 	sub := js.Subscriber("demo")
 	messages := make(chan string)
 	subscription, err := sub.Subscribe(func(ctx context.Context, l *zap.Logger, msg *nats.Msg) error {
 		l.Info("received message", zap.String("msg", string(msg.Data)))
+
 		messages <- string(msg.Data)
+
 		return nil
 	},
 		nats.ConsumerName("my-consumer"),
@@ -68,8 +73,9 @@ func TestNew(t *testing.T) {
 
 	send(t, l, "Hello World #2", pub, messages)
 
-	natsContainerName, err := natsContainer.Container.Name(ctx)
+	natsContainerName, err := natsContainer.Name(ctx)
 	natsContainerName = strings.TrimPrefix(natsContainerName, "/")
+
 	require.NoError(t, err)
 
 	{

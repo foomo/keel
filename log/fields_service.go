@@ -5,58 +5,53 @@ import (
 )
 
 const (
-	// PeerServiceKey represents the ServiceNameKey name of the remote service.
-	// Should equal the actual `service.name` resource attribute of the remote service, if any.
+	// Deprecated: use semconv messaging attributes instead.
 	PeerServiceKey = "peer_service"
+	// Deprecated: use semconv messaging attributes instead.
+	ServiceTypeKey = "service_type"
+	// Deprecated: use semconv messaging attributes instead.
+	ServiceNameKey = "service_name"
+	// Deprecated: use semconv messaging attributes instead.
+	ServiceMethodKey = "service_method"
+	// Deprecated: use semconv messaging attributes instead.
+	ServiceNamespaceKey = "service_namespace"
+	// Deprecated: use semconv messaging attributes instead.
+	ServiceInstanceIDKey = "service_instance.id"
+	// Deprecated: use semconv messaging attributes instead.
+	ServiceVersionKey = "service_version"
 )
 
+// Deprecated: use semconv messaging attributes instead.
 func FPeerService(name string) zap.Field {
 	return zap.String(PeerServiceKey, name)
 }
 
-const (
-	ServiceTypeKey = "service_type"
-
-	// ServiceNameKey represents the NameKey of the service.
-	ServiceNameKey = "service_name"
-
-	// ServiceMethodKey represents the Method of the service.
-	ServiceMethodKey = "service_method"
-
-	// ServiceNamespaceKey represents a namespace for `service.name`. This needs to
-	// have meaning that helps to distinguish a group of services. For example, the
-	// team name that owns a group of services. `service.name` is expected to be
-	// unique within the same namespace.
-	ServiceNamespaceKey = "service_namespace"
-
-	// ServiceInstanceIDKey represents a unique identifier of the service instance. In conjunction
-	// with the `service.name` and `service.namespace` this must be unique.
-	ServiceInstanceIDKey = "service_instance.id"
-
-	// ServiceVersionKey represents the version of the service API.
-	ServiceVersionKey = "service_version"
-)
-
+// Deprecated: use semconv messaging attributes instead.
 func FServiceType(name string) zap.Field {
 	return zap.String(ServiceTypeKey, name)
 }
 
+// Deprecated: use semconv messaging attributes instead.
 func FServiceName(name string) zap.Field {
 	return zap.String(ServiceNameKey, name)
 }
 
+// Deprecated: use semconv messaging attributes instead.
 func FServiceNamespace(namespace string) zap.Field {
 	return zap.String(ServiceNamespaceKey, namespace)
 }
 
+// Deprecated: use semconv messaging attributes instead.
 func FServiceInstanceID(id string) zap.Field {
 	return zap.String(ServiceInstanceIDKey, id)
 }
 
+// Deprecated: use semconv messaging attributes instead.
 func FServiceVersion(version string) zap.Field {
 	return zap.String(ServiceVersionKey, version)
 }
 
+// Deprecated: use semconv messaging attributes instead.
 func FServiceMethod(method string) zap.Field {
 	return zap.String(ServiceMethodKey, method)
 }

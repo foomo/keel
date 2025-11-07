@@ -21,6 +21,8 @@ const (
 )
 
 func TestGzip(t *testing.T) {
+	t.Parallel()
+
 	svr := keeltest.NewServer()
 
 	// get logger
@@ -53,6 +55,8 @@ func TestGzip(t *testing.T) {
 
 	// send payload < 1024
 	t.Run("<1024", func(t *testing.T) {
+		t.Parallel()
+
 		payload = gzipPayload1023
 		body, err := gzipString(payload)
 		require.NoError(t, err)
@@ -65,6 +69,7 @@ func TestGzip(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		// validate response header
@@ -76,7 +81,7 @@ func TestGzip(t *testing.T) {
 	})
 
 	// send payload > 1024
-	t.Run(">=1024", func(t *testing.T) {
+	t.Run(">=1024", func(t *testing.T) { //nolint:paralleltest
 		payload = gzipPayload1024
 		body, err := gzipString(payload)
 		require.NoError(t, err)
@@ -89,6 +94,7 @@ func TestGzip(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		// validate response header
@@ -104,6 +110,8 @@ func TestGzip(t *testing.T) {
 }
 
 func TestGZipBadRequest(t *testing.T) {
+	t.Parallel()
+
 	svr := keeltest.NewServer()
 
 	// get logger
@@ -126,12 +134,14 @@ func TestGZipBadRequest(t *testing.T) {
 	req.Header.Set(stdhttp.HeaderContentEncoding.String(), stdhttp.EncodingGzip.String())
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
+
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	defer resp.Body.Close()
 }
 
 func gzipString(body string) ([]byte, error) {
 	var buf bytes.Buffer
+
 	gz := gzip.NewWriter(&buf)
 
 	_, err := gz.Write([]byte(body))
@@ -154,7 +164,8 @@ func gunzipString(body []byte) ([]byte, error) {
 	defer gr.Close()
 
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, gr) //nolint:gosec
+
+	_, err = io.Copy(&buf, gr)
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,8 @@ import (
 )
 
 func TestCORS(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		target string
@@ -99,11 +101,14 @@ func TestCORS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			handler := tt.with(zaptest.NewLogger(t), tt.name, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			}))
 			r := httptest.NewRequest(tt.method, tt.target, nil)
 			r.Header.Add(keelhttp.HeaderOrigin, tt.origin)
+
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, r)
 			tt.expect(t, r, w)

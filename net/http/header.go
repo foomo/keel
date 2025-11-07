@@ -40,12 +40,14 @@ const (
 	HeaderUserAgent           = "User-Agent"
 
 	// Cloudflare
+
 	HeaderCloudflareIPCountry    = "Cf-Ipcountry"
 	HeaderCloudflareRay          = "Cf-Ray"
 	HeaderCloudflareConnectingIP = "Cf-Connecting-Ip"
 	HeaderCloudflareVisitor      = "Cf-Visitor"
 
 	// Access control
+
 	HeaderAccessControlRequestMethod    = "Access-Control-Request-Method"
 	HeaderAccessControlRequestHeaders   = "Access-Control-Request-Headers"
 	HeaderAccessControlAllowOrigin      = "Access-Control-Allow-Origin"
@@ -56,6 +58,7 @@ const (
 	HeaderAccessControlMaxAge           = "Access-Control-Max-Age"
 
 	// Security
+
 	HeaderStrictTransportSecurity         = "Strict-Transport-Security"
 	HeaderXContentTypeOptions             = "X-Content-Type-Options"
 	HeaderXXSSProtection                  = "X-XSS-Protection"
@@ -66,6 +69,7 @@ const (
 	HeaderReferrerPolicy                  = "Referrer-Policy"
 
 	// Telementry
+
 	HeaderTraceParent = "Traceparent"
 	HeaderTraceState  = "Tracestate"
 )

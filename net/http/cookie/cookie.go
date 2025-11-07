@@ -95,17 +95,21 @@ func New(name string, opts ...Option) Cookie {
 		HTTPOnly: true,
 		SameSite: http.SameSiteDefaultMode,
 	}
+
 	for _, opt := range opts {
 		if opt != nil {
 			opt(&inst)
 		}
 	}
+
 	if inst.DomainProvider == nil {
 		inst.DomainProvider = NewDomainProvider()
 	}
+
 	if inst.TimeProvider == nil {
 		inst.TimeProvider = NewTimeProvider()
 	}
+
 	return inst
 }
 
@@ -117,6 +121,7 @@ func (c Cookie) Delete(w http.ResponseWriter, r *http.Request) error {
 	} else if _, err := c.Set(w, r, "", WithMaxAge(-1)); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -129,10 +134,12 @@ func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts .
 	if err != nil {
 		return nil, err
 	}
+
 	options := c
 	for _, opt := range opts {
 		opt(&options)
 	}
+
 	cookie := &http.Cookie{
 		Name:     c.Name,
 		Value:    value,
@@ -146,6 +153,8 @@ func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts .
 	if options.Expires.Nanoseconds() > 0 {
 		cookie.Expires = options.TimeProvider().Add(options.Expires)
 	}
+
 	http.SetCookie(w, cookie)
+
 	return cookie, nil
 }

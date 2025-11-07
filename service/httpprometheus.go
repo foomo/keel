@@ -22,6 +22,7 @@ func NewHTTPPrometheus(l *zap.Logger, name, addr, path string) *HTTP {
 			EnableOpenMetrics: true,
 		},
 	))
+
 	return NewHTTP(l, name, addr, handler)
 }
 

@@ -14,7 +14,9 @@ func Compose(l *zap.Logger, name string, handler http.Handler, middlewares ...Mi
 		for _, middleware := range middlewares {
 			next = middleware(l, name, next)
 		}
+
 		return next
 	}
+
 	return composed(l, name, handler)
 }

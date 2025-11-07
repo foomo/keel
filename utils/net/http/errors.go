@@ -5,6 +5,7 @@ import (
 
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/pkg/errors"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -48,7 +49,7 @@ func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int
 		} else {
 			l = log.WithError(l, err)
 			l = log.WithHTTPRequest(l, r)
-			l.Error("http server error", log.FHTTPStatusCode(code))
+			l.Error("http server error", log.Attribute(semconv.HTTPResponseStatusCode(code)))
 		}
 		// w.Header().Set(keelhttp.HeaderXError, err.Error()) TODO make configurable with better value
 		http.Error(w, http.StatusText(code), code)

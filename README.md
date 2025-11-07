@@ -1,10 +1,9 @@
-[![Build Status](https://github.com/foomo/keel/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/foomo/keel/actions/workflows/test.yml)
+[![Build Status](https://github.com/foomo/keel/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/foomo/keel/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/foomo/keel)](https://goreportcard.com/report/github.com/foomo/keel)
-[![Coverage Status](https://coveralls.io/repos/github/foomo/keel/badge.svg?branch=main&)](https://coveralls.io/github/foomo/keel?branch=main)
 [![GoDoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
 
 <p align="center">
-  <img alt="sesamy" src=".github/assets/keel.png"/>
+  <img alt="sesamy" src="docs/public/keel.png"/>
 </p>
 
 # keel
@@ -64,10 +63,12 @@ func newService() *http.ServeMux {
 
 ## How to Contribute
 
-Please refer to the [CONTRIBUTING](.gihub/CONTRIBUTING.md) details and follow the [CODE_OF_CONDUCT](.gihub/CODE_OF_CONDUCT.md) and [SECURITY](.github/SECURITY.md) guidelines.
+Contributions are welcome! Please read the [contributing guide](docs/CONTRIBUTING.md).
+
+![Contributors](https://contributors-table.vercel.app/image?repo=foomo/keel&width=50&columns=15)
 
 ## License
 
-Distributed under MIT License, please see license file within the code for more details.
+Distributed under MIT License, please read the [license file](LICENSE) for more details.
 
 _Made with ♥ [foomo](https://www.foomo.org) by [bestbytes](https://www.bestbytes.com)_

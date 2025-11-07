@@ -113,6 +113,7 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 		}); err != nil {
 			return nil, errors.Wrap(err, "failed to register temporal namespace")
 		}
+
 		clientOpts.Namespace = o.RegisterNamespace.Namespace
 	}
 
@@ -128,6 +129,7 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create new opentracing interceptor")
 		}
+
 		clientOpts.Interceptors = append(clientOpts.Interceptors, tracingInterceptor)
 		clientOpts.MetricsHandler = NewMetricsHandler(telemetry.Meter())
 	}
