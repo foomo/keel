@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"os"
 	"sync"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 
 func ExampleNewGoRoutine() {
 	var once sync.Once
+	// unset for github actions
+	_ = os.Setenv("GITHUB_REPOSITORY", "")
 
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewExample()),
