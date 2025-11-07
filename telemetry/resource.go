@@ -11,8 +11,8 @@ import (
 
 // ResourceEnvMap maps environment variables to semantic attributes.
 var envAttributes = map[attribute.Key][]string{
-	semconv.VCSRepositoryNameKey:    {"REPO_NAME", "REPOSITORY_NAME", "GIT_REPOSITORY_NAME", "GITHUB_REPOSITORY_NAME", "GIT_OTEL_VCS_REPOSITORY_NAME"},
-	semconv.VCSRepositoryURLFullKey: {"REPO_URL", "REPOSITORY_URL", "GIT_REPOSITORY_URL", "GITHUB_REPOSITORY", "OTEL_VCS_REPOSITORY_URL_FULL"},
+	semconv.VCSRepositoryNameKey:    {"REPO_NAME", "REPOSITORY_NAME", "GIT_REPOSITORY_NAME", "GITHUB_REPOSITORY", "GITHUB_REPOSITORY_NAME", "GIT_OTEL_VCS_REPOSITORY_NAME"},
+	semconv.VCSRepositoryURLFullKey: {"REPO_URL", "REPOSITORY_URL", "GIT_REPOSITORY_URL", "OTEL_VCS_REPOSITORY_URL_FULL"},
 	semconv.VCSRefBaseNameKey:       {"OTEL_VCS_BASE_NAME"},
 	semconv.VCSRefBaseRevisionKey:   {"OTEL_VCS_BASE_REVSION"},
 	semconv.VCSRefBaseTypeKey:       {"OTEL_VCS_BASE_TYPE"},
