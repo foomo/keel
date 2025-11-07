@@ -1,10 +1,10 @@
-//go:build !pprof
-
 package service
 
 import (
 	"net/http"
+	"net/http/pprof"
 
+	pyroscope_pprof "github.com/grafana/pyroscope-go/http/pprof"
 	"go.uber.org/zap"
 )
 
@@ -15,16 +15,12 @@ var (
 )
 
 func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
-	route := func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-		_, _ = w.Write([]byte("To enable pprof, you need to build your binary with the `-tags=pprof` flag"))
-	}
 	handler := http.NewServeMux()
-	handler.HandleFunc(path+"/", route)
-	handler.HandleFunc(path+"/cmdline", route)
-	handler.HandleFunc(path+"/profile", route)
-	handler.HandleFunc(path+"/symbol", route)
-	handler.HandleFunc(path+"/trace", route)
+	handler.HandleFunc(path+"/", pprof.Index)
+	handler.HandleFunc(path+"/cmdline", pprof.Cmdline)
+	handler.HandleFunc(path+"/profile", pyroscope_pprof.Profile)
+	handler.HandleFunc(path+"/symbol", pprof.Symbol)
+	handler.HandleFunc(path+"/trace", pprof.Trace)
 
 	return NewHTTP(l, name, addr, handler)
 }

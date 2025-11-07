@@ -47,6 +47,7 @@ func (t *logger) With(keyvals ...interface{}) *logger {
 
 func (t *logger) fields(keyvals ...interface{}) []zap.Field {
 	var fields []zap.Field
+
 	for i := 0; i < len(keyvals); i++ {
 		if value, ok := keyvals[i].(zap.Field); ok {
 			fields = append(fields, value)

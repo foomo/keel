@@ -11,6 +11,7 @@ linters:
   disable:
     # Project specific linters
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: false, auto-fix: false]
+    - modernize
     # Discouraged linters
     - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
     - embeddedstructfieldcheck #  Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
@@ -59,6 +60,7 @@ linters:
       disabled-checks:
         - assignOp
         - ifElseChain
+        - deprecatedComment
     gomoddirectives:
       replace-local: true
     gosec:
@@ -84,6 +86,7 @@ linters:
           - unused
           - gosec
     paths:
+      - tmp
       - examples
 formatters:
   enable:
