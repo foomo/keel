@@ -61,6 +61,10 @@ func (c Context) Span() trace.Span {
 	return trace.SpanFromContext(c.Context)
 }
 
+func (c Context) SetSpanDebug() {
+	c.Span().SetAttributes(attribute.Bool("debug.enabled", true))
+}
+
 // EndSpan ends the span.
 func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 	sp := c.Span()
