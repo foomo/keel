@@ -9,15 +9,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func Log(ctx context.Context, opts ...zap.Option) *zap.Logger {
-	return log(ctx, 1, opts...)
-}
-
-func log(ctx context.Context, skip int, opts ...zap.Option) *zap.Logger {
+func logger(ctx context.Context, skip int, opts ...zap.Option) *zap.Logger {
 	return zap.L().
 		WithOptions(append(opts, zap.WithCaller(false))...).
-		With(logSpanFields(trace.SpanContextFromContext(ctx))...).
-		With(logCallerFields(skip + 1)...)
+		With(logSpanFields(trace.SpanContextFromContext(ctx))...)
 }
 
 func logSpanFields(ctx trace.SpanContext, opts ...zap.Option) []zapcore.Field {
@@ -27,6 +22,7 @@ func logSpanFields(ctx trace.SpanContext, opts ...zap.Option) []zapcore.Field {
 			zap.String("span_id", ctx.SpanID().String()),
 		}
 	}
+
 	return nil
 }
 
@@ -38,5 +34,6 @@ func logCallerFields(skip int) []zapcore.Field {
 			zap.Int("span_lint_number", line),
 		}
 	}
+
 	return nil
 }

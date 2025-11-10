@@ -6,7 +6,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/foomo/keel/internal/runtimeutil"
-	pkglog "github.com/foomo/keel/log"
+	"github.com/foomo/keel/log"
 	"github.com/grafana/pyroscope-go"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel/metric/noop"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type Context struct {
@@ -31,29 +30,24 @@ func Ctx(ctx context.Context) Context {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
-// Log returns the logger from the context.
-func (c Context) Log() *zap.Logger {
-	return Log(c.Context)
-}
-
 // LogDebug logs a message at debug level.
 func (c Context) LogDebug(msg string, kv ...attribute.KeyValue) {
-	log(c.Context, 1).Debug(msg, pkglog.Attributes(kv...)...)
+	logger(c.Context, 1).Debug(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
 }
 
 // LogInfo logs a message at info level.
 func (c Context) LogInfo(msg string, kv ...attribute.KeyValue) {
-	log(c.Context, 1).Info(msg, pkglog.Attributes(kv...)...)
+	logger(c.Context, 1).Info(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
 }
 
 // LogWarn logs a message at warn level.
 func (c Context) LogWarn(msg string, kv ...attribute.KeyValue) {
-	log(c.Context, 1).Warn(msg, pkglog.Attributes(kv...)...)
+	logger(c.Context, 1).Warn(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
 }
 
 // LogError logs a message at error level.
 func (c Context) LogError(msg string, kv ...attribute.KeyValue) {
-	log(c.Context, 1).Error(msg, pkglog.Attributes(kv...)...)
+	logger(c.Context, 1).Error(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
 }
 
 // Span returns the span from the context.
