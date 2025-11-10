@@ -6,7 +6,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/foomo/keel/internal/runtimeutil"
-	"github.com/foomo/keel/log"
+	pkglog "github.com/foomo/keel/log"
 	"github.com/grafana/pyroscope-go"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -38,22 +38,22 @@ func (c Context) Log() *zap.Logger {
 
 // LogDebug logs a message at debug level.
 func (c Context) LogDebug(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context, zap.AddCallerSkip(1)).Debug(msg, log.Attributes(kv...)...)
+	log(c.Context, 1).Debug(msg, pkglog.Attributes(kv...)...)
 }
 
 // LogInfo logs a message at info level.
 func (c Context) LogInfo(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context, zap.AddCallerSkip(1)).Info(msg, log.Attributes(kv...)...)
+	log(c.Context, 1).Info(msg, pkglog.Attributes(kv...)...)
 }
 
 // LogWarn logs a message at warn level.
 func (c Context) LogWarn(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context, zap.AddCallerSkip(1)).Warn(msg, log.Attributes(kv...)...)
+	log(c.Context, 1).Warn(msg, pkglog.Attributes(kv...)...)
 }
 
 // LogError logs a message at error level.
 func (c Context) LogError(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context, zap.AddCallerSkip(1)).Error(msg, log.Attributes(kv...)...)
+	log(c.Context, 1).Error(msg, pkglog.Attributes(kv...)...)
 }
 
 // Span returns the span from the context.
