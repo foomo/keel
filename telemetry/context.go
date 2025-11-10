@@ -213,5 +213,5 @@ func (c Context) log(ctx context.Context, lvl zapcore.Level, msg string, skip in
 
 	kv = append(kv, pkgsemconv.CodeCaller(skip+1)...)
 
-	zap.L().Log(lvl, msg, log.Attributes(kv...)...)
+	zap.L().WithOptions(zap.WithCaller(false)).Log(lvl, msg, log.Attributes(kv...)...)
 }
