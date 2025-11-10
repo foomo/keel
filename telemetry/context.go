@@ -65,7 +65,8 @@ func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		if err != nil {
-			c.RecordError(err)
+			sp.RecordError(err, trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(3, 1))))
+			sp.SetStatus(codes.Error, errors.Cause(err).Error())
 		} else {
 			c.SetSpanStatusOK()
 		}
@@ -76,7 +77,18 @@ func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 
 // DeferEndSpan is a helper so you can do `defer ctx.DeferEndSpan(&err)` instead of `defer func(){ ctx.EndSpan(err) }()`
 func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
-	c.EndSpan(*err, opts...)
+	e := *err
+	sp := c.Span()
+	if sp.IsRecording() {
+		if e != nil {
+			sp.RecordError(e, trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(3, 1))))
+			sp.SetStatus(codes.Error, errors.Cause(e).Error())
+		} else {
+			c.SetSpanStatusOK()
+		}
+
+		sp.End(opts...)
+	}
 }
 
 // SetSpanStatusOK sets the status of the span to ok.
