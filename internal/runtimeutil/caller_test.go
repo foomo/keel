@@ -21,7 +21,7 @@ func TestCaller(t *testing.T) {
 
 	assert.Equal(t, "runtimeutil_test.TestCaller", shortName)
 	assert.Equal(t, "github.com/foomo/keel/internal/runtimeutil_test.TestCaller", fullName)
-	assert.True(t, strings.HasSuffix(file, "github.com/foomo/keel/internal/runtimeutil/caller_test.go"))
+	assert.True(t, strings.HasSuffix(file, "/internal/runtimeutil/caller_test.go"))
 	assert.Equal(t, 20, line)
 
 	c := new(caller)
@@ -29,6 +29,6 @@ func TestCaller(t *testing.T) {
 
 	assert.Equal(t, "runtimeutil_test.(*caller).caller", shortName)
 	assert.Equal(t, "github.com/foomo/keel/internal/runtimeutil_test.(*caller).caller", fullName)
-	assert.True(t, strings.HasSuffix(file, "github.com/foomo/keel/internal/runtimeutil/caller_test.go"))
+	assert.True(t, strings.HasSuffix(file, "/internal/runtimeutil/caller_test.go"))
 	assert.Equal(t, 14, line)
 }
