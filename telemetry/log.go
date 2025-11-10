@@ -31,7 +31,7 @@ func logCallerFields(skip int) []zapcore.Field {
 		return []zapcore.Field{
 			zap.String("code_function_name", shortName),
 			zap.String("code_file_path", file),
-			zap.Int("span_lint_number", line),
+			zap.Int("code_line_number", line),
 		}
 	}
 

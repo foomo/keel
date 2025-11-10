@@ -5,10 +5,11 @@ import (
 	"reflect"
 	"runtime/pprof"
 
+	"github.com/pkg/errors"
+
 	"github.com/foomo/keel/internal/runtimeutil"
 	"github.com/foomo/keel/log"
 	"github.com/grafana/pyroscope-go"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -112,15 +113,23 @@ func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) {
 
 // RecordError records an error on the span and logs it.
 func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
-	c.SetSpanStatusError(errors.Cause(err).Error())
-	c.RecordSpanError(err, trace.WithAttributes(kv...))
+	sp := c.Span()
+	if sp.IsRecording() {
+		sp.RecordError(err,
+			trace.WithAttributes(kv...),
+			trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(3, 1))),
+		)
+		sp.SetStatus(codes.Error, errors.Cause(err).Error())
+	}
 }
 
 // RecordSpanError records an error on the span.
 func (c Context) RecordSpanError(err error, opts ...trace.EventOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
-		sp.RecordError(err, append(opts, trace.WithStackTrace(true))...)
+		sp.RecordError(err, append(opts,
+			trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(5, 1))),
+		)...)
 	}
 }
 

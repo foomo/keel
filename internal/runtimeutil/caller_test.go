@@ -1,6 +1,7 @@
 package runtimeutil_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -31,4 +32,15 @@ func TestCaller(t *testing.T) {
 	assert.Equal(t, "github.com/foomo/keel/internal/runtimeutil_test.(*caller).caller", fullName)
 	assert.True(t, strings.HasSuffix(file, "/internal/runtimeutil/caller_test.go"))
 	assert.Equal(t, 14, line)
+}
+
+func TestStackTrace(t *testing.T) {
+	t.Parallel()
+
+	stack := runtimeutil.StackTrace(2, 1)
+	parts := strings.Split(stack, "\n")
+
+	fmt.Println(parts)
+	assert.Len(t, parts, 4)
+	assert.Equal(t, "github.com/foomo/keel/internal/runtimeutil_test.TestStackTrace", parts[0])
 }
