@@ -81,7 +81,7 @@ func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		if e != nil {
-			sp.RecordError(e, trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(3, 1))))
+			sp.RecordError(e, trace.WithAttributes(pkgsemconv.CodeStacktrace(5, 1)))
 			sp.SetStatus(codes.Error, errors.Cause(e).Error())
 		} else {
 			c.SetSpanStatusOK()
@@ -129,7 +129,7 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	if sp.IsRecording() {
 		sp.RecordError(err,
 			trace.WithAttributes(kv...),
-			trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(3, 1))),
+			trace.WithAttributes(pkgsemconv.CodeStacktrace(3, 1)),
 		)
 		sp.SetStatus(codes.Error, errors.Cause(err).Error())
 	}

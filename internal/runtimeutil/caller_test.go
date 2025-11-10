@@ -23,7 +23,7 @@ func TestCaller(t *testing.T) {
 	assert.Equal(t, "runtimeutil_test.TestCaller", shortName)
 	assert.Equal(t, "github.com/foomo/keel/internal/runtimeutil_test.TestCaller", fullName)
 	assert.True(t, strings.HasSuffix(file, "/internal/runtimeutil/caller_test.go"))
-	assert.Equal(t, 20, line)
+	assert.Equal(t, 21, line)
 
 	c := new(caller)
 	shortName, fullName, file, line, _ = c.caller()
@@ -31,7 +31,7 @@ func TestCaller(t *testing.T) {
 	assert.Equal(t, "runtimeutil_test.(*caller).caller", shortName)
 	assert.Equal(t, "github.com/foomo/keel/internal/runtimeutil_test.(*caller).caller", fullName)
 	assert.True(t, strings.HasSuffix(file, "/internal/runtimeutil/caller_test.go"))
-	assert.Equal(t, 14, line)
+	assert.Equal(t, 15, line)
 }
 
 func TestStackTrace(t *testing.T) {
