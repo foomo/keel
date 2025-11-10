@@ -3,10 +3,9 @@ package telemetry
 import (
 	"context"
 	"reflect"
-	"runtime"
 	"runtime/pprof"
-	"strings"
 
+	"github.com/foomo/keel/internal/runtimeutil"
 	"github.com/foomo/keel/log"
 	"github.com/grafana/pyroscope-go"
 	"github.com/pkg/errors"
@@ -133,13 +132,13 @@ func (c Context) AddSpanEvent(name string, opts ...trace.EventOption) {
 
 // StartSpan starts a span.
 func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
-	ctx, _ := c.startSpan("CODE", 2, opts...)
+	ctx, _ := c.startSpan("FUNC", 1, opts...)
 	return ctx
 }
 
 // StartSpanWithProfile starts a span and profiles the handler.
 func (c Context) StartSpanWithProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
-	ctx, span := c.startSpan("PROFILE", 2, trace.WithAttributes(kv...))
+	ctx, span := c.startSpan("FUNC", 1, trace.WithAttributes(kv...))
 	defer span.End()
 
 	ctx.StartProfile(handler, kv...)
@@ -387,27 +386,16 @@ func (c Context) FloatUpDownCounter(name string, opts ...any) metric.Float64UpDo
 func (c Context) startSpan(prefix string, skip int, opts ...trace.SpanStartOption) (Context, trace.Span) {
 	name := prefix
 
-	var attrs []attribute.KeyValue
-	if pc, file, line, ok := runtime.Caller(skip); ok {
-		attrs = append(attrs,
+	if shortName, _, file, line, ok := runtimeutil.Caller(skip + 1); ok {
+		name += " " + shortName
+		opts = append(opts, trace.WithAttributes(
+			semconv.CodeFunctionName(shortName),
 			semconv.CodeLineNumber(line),
 			semconv.CodeFilePath(file),
-		)
-
-		if details := runtime.FuncForPC(pc); details != nil {
-			funcName := details.Name()
-
-			lastSlash := strings.LastIndexByte(funcName, '/')
-			if lastSlash < 0 {
-				lastSlash = 0
-			}
-
-			lastDot := strings.LastIndexByte(funcName[lastSlash:], '.') + lastSlash
-			name += " " + funcName[lastDot+1:]
-		}
+		))
 	}
 
-	ctx, span := Tracer().Start(c.Context, name, append(opts, trace.WithAttributes(attrs...))...) //nolint:spancheck
+	ctx, span := Tracer().Start(c.Context, name, opts...) //nolint:spancheck
 
 	return Ctx(ctx), span //nolint:spancheck
 }

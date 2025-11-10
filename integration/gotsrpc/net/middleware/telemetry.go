@@ -176,7 +176,7 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage))
 					}
 
-					m.Record(r.Context(),
+					m.Record(ctx,
 						stats.Execution.Seconds(),
 						stats.Package,
 						stats.Service,
