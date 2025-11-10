@@ -2,19 +2,18 @@ package telemetry
 
 import (
 	"context"
-	"reflect"
 	"runtime/pprof"
 
+	pkgsemconv "github.com/foomo/keel/semconv"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/foomo/keel/internal/runtimeutil"
 	"github.com/foomo/keel/log"
 	"github.com/grafana/pyroscope-go"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -33,22 +32,22 @@ func Ctx(ctx context.Context) Context {
 
 // LogDebug logs a message at debug level.
 func (c Context) LogDebug(msg string, kv ...attribute.KeyValue) {
-	logger(c.Context, 1).Debug(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
+	c.log(c.Context, zapcore.DebugLevel, msg, 1, kv...)
 }
 
 // LogInfo logs a message at info level.
 func (c Context) LogInfo(msg string, kv ...attribute.KeyValue) {
-	logger(c.Context, 1).Info(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
+	c.log(c.Context, zapcore.InfoLevel, msg, 1, kv...)
 }
 
 // LogWarn logs a message at warn level.
 func (c Context) LogWarn(msg string, kv ...attribute.KeyValue) {
-	logger(c.Context, 1).Warn(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
+	c.log(c.Context, zapcore.WarnLevel, msg, 1, kv...)
 }
 
 // LogError logs a message at error level.
 func (c Context) LogError(msg string, kv ...attribute.KeyValue) {
-	logger(c.Context, 1).Error(msg, append(logCallerFields(1), log.Attributes(kv...)...)...)
+	c.log(c.Context, zapcore.ErrorLevel, msg, 1, kv...)
 }
 
 // Span returns the span from the context.
@@ -78,6 +77,7 @@ func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 // DeferEndSpan is a helper so you can do `defer ctx.DeferEndSpan(&err)` instead of `defer func(){ ctx.EndSpan(err) }()`
 func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
 	e := *err
+
 	sp := c.Span()
 	if sp.IsRecording() {
 		if e != nil {
@@ -136,20 +136,20 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 }
 
 // RecordSpanError records an error on the span.
-func (c Context) RecordSpanError(err error, opts ...trace.EventOption) {
+func (c Context) RecordSpanError(err error, kv ...attribute.KeyValue) {
 	sp := c.Span()
 	if sp.IsRecording() {
-		sp.RecordError(err, append(opts,
-			trace.WithAttributes(semconv.CodeStacktrace(runtimeutil.StackTrace(5, 1))),
-		)...)
+		sp.RecordError(err,
+			trace.WithAttributes(append(kv, pkgsemconv.CodeStacktrace(5, 1))...),
+		)
 	}
 }
 
 // AddSpanEvent adds an event to the span.
-func (c Context) AddSpanEvent(name string, opts ...trace.EventOption) {
+func (c Context) AddSpanEvent(name string, kv ...attribute.KeyValue) {
 	sp := c.Span()
 	if sp.IsRecording() {
-		sp.AddEvent(name, opts...)
+		sp.AddEvent(name, trace.WithAttributes(kv...))
 	}
 }
 
@@ -160,16 +160,16 @@ func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
 }
 
 // StartSpanWithProfile starts a span and profiles the handler.
-func (c Context) StartSpanWithProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
+func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
 	ctx, span := c.startSpan("FUNC", 1, trace.WithAttributes(kv...))
 	defer span.End()
 
-	ctx.StartProfile(handler, kv...)
+	ctx.StartProfile(name, handler, kv...)
 }
 
 // StartProfile starts a profile for the handler.
-func (c Context) StartProfile(handler func(ctx Context), kv ...attribute.KeyValue) {
-	pyroscope.TagWrapper(c.Context, PyroscopeLabels(kv...), func(ctx context.Context) {
+func (c Context) StartProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
+	pyroscope.TagWrapper(c.Context, PyroscopeLabels(append(kv, pkgsemconv.ProfileName(name))...), func(ctx context.Context) {
 		handler(Ctx(ctx))
 	})
 }
@@ -180,226 +180,6 @@ func (c Context) SetProfileAttributes(kv ...attribute.KeyValue) Context {
 	pprof.SetGoroutineLabels(ctx)
 
 	return Ctx(ctx)
-}
-
-// IntHistogram creates and returns a Int64Histogram metric instrument with the specified name and optional settings.
-func (c Context) IntHistogram(name string, opts ...any) metric.Int64Histogram {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Int64HistogramOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.HistogramOption:
-			metricOptions = append(metricOptions, t)
-		case metric.Int64HistogramOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid Histogram option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Int64Histogram(name, metricOptions...)
-	if err != nil {
-		otel.Handle(err)
-		return noop.Int64Histogram{}
-	}
-
-	return m
-}
-
-// FloatHistogram creates and returns a Float64Histogram metric instrument with the specified name and optional settings.
-func (c Context) FloatHistogram(name string, opts ...any) metric.Float64Histogram {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Float64HistogramOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.HistogramOption:
-			metricOptions = append(metricOptions, t)
-		case metric.Float64HistogramOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid Histogram option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Float64Histogram(name, metricOptions...)
-	if err != nil {
-		otel.Handle(err)
-		return noop.Float64Histogram{}
-	}
-
-	return m
-}
-
-// IntGauge creates and returns a Int64Gauge metric instrument with the specified name and optional settings.
-func (c Context) IntGauge(name string, opts ...any) metric.Int64Gauge {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Int64GaugeOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.Int64GaugeOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid Gauge option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Int64Gauge(name, metricOptions...)
-	if err != nil {
-		c.LogWarn("failed to create Gauge", semconv.ErrorType(err), semconv.ErrorMessage(err.Error()))
-		return noop.Int64Gauge{}
-	}
-
-	return m
-}
-
-// FloatGauge creates and returns a Float64Gauge metric with the specified name and optional configurations.
-func (c Context) FloatGauge(name string, opts ...any) metric.Float64Gauge {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Float64GaugeOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.Float64GaugeOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid Gauge option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Float64Gauge(name, metricOptions...)
-	if err != nil {
-		c.LogWarn("failed to create Gauge", semconv.ErrorType(err), semconv.ErrorMessage(err.Error()))
-		return noop.Float64Gauge{}
-	}
-
-	return m
-}
-
-// IntCounter creates and returns a Int64Counter metric instrument with the specified name and optional settings.
-func (c Context) IntCounter(name string, opts ...any) metric.Int64Counter {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Int64CounterOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.Int64CounterOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid Counter option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Int64Counter(name, metricOptions...)
-	if err != nil {
-		c.LogWarn("failed to create Counter", semconv.ErrorType(err), semconv.ErrorMessage(err.Error()))
-		return noop.Int64Counter{}
-	}
-
-	return m
-}
-
-// FloatCounter creates and returns a Float64Counter metric instrument with the specified name and optional settings.
-func (c Context) FloatCounter(name string, opts ...any) metric.Float64Counter {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Float64CounterOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.Float64CounterOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid Counter option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Float64Counter(name, metricOptions...)
-	if err != nil {
-		c.LogWarn("failed to create Counter", semconv.ErrorType(err), semconv.ErrorMessage(err.Error()))
-		return noop.Float64Counter{}
-	}
-
-	return m
-}
-
-// IntUpDownCounter creates and returns a Int64UpDownCounter metric instrument with the specified name and optional settings.
-func (c Context) IntUpDownCounter(name string, opts ...any) metric.Int64UpDownCounter {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Int64UpDownCounterOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.Int64UpDownCounterOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid UpDownCounter option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Int64UpDownCounter(name, metricOptions...)
-	if err != nil {
-		c.LogWarn("failed to create UpDownCounter", semconv.ErrorType(err), semconv.ErrorMessage(err.Error()))
-		return noop.Int64UpDownCounter{}
-	}
-
-	return m
-}
-
-// FloatUpDownCounter creates and returns a Float64UpDownCounter metric instrument with the specified name and optional settings.
-func (c Context) FloatUpDownCounter(name string, opts ...any) metric.Float64UpDownCounter {
-	var (
-		meterOptions  []metric.MeterOption
-		metricOptions []metric.Float64UpDownCounterOption
-	)
-
-	for _, v := range opts {
-		switch t := v.(type) {
-		case metric.MeterOption:
-			meterOptions = append(meterOptions, t)
-		case metric.Float64UpDownCounterOption:
-			metricOptions = append(metricOptions, t)
-		default:
-			c.LogWarn("invalid UpDownCounter option", attribute.String("type", reflect.TypeOf(v).String()))
-		}
-	}
-
-	m, err := Meter(meterOptions...).Float64UpDownCounter(name, metricOptions...)
-	if err != nil {
-		c.LogWarn("failed to create UpDownCounter", semconv.ErrorType(err), semconv.ErrorMessage(err.Error()))
-		return noop.Float64UpDownCounter{}
-	}
-
-	return m
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -421,4 +201,17 @@ func (c Context) startSpan(prefix string, skip int, opts ...trace.SpanStartOptio
 	ctx, span := Tracer().Start(c.Context, name, opts...) //nolint:spancheck
 
 	return Ctx(ctx), span //nolint:spancheck
+}
+
+func (c Context) log(ctx context.Context, lvl zapcore.Level, msg string, skip int, kv ...attribute.KeyValue) {
+	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
+		kv = append(kv,
+			pkgsemconv.TraceID(spanCtx.TraceID().String()),
+			pkgsemconv.SpanID(spanCtx.SpanID().String()),
+		)
+	}
+
+	kv = append(kv, pkgsemconv.CodeCaller(skip+1)...)
+
+	zap.L().Log(lvl, msg, log.Attributes(kv...)...)
 }

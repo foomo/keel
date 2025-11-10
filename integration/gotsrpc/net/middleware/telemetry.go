@@ -132,76 +132,74 @@ func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
 			ctx := telemetry.Ctx(r.Context())
 			ctx.AddSpanEvent("GOTSRCP Telemetry")
 
-			ctx.StartProfile(func(ctx telemetry.Context) {
-				r = r.WithContext(ctx)
+			r = r.WithContext(ctx)
 
-				next.ServeHTTP(w, r)
+			next.ServeHTTP(w, r)
 
-				if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
-					if !opts.PayloadAttributeDisabled {
-						ctx.SetSpanAttributes(keelsemconv.GoTSRPCPayload(sanitizePayload(r)))
-					}
+			if stats, ok := gotsrpc.GetStatsForRequest(r); ok {
+				if !opts.PayloadAttributeDisabled {
+					ctx.SetSpanAttributes(keelsemconv.GoTSRPCPayload(sanitizePayload(r)))
+				}
 
-					var pkg string
-					if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
-						pkg = parts[len(parts)-1] + "."
-					}
+				var pkg string
+				if parts := strings.Split(stats.Package, "/"); len(parts) > 0 {
+					pkg = parts[len(parts)-1] + "."
+				}
 
-					// override span name
-					ctx.SetSpanName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
+				// override span name
+				ctx.SetSpanName(fmt.Sprintf("GOTSRPC %s%s/%s", pkg, stats.Service, stats.Func))
 
-					// define default attributes
-					attrs := []attribute.KeyValue{
-						keelsemconv.GoTSRPCFunc(stats.Func),
-						keelsemconv.GoTSRPCService(stats.Service),
-						keelsemconv.GoTSRPCPackage(stats.Package),
-					}
+				// define default attributes
+				attrs := []attribute.KeyValue{
+					keelsemconv.GoTSRPCFunc(stats.Func),
+					keelsemconv.GoTSRPCService(stats.Service),
+					keelsemconv.GoTSRPCPackage(stats.Package),
+				}
 
-					// add trace attributes
-					ctx.SetSpanAttributes(append(attrs,
-						keelsemconv.GoTSRPCMarshalling(stats.Marshalling.Milliseconds()),
-						keelsemconv.GoTSRPCUnmarshalling(stats.Unmarshalling.Milliseconds()),
-					)...)
+				// add trace attributes
+				ctx.SetSpanAttributes(append(attrs,
+					keelsemconv.GoTSRPCMarshalling(stats.Marshalling.Milliseconds()),
+					keelsemconv.GoTSRPCUnmarshalling(stats.Unmarshalling.Milliseconds()),
+				)...)
+
+				if stats.ErrorCode != 0 {
+					ctx.SetSpanStatusError(stats.ErrorMessage)
+					ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode))
+				}
+
+				if stats.ErrorType != "" {
+					ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorType(stats.ErrorType))
+				}
+
+				if stats.ErrorMessage != "" {
+					ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage))
+				}
+
+				m.Record(ctx,
+					stats.Execution.Seconds(),
+					stats.Package,
+					stats.Service,
+					stats.Func,
+					m.AttrError(stats.ErrorCode != 0),
+				)
+
+				// enrich logger
+				if labeler, ok := httplog.LabelerFromRequest(r); ok {
+					labeler.Add(log.Attributes(attrs...)...)
 
 					if stats.ErrorCode != 0 {
-						ctx.SetSpanStatusError(stats.ErrorMessage)
-						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode))
+						labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode)))
 					}
 
 					if stats.ErrorType != "" {
-						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorType(stats.ErrorType))
+						labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorType(stats.ErrorType)))
 					}
 
 					if stats.ErrorMessage != "" {
-						ctx.SetSpanAttributes(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage))
-					}
-
-					m.Record(ctx,
-						stats.Execution.Seconds(),
-						stats.Package,
-						stats.Service,
-						stats.Func,
-						m.AttrError(stats.ErrorCode != 0),
-					)
-
-					// enrich logger
-					if labeler, ok := httplog.LabelerFromRequest(r); ok {
-						labeler.Add(log.Attributes(attrs...)...)
-
-						if stats.ErrorCode != 0 {
-							labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorCode(stats.ErrorCode)))
-						}
-
-						if stats.ErrorType != "" {
-							labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorType(stats.ErrorType)))
-						}
-
-						if stats.ErrorMessage != "" {
-							labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage)))
-						}
+						labeler.Add(log.Attribute(keelsemconv.GoTSRPCErrorMessage(stats.ErrorMessage)))
 					}
 				}
-			}, keelsemconv.ProfileName("gotsrpc"))
+			}
 		})
 	}
 }
