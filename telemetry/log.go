@@ -8,11 +8,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func Log(ctx context.Context) *zap.Logger {
-	return logFromSpanContext(trace.SpanContextFromContext(ctx))
+func Log(ctx context.Context, opts ...zap.Option) *zap.Logger {
+	return logFromSpanContext(trace.SpanContextFromContext(ctx), opts...)
 }
 
-func logFromSpanContext(ctx trace.SpanContext) *zap.Logger {
+func logFromSpanContext(ctx trace.SpanContext, opts ...zap.Option) *zap.Logger {
 	var fields []zapcore.Field
 	if ctx.IsValid() {
 		fields = append(fields,
@@ -21,5 +21,5 @@ func logFromSpanContext(ctx trace.SpanContext) *zap.Logger {
 		)
 	}
 
-	return zap.L().With(fields...)
+	return zap.L().With(fields...).WithOptions(opts...)
 }

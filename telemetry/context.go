@@ -38,22 +38,22 @@ func (c Context) Log() *zap.Logger {
 
 // LogDebug logs a message at debug level.
 func (c Context) LogDebug(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context).Debug(msg, log.Attributes(kv...)...)
+	Log(c.Context, zap.AddCallerSkip(1)).Debug(msg, log.Attributes(kv...)...)
 }
 
 // LogInfo logs a message at info level.
 func (c Context) LogInfo(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context).Info(msg, log.Attributes(kv...)...)
+	Log(c.Context, zap.AddCallerSkip(1)).Info(msg, log.Attributes(kv...)...)
 }
 
 // LogWarn logs a message at warn level.
 func (c Context) LogWarn(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context).Warn(msg, log.Attributes(kv...)...)
+	Log(c.Context, zap.AddCallerSkip(1)).Warn(msg, log.Attributes(kv...)...)
 }
 
 // LogError logs a message at error level.
 func (c Context) LogError(msg string, kv ...attribute.KeyValue) {
-	Log(c.Context).Error(msg, log.Attributes(kv...)...)
+	Log(c.Context, zap.AddCallerSkip(1)).Error(msg, log.Attributes(kv...)...)
 }
 
 // Span returns the span from the context.
