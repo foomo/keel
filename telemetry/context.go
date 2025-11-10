@@ -113,9 +113,9 @@ func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) {
 
 // RecordError records an error on the span and logs it.
 func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
-	c.RecordSpanError(err, trace.WithAttributes(kv...))
 	c.SetSpanStatusError(errors.Cause(err).Error())
-	c.Log().With(append(log.Attributes(kv...), zap.Error(err))...).Error(errors.Cause(err).Error())
+	c.RecordSpanError(err, trace.WithAttributes(kv...))
+	c.LogError(err.Error(), kv...)
 }
 
 // RecordSpanError records an error on the span.
