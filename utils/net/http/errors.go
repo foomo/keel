@@ -45,9 +45,7 @@ func NotFoundServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, 
 // ServerError http response
 func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int, err error) {
 	if err != nil {
-		ctx := telemetry.Ctx(r.Context())
-		ctx.RecordError(err)
-
+		telemetry.Ctx(r.Context()).RecordError(err)
 		// add log entry
 		if labeler, ok := httplog.LabelerFromRequest(r); ok {
 			labeler.Add(log.FErrorType(err), log.FError(errors.Wrap(err, "http server error")))
