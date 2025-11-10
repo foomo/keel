@@ -79,6 +79,11 @@ func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 	}
 }
 
+// DeferEndSpan is a helper so you can do `defer ctx.DeferEndSpan(&err)` instead of `defer func(){ ctx.EndSpan(err) }()`
+func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
+	c.EndSpan(*err, opts...)
+}
+
 // SetSpanStatusOK sets the status of the span to ok.
 func (c Context) SetSpanStatusOK() {
 	sp := c.Span()
