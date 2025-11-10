@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"strings"
+
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -10,7 +12,7 @@ func PyroscopeLabels(kv ...attribute.KeyValue) pyroscope.LabelSet {
 
 	for _, value := range kv {
 		if value.Valid() {
-			labels = append(labels, string(value.Key), value.Value.AsString())
+			labels = append(labels, strings.ReplaceAll(string(value.Key), ".", "_"), value.Value.AsString())
 		}
 	}
 
