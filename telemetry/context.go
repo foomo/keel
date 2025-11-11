@@ -160,8 +160,9 @@ func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
 }
 
 // StartSpanWithNewRoot sets the name of the span.
-func (c Context) StartSpanWithNewRoot(name string) Context {
-	return c.StartSpan(trace.WithNewRoot(), trace.WithLinks(trace.LinkFromContext(c.Context)))
+func (c Context) StartSpanWithNewRoot(opts ...trace.SpanStartOption) Context {
+	ctx, _ := c.startSpan("FUNC", 1, append(opts, trace.WithNewRoot(), trace.WithLinks(trace.LinkFromContext(c.Context)))...)
+	return ctx
 }
 
 // StartSpanWithProfile starts a span and profiles the handler.
