@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	httplog "github.com/foomo/keel/net/http/log"
+	"github.com/foomo/keel/telemetry"
 	"github.com/pkg/errors"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
@@ -44,6 +45,8 @@ func NotFoundServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, 
 // ServerError http response
 func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int, err error) {
 	if err != nil {
+		telemetry.Ctx(r.Context()).RecordError(err)
+		// add log entry
 		if labeler, ok := httplog.LabelerFromRequest(r); ok {
 			labeler.Add(log.FErrorType(err), log.FError(errors.Wrap(err, "http server error")))
 		} else {

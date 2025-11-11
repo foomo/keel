@@ -33,21 +33,11 @@ func TestCtx(t *testing.T) {
 		t.Parallel()
 		ctx := telemetry.Ctx(t.Context())
 
-		{ // zap logger
-			field := zap.String("foo", "bar")
-			ctx.Log().Info("Info", field)
-			ctx.Log().Warn("Warn", field)
-			ctx.Log().Debug("Debug", field)
-			ctx.Log().Error("Error", field)
-		}
-
-		{ // wrapped logger
-			attr := attribute.String("foo", "bar")
-			ctx.LogInfo("Info", attr)
-			ctx.LogWarn("Warn", attr)
-			ctx.LogDebug("Debug", attr)
-			ctx.LogError("Error", attr)
-		}
+		attr := attribute.String("foo", "bar")
+		ctx.LogInfo("Info", attr)
+		ctx.LogWarn("Warn", attr)
+		ctx.LogDebug("Debug", attr)
+		ctx.LogError("Error", attr)
 	})
 
 	t.Run("StartSpan", func(t *testing.T) { //nolint:paralleltest
