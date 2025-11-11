@@ -159,6 +159,11 @@ func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
 	return ctx
 }
 
+// StartSpanWithNewRoot sets the name of the span.
+func (c Context) StartSpanWithNewRoot(name string) Context {
+	return c.StartSpan(trace.WithNewRoot(), trace.WithLinks(trace.LinkFromContext(c.Context)))
+}
+
 // StartSpanWithProfile starts a span and profiles the handler.
 func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
 	ctx, span := c.startSpan("FUNC", 1, trace.WithAttributes(kv...))
@@ -169,7 +174,9 @@ func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv
 
 // StartProfile starts a profile for the handler.
 func (c Context) StartProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
-	pyroscope.TagWrapper(c.Context, PyroscopeLabels(append(kv, pkgsemconv.ProfileName(name))...), func(ctx context.Context) {
+	attr := pkgsemconv.ProfileName(name)
+	c.Span().SetAttributes(attr)
+	pyroscope.TagWrapper(c.Context, PyroscopeLabels(append(kv, attr)...), func(ctx context.Context) {
 		handler(Ctx(ctx))
 	})
 }
