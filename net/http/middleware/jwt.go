@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	jwt2 "github.com/golang-jwt/jwt"
+	gojwt "github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -24,11 +24,11 @@ type (
 		ErrorHandler        JWTErrorHandler
 	}
 	JWTOption              func(*JWTOptions)
-	JWTClaimsProvider      func() jwt2.Claims
-	JWTClaimsHandler       func(*zap.Logger, http.ResponseWriter, *http.Request, jwt2.Claims) bool
+	JWTClaimsProvider      func() gojwt.Claims
+	JWTClaimsHandler       func(*zap.Logger, http.ResponseWriter, *http.Request, gojwt.Claims) bool
 	JWTErrorHandler        func(*zap.Logger, http.ResponseWriter, *http.Request, error) bool
-	JWTMissingTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request) (jwt2.Claims, bool)
-	JWTInvalidTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request, *jwt2.Token) bool
+	JWTMissingTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request) (gojwt.Claims, bool)
+	JWTInvalidTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request, *gojwt.Token) bool
 )
 
 // DefaultJWTErrorHandler function
@@ -38,29 +38,29 @@ func DefaultJWTErrorHandler(l *zap.Logger, w http.ResponseWriter, r *http.Reques
 }
 
 // DefaultJWTMissingTokenHandler function
-func DefaultJWTMissingTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request) (jwt2.Claims, bool) {
+func DefaultJWTMissingTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request) (gojwt.Claims, bool) {
 	return nil, true
 }
 
 // RequiredJWTMissingTokenHandler function
-func RequiredJWTMissingTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request) (jwt2.Claims, bool) {
+func RequiredJWTMissingTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request) (gojwt.Claims, bool) {
 	httputils.BadRequestServerError(l, w, r, errors.New("missing jwt token"))
 	return nil, false
 }
 
 // DefaultJWTInvalidTokenHandler function
-func DefaultJWTInvalidTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, token *jwt2.Token) bool {
+func DefaultJWTInvalidTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, token *gojwt.Token) bool {
 	httputils.BadRequestServerError(l, w, r, errors.New("invalid jwt token"))
 	return false
 }
 
 // DefaultJWTClaimsProvider function
-func DefaultJWTClaimsProvider() jwt2.Claims {
-	return &jwt2.StandardClaims{}
+func DefaultJWTClaimsProvider() gojwt.Claims {
+	return &gojwt.RegisteredClaims{}
 }
 
 // DefaultJWTClaimsHandler function
-func DefaultJWTClaimsHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims jwt2.Claims) bool {
+func DefaultJWTClaimsHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims gojwt.Claims) bool {
 	return true
 }
 

@@ -17,7 +17,7 @@ require (
 	github.com/foomo/keel/net/stream v0.0.0-00010101000000-000000000000
 	github.com/foomo/keel/persistence/mongo v0.0.0-00010101000000-000000000000
 	github.com/foomo/keel/persistence/postgres v0.0.0-00010101000000-000000000000
-	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/nats-io/nats.go v1.47.0
 	github.com/pkg/errors v0.9.1
