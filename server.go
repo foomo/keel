@@ -240,10 +240,8 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer interface{}) {
-	for _, value := range s.closers() {
-		if value == closer {
-			return
-		}
+	if slices.Contains(s.closers(), closer) {
+		return
 	}
 
 	if IsCloser(closer) {

@@ -2,6 +2,7 @@ package keeltest
 
 import (
 	"context"
+	"slices"
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/metric"
@@ -82,10 +83,8 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddService add a single service
 func (s *Server) AddService(service Service) {
-	for _, value := range s.services {
-		if value == service {
-			return
-		}
+	if slices.Contains(s.services, service) {
+		return
 	}
 
 	s.services = append(s.services, service)

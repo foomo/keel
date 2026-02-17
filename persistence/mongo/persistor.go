@@ -2,6 +2,7 @@ package keelmongo
 
 import (
 	"context"
+	"slices"
 
 	"github.com/foomo/keel/env"
 	"github.com/go-logr/zapr"
@@ -188,10 +189,8 @@ func (p Persistor) HasCollection(ctx context.Context, name string) (bool, error)
 		return false, err
 	}
 
-	for i := range names {
-		if names[i] == name {
-			return true, nil
-		}
+	if slices.Contains(names, name) {
+		return true, nil
 	}
 
 	return false, nil

@@ -58,7 +58,6 @@ linters:
       # By default, all analyzers are enabled.
       disable:
         - any
-        - slicescontains
         - slicessort
         - stditerators
         - stringscut
