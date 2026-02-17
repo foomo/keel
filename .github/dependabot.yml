@@ -20,7 +20,7 @@ updates:
 
   - package-ecosystem: gomod
     open-pull-requests-limit: 1
-    commit-message: { prefix: chore(deps) }
+    commit-message: { prefix: sec(deps) }
     directories: [ '**/*' ]
     schedule:
       day: sunday
