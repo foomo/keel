@@ -58,15 +58,7 @@ linters:
       # By default, all analyzers are enabled.
       disable:
         - any
-        - slicessort
-        - stditerators
         - stringscut
-        - stringscutprefix
-        - stringsseq
-        - stringsbuilder
-        - testingcontext
-        - unsafefuncs
-        - waitgroup
     exhaustive:
       default-signifies-exhaustive: true
     gocritic:

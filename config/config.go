@@ -311,7 +311,7 @@ func GetStruct(c *viper.Viper, key string, fallback interface{}) (func(v interfa
 			return err
 		}
 
-		for _, keyPart := range strings.Split(key, ".") {
+		for keyPart := range strings.SplitSeq(key, ".") {
 			if cfgPart, ok := cfg[keyPart]; ok {
 				if o, ok := cfgPart.(map[string]interface{}); ok {
 					cfg = o
