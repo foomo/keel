@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/foomo/keel/service"
-	jwt2 "github.com/golang-jwt/jwt"
+	gojwt "github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel"
@@ -19,7 +19,7 @@ import (
 )
 
 type CustomClaims struct {
-	jwt2.StandardClaims
+	gojwt.RegisteredClaims
 	Name     string `json:"name"`
 	Language string `json:"language"`
 }
@@ -84,11 +84,11 @@ func main() {
 					// use custom token provider
 					middleware.JWTWithTokenProvider(tokenProvider),
 					// user custom claims
-					middleware.JWTWithClaimsProvider(func() jwt2.Claims {
+					middleware.JWTWithClaimsProvider(func() gojwt.Claims {
 						return &CustomClaims{}
 					}),
 					// handle existing claim
-					middleware.JWTWithClaimsHandler(func(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims jwt2.Claims) bool {
+					middleware.JWTWithClaimsHandler(func(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims gojwt.Claims) bool {
 						if value, ok := claims.(*CustomClaims); ok {
 							var language string
 							switch {
@@ -121,11 +121,11 @@ func main() {
 						}
 					}),
 					// create cookie if missing
-					middleware.JWTWithMissingTokenHandler(func(l *zap.Logger, w http.ResponseWriter, r *http.Request) (jwt2.Claims, bool) {
+					middleware.JWTWithMissingTokenHandler(func(l *zap.Logger, w http.ResponseWriter, r *http.Request) (gojwt.Claims, bool) {
 						claims := &CustomClaims{
-							StandardClaims: jwt.NewStandardClaims(),
-							Name:           "JWT From Cookie Example",
-							Language:       "de",
+							RegisteredClaims: jwt.NewStandardClaims(),
+							Name:             "JWT From Cookie Example",
+							Language:         "de",
 						}
 						if token, err := jwtInst.GetSignedToken(claims); err != nil {
 							httputils.InternalServerError(l, w, r, err)

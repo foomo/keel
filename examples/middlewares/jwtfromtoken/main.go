@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/foomo/keel/service"
-	jwt2 "github.com/golang-jwt/jwt"
+	gojwt "github.com/golang-jwt/jwt/v5"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/jwt"
@@ -24,7 +24,7 @@ func main() {
 	contextKey := "custom"
 
 	type CustomClaims struct {
-		jwt2.StandardClaims
+		gojwt.RegisteredClaims
 		Name string `json:"name"`
 	}
 
@@ -56,8 +56,8 @@ func main() {
 	})
 	svs.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		if token, err := jwtInst.GetSignedToken(CustomClaims{
-			StandardClaims: jwt.NewStandardClaims(),
-			Name:           "JWT From Token Example",
+			RegisteredClaims: jwt.NewRegisteredClaims(jwt.WithOffset(jwt.MaxTimeDifferenceBetweenNodes)),
+			Name:             "JWT From Token Example",
 		}); err != nil {
 			httputils.InternalServerError(l, w, r, err)
 		} else {
@@ -77,7 +77,7 @@ func main() {
 					// use custom token provider
 					middleware.JWTWithTokenProvider(tokenProvider),
 					// user custom claims
-					middleware.JWTWithClaimsProvider(func() jwt2.Claims {
+					middleware.JWTWithClaimsProvider(func() gojwt.Claims {
 						return &CustomClaims{}
 					}),
 				),

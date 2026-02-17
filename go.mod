@@ -7,7 +7,7 @@ require (
 	github.com/fbiville/markdown-table-formatter v0.3.0
 	github.com/foomo/gostandards v0.2.0
 	github.com/go-logr/logr v1.4.3
-	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go v1.2.7

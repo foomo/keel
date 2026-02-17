@@ -1,12 +1,12 @@
 package jwt
 
 import (
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 )
 
 func DefaultKeyFunc(key Key, deprecatedKeys map[string]Key) jwt.Keyfunc {
-	return func(token *jwt.Token) (interface{}, error) {
+	return func(token *jwt.Token) (any, error) {
 		if token.Method.Alg() != jwt.SigningMethodRS256.Name {
 			return nil, errors.New("unexpected jwt signing method: " + token.Method.Alg())
 		}
