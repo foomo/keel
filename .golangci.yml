@@ -58,13 +58,6 @@ linters:
       # By default, all analyzers are enabled.
       disable:
         - any
-        - fmtappendf
-        - forvar
-        - mapsloop
-        - minmax
-        - omitzero
-        - plusbuild
-        - reflecttypefor
         - slicescontains
         - slicessort
         - stditerators

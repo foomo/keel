@@ -524,7 +524,7 @@ func (s *Server) readmeServices() string {
 
 		for _, value := range s.initServices {
 			if v, ok := value.(*service.HTTP); ok {
-				t := reflect.TypeOf(v)
+				t := reflect.TypeFor[*service.HTTP]()
 				rows = append(rows, []string{
 					markdown.Code(v.Name()),
 					markdown.Code(t.String()),

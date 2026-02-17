@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	TDateTime = reflect.TypeOf(DateTime(""))
+	TDateTime = reflect.TypeFor[DateTime]()
 )
 
 type DateTimeCodec struct{}
