@@ -20,8 +20,8 @@ func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP 
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		type payload struct {
-			Key   string      `json:"key"`
-			Value interface{} `json:"value"`
+			Key   string `json:"key"`
+			Value any    `json:"value"`
 		}
 
 		enc := json.NewEncoder(w)

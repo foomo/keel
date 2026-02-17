@@ -12,7 +12,7 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-func Inline(t *testing.T, skip int, msgAndArgs ...interface{}) (string, bool) {
+func Inline(t *testing.T, skip int, msgAndArgs ...any) (string, bool) {
 	t.Helper()
 
 	// retrieve caller info
@@ -83,7 +83,7 @@ func InlineFloat64(t *testing.T, skip int) (float64, bool) {
 	}
 }
 
-func InlineJSON(t *testing.T, skip int, target interface{}) {
+func InlineJSON(t *testing.T, skip int, target any) {
 	t.Helper()
 
 	if inline, ok := Inline(t, skip+1); ok {

@@ -11,7 +11,7 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-func InlineEqual(t *testing.T, actual interface{}, msgAndArgs ...interface{}) bool {
+func InlineEqual(t *testing.T, actual any, msgAndArgs ...any) bool {
 	t.Helper()
 
 	expected, ok := keeltest.Inline(t, 2, "%v", actual)
@@ -22,7 +22,7 @@ func InlineEqual(t *testing.T, actual interface{}, msgAndArgs ...interface{}) bo
 	}
 }
 
-func InlineJSONEq(t *testing.T, actual interface{}, msgAndArgs ...interface{}) bool {
+func InlineJSONEq(t *testing.T, actual any, msgAndArgs ...any) bool {
 	t.Helper()
 	// marshal value
 	actualBytes, err := json.Marshal(actual)

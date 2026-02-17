@@ -29,12 +29,12 @@ func FName(name string) zap.Field {
 }
 
 // FValue creates a zap.Field with a given value under the key "value".
-func FValue(value interface{}) zap.Field {
+func FValue(value any) zap.Field {
 	return zap.String(ValueKey, fmt.Sprintf("%v", value))
 }
 
 // FJSON creates a zap.Field with a given value under the key "json".
-func FJSON(v interface{}) zap.Field {
+func FJSON(v any) zap.Field {
 	if out, err := json.Marshal(v); err != nil {
 		return zap.String(JSONKey+"_error", err.Error())
 	} else {

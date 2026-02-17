@@ -9,7 +9,7 @@ import (
 
 const ActivityErrorType = "keeltemporal.ActivityError"
 
-func NewActivityError(msg string, err error, details ...interface{}) error {
+func NewActivityError(msg string, err error, details ...any) error {
 	return temporal.NewNonRetryableApplicationError(msg, ActivityErrorType, err, details...)
 }
 

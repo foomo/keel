@@ -17,11 +17,11 @@ func NewLogger(l *zap.Logger) *logger {
 	}
 }
 
-func (t *logger) Debug(msg string, keyvals ...interface{}) {
+func (t *logger) Debug(msg string, keyvals ...any) {
 	t.l.Debug(msg, t.fields(keyvals...)...)
 }
 
-func (t *logger) Info(msg string, keyvals ...interface{}) {
+func (t *logger) Info(msg string, keyvals ...any) {
 	// TODO check with temporal why errors are being logged as info!
 	for _, keyval := range keyvals {
 		if keyval == "Error" {
@@ -33,19 +33,19 @@ func (t *logger) Info(msg string, keyvals ...interface{}) {
 	t.l.Info(msg, t.fields(keyvals...)...)
 }
 
-func (t *logger) Warn(msg string, keyvals ...interface{}) {
+func (t *logger) Warn(msg string, keyvals ...any) {
 	t.l.Warn(msg, t.fields(keyvals...)...)
 }
 
-func (t *logger) Error(msg string, keyvals ...interface{}) {
+func (t *logger) Error(msg string, keyvals ...any) {
 	t.l.Error(msg, t.fields(keyvals...)...)
 }
 
-func (t *logger) With(keyvals ...interface{}) *logger {
+func (t *logger) With(keyvals ...any) *logger {
 	return NewLogger(t.l.With(t.fields(keyvals...)...))
 }
 
-func (t *logger) fields(keyvals ...interface{}) []zap.Field {
+func (t *logger) fields(keyvals ...any) []zap.Field {
 	var fields []zap.Field
 
 	for i := 0; i < len(keyvals); i++ {

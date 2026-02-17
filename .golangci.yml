@@ -53,24 +53,23 @@ linters:
 
   # https://golangci-lint.run/docs/linters/
   settings:
-    modernize:
-      # List of analyzers to disable.
-      # By default, all analyzers are enabled.
-      disable:
-        - any
-        - stringscut
+    # https://golangci-lint.run/docs/linters/configuration/#exhaustive
     exhaustive:
       default-signifies-exhaustive: true
+    # https://golangci-lint.run/docs/linters/configuration/#gocritic
     gocritic:
       disabled-checks:
         - assignOp
         - ifElseChain
         - deprecatedComment
+    # https://golangci-lint.run/docs/linters/configuration/#gomoddirectives
     gomoddirectives:
       replace-local: true
+    # https://golangci-lint.run/docs/linters/configuration/#gosec
     gosec:
       severity: medium
       confidence: medium
+    # https://golangci-lint.run/docs/linters/configuration/#revive
     revive:
       rules:
         - name: exported
@@ -78,7 +77,6 @@ linters:
         - name: package-comments
           disabled: true
   exclusions:
-    generated: lax
     presets:
       - comments
       - common-false-positives

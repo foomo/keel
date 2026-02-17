@@ -126,7 +126,7 @@ func JWTWithSetContext(v bool) JWTOption {
 }
 
 // JWT middleware
-func JWT(v *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
+func JWT(v *jwt.JWT, contextKey any, opts ...JWTOption) Middleware {
 	options := GetDefaultJWTOptions()
 
 	for _, opt := range opts {
@@ -139,7 +139,7 @@ func JWT(v *jwt.JWT, contextKey interface{}, opts ...JWTOption) Middleware {
 }
 
 // JWTWithOptions middleware
-func JWTWithOptions(v *jwt.JWT, contextKey interface{}, opts JWTOptions) Middleware {
+func JWTWithOptions(v *jwt.JWT, contextKey any, opts JWTOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

@@ -150,12 +150,12 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 			// Check allowed origin patterns
 			for _, re := range allowOriginPatterns {
 				if allowOrigin == "" {
-					index := strings.Index(origin, "://")
-					if index == -1 {
+					_, after, found := strings.Cut(origin, "://")
+					if !found {
 						continue
 					}
 
-					if len(origin[index+3:]) > 253 {
+					if len(after) > 253 {
 						break
 					}
 
@@ -218,10 +218,10 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 }
 
 func matchScheme(domain, pattern string) bool {
-	didx := strings.Index(domain, ":")
-	pidx := strings.Index(pattern, ":")
+	domScheme, _, domFound := strings.Cut(domain, ":")
+	patScheme, _, patFound := strings.Cut(pattern, ":")
 
-	return didx != -1 && pidx != -1 && domain[:didx] == pattern[:pidx]
+	return domFound && patFound && domScheme == patScheme
 }
 
 // matchSubdomain compares authority with wildcard
@@ -230,20 +230,20 @@ func matchSubdomain(domain, pattern string) bool {
 		return false
 	}
 
-	didx := strings.Index(domain, "://")
-
-	pidx := strings.Index(pattern, "://")
-	if didx == -1 || pidx == -1 {
+	_, domAuth, domFound := strings.Cut(domain, "://")
+	if !domFound {
 		return false
 	}
 
-	domAuth := domain[didx+3:]
+	_, patAuth, patFound := strings.Cut(pattern, "://")
+	if !patFound {
+		return false
+	}
+
 	// to avoid long loop by invalid long domain
 	if len(domAuth) > 253 {
 		return false
 	}
-
-	patAuth := pattern[pidx+3:]
 
 	domComp := strings.Split(domAuth, ".")
 	patComp := strings.Split(patAuth, ".")

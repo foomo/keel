@@ -18,7 +18,7 @@ func Readme() string {
 	{
 		keys := c.AllKeys()
 		for _, key := range keys {
-			var fallback interface{}
+			var fallback any
 			if v, ok := defaults[key]; ok {
 				fallback = v
 			}

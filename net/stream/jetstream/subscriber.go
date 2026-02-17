@@ -17,7 +17,7 @@ type (
 		unmarshal UnmarshalFn
 		opts      []nats.SubOpt
 	}
-	UnmarshalFn func(data []byte, v interface{}) error
+	UnmarshalFn func(data []byte, v any) error
 )
 
 func (s *Subscriber) JS() nats.JetStreamContext {
@@ -58,7 +58,7 @@ func (s *Subscriber) QueueSubscribe(queue string, handler stream.MsgHandler, opt
 	}, s.SubOpts(opts...)...)
 }
 
-func (s *Subscriber) Unmarshal(msg *nats.Msg, v interface{}) error {
+func (s *Subscriber) Unmarshal(msg *nats.Msg, v any) error {
 	return s.unmarshal(msg.Data, v)
 }
 

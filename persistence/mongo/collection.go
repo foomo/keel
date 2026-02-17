@@ -18,7 +18,7 @@ import (
 )
 
 type (
-	DecodeFn         func(val interface{}) error
+	DecodeFn         func(val any) error
 	IterateHandlerFn func(decode DecodeFn) error
 )
 
@@ -162,7 +162,7 @@ func (c *Collection) Col() *mongo.Collection {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
-func (c *Collection) Get(ctx context.Context, id string, result interface{}, opts ...*options.FindOneOptions) error {
+func (c *Collection) Get(ctx context.Context, id string, result any, opts ...*options.FindOneOptions) error {
 	if id == "" {
 		return keelpersistence.ErrNotFound
 	}
@@ -329,7 +329,7 @@ func (c *Collection) Insert(ctx context.Context, entity Entity) error {
 }
 
 func (c *Collection) InsertMany(ctx context.Context, entities []Entity) error {
-	inserts := make([]interface{}, len(entities))
+	inserts := make([]any, len(entities))
 	for i, entity := range entities {
 		if entity == nil {
 			return errors.New("entity must not be nil")
@@ -375,7 +375,7 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts ...*options.FindOptions) error {
+func (c *Collection) Find(ctx context.Context, filter, results any, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
@@ -390,7 +390,7 @@ func (c *Collection) Find(ctx context.Context, filter, results interface{}, opts
 	return cursor.Err()
 }
 
-func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, opts ...*options.FindOneOptions) error {
+func (c *Collection) FindOne(ctx context.Context, filter, result any, opts ...*options.FindOneOptions) error {
 	res := c.collection.FindOne(ctx, filter, opts...)
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, res.Err())
@@ -401,7 +401,7 @@ func (c *Collection) FindOne(ctx context.Context, filter, result interface{}, op
 	return res.Decode(result)
 }
 
-func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handler IterateHandlerFn, opts ...*options.FindOptions) error {
+func (c *Collection) FindIterate(ctx context.Context, filter any, handler IterateHandlerFn, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
@@ -420,7 +420,7 @@ func (c *Collection) FindIterate(ctx context.Context, filter interface{}, handle
 	return cursor.Err()
 }
 
-func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, results interface{}, opts ...*options.AggregateOptions) error {
+func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, results any, opts ...*options.AggregateOptions) error {
 	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
@@ -451,7 +451,7 @@ func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeli
 }
 
 // Count returns the count of documents
-func (c *Collection) Count(ctx context.Context, filter interface{}, opts ...*options.CountOptions) (int64, error) {
+func (c *Collection) Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error) {
 	return c.collection.CountDocuments(ctx, filter, opts...)
 }
 

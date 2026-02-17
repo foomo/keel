@@ -26,7 +26,7 @@ var (
 	ErrStartupProbeFailed    = errors.New("startup probe failed")
 )
 
-func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type][]interface{}) *HTTP {
+func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type][]any) *HTTP {
 	handler := http.NewServeMux()
 
 	unavailable := func(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
@@ -36,7 +36,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 		}
 	}
 
-	call := func(ctx context.Context, probe interface{}) (bool, error) {
+	call := func(ctx context.Context, probe any) (bool, error) {
 		switch h := probe.(type) {
 		case healthz.BoolHealthzer:
 			return h.Healthz(), nil
@@ -77,7 +77,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 	})
 
 	handler.HandleFunc(path+"/"+healthz.TypeLiveness.String(), func(w http.ResponseWriter, r *http.Request) {
-		var ps []interface{}
+		var ps []any
 		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
@@ -101,7 +101,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 	})
 
 	handler.HandleFunc(path+"/"+healthz.TypeReadiness.String(), func(w http.ResponseWriter, r *http.Request) {
-		var ps []interface{}
+		var ps []any
 		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
@@ -125,7 +125,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 	})
 
 	handler.HandleFunc(path+"/"+healthz.TypeStartup.String(), func(w http.ResponseWriter, r *http.Request) {
-		var ps []interface{}
+		var ps []any
 		if p, ok := probes[healthz.TypeAlways]; ok {
 			ps = append(ps, p...)
 		}
@@ -151,7 +151,7 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 	return NewHTTP(l, name, addr, handler)
 }
 
-func NewDefaultHTTPProbes(l *zap.Logger, probes map[healthz.Type][]interface{}) *HTTP {
+func NewDefaultHTTPProbes(l *zap.Logger, probes map[healthz.Type][]any) *HTTP {
 	return NewHealthz(
 		l,
 		DefaultHTTPHealthzName,

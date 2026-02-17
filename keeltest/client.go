@@ -54,7 +54,7 @@ func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) 
 	}
 }
 
-func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([]byte, int, error) {
+func (c *HTTPClient) Post(ctx context.Context, path string, data any) ([]byte, int, error) {
 	var req *http.Request
 
 	if v, err := json.Marshal(data); err != nil {
