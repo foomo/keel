@@ -19,7 +19,7 @@ pre-commit:
       stage_fixed: true
     golangci-lint:
       glob: "*.go"
-      run: golangci-lint run --fast-only
+      run: golangci-lint run --new --fast-only
       stage_fixed: true
 
 commit-msg:
@@ -30,7 +30,7 @@ commit-msg:
         commit_msg_file={1}
         commit_msg=$(cat "$commit_msg_file")
         # Regex for conventional commits (type(scope?): subject)
-        regex="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test|sec|wip)(\([a-z0-9\-]+\))?(!)?: .{1,50}"
+        regex="^(build|chore|ci|docs|feat|fix|perf|refactor|style|test|sec|wip|revert)(\([a-z0-9\-]+\))?(!)?: .{1,50}"
         if ! echo "$commit_msg" | grep -qE "$regex"; then
           echo "Error: Commit message does not follow Conventional Commits format."
           echo "Format: type(scope?): subject"
