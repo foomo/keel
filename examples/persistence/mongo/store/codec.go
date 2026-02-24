@@ -6,9 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/bson/bsonrw"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 var (
@@ -17,9 +15,9 @@ var (
 
 type DateTimeCodec struct{}
 
-func (d *DateTimeCodec) EncodeValue(_ bsoncodec.EncodeContext, vw bsonrw.ValueWriter, val reflect.Value) error {
+func (d *DateTimeCodec) EncodeValue(_ bson.EncodeContext, vw bson.ValueWriter, val reflect.Value) error {
 	if !val.IsValid() || val.Type() != TDateTime {
-		return bsoncodec.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
+		return bson.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
 	}
 	td, ok := val.Interface().(DateTime)
 	if !ok {
@@ -27,26 +25,26 @@ func (d *DateTimeCodec) EncodeValue(_ bsoncodec.EncodeContext, vw bsonrw.ValueWr
 	}
 	tt, err := td.Time()
 	if err != nil {
-		return bsoncodec.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
+		return bson.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
 	}
 	return vw.WriteDateTime(tt.UnixMilli())
 }
 
-func (d *DateTimeCodec) DecodeValue(_ bsoncodec.DecodeContext, vr bsonrw.ValueReader, val reflect.Value) error {
+func (d *DateTimeCodec) DecodeValue(_ bson.DecodeContext, vr bson.ValueReader, val reflect.Value) error {
 	if !val.CanSet() || val.Type() != TDateTime {
-		return bsoncodec.ValueDecoderError{Name: "DecimalDecodeValue", Types: []reflect.Type{TDateTime}, Received: val}
+		return bson.ValueDecoderError{Name: "DecimalDecodeValue", Types: []reflect.Type{TDateTime}, Received: val}
 	}
 
 	var dateTimeVal DateTime
 	//nolint:exhaustive
 	switch t := vr.Type(); t {
-	case bsontype.DateTime:
+	case bson.TypeDateTime:
 		dt, err := vr.ReadDateTime()
 		if err != nil {
 			return err
 		}
 		dateTimeVal = NewDateTime(time.UnixMilli(dt))
-	case bsontype.String:
+	case bson.TypeString:
 		decimalStr, err := vr.ReadString()
 		if err != nil {
 			return err

@@ -1,10 +1,9 @@
 package store
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var (
@@ -18,8 +17,8 @@ var (
 
 // Entity type
 type Entity struct {
-	ID     string             `json:"id" bson:"id" yaml:"id"`
-	BsonID primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty" yaml:"_id,omitempty"` //nolint:tagliatelle
+	ID     string        `json:"id" bson:"id" yaml:"id"`
+	BsonID bson.ObjectID `json:"_id,omitempty" bson:"_id,omitempty" yaml:"_id,omitempty"` //nolint:tagliatelle
 }
 
 func NewEntity(id string) Entity {

@@ -8,8 +8,8 @@ require (
 	github.com/foomo/keel v0.0.0-00010101000000-000000000000
 	github.com/go-logr/zapr v1.3.0
 	github.com/pkg/errors v0.9.1
-	go.mongodb.org/mongo-driver v1.17.9
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.65.0
+	go.mongodb.org/mongo-driver/v2 v2.5.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo v0.0.0-20260224175237-32f81e89de44
 	go.uber.org/zap v1.27.1
 )
 
@@ -18,9 +18,7 @@ require (
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
-	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.2.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect

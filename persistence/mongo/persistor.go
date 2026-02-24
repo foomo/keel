@@ -7,13 +7,13 @@ import (
 	"github.com/foomo/keel/env"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
-	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/connstring"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +33,7 @@ type (
 	Option             func(o *Options)
 	ClientOption       func(*options.ClientOptions)
 	ClientLoggerOption func(*options.LoggerOptions)
-	DatabaseOption     func(*options.DatabaseOptions)
+	DatabaseOption     func(*options.DatabaseOptionsBuilder)
 )
 
 // ------------------------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	}
 
 	// create connection
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := mongo.Connect(clientOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect")
 	}

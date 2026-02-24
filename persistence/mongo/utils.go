@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/foomo/keel/log"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // CloseCursor with defer
