@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	keelerrors "github.com/foomo/keel/errors"
 	"github.com/foomo/keel/log"
 	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel/attribute"
@@ -183,7 +182,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 			// wrap the error in case it was produced because of the circuit breaker being (half-)open
 			if errors.Is(err, gobreaker.ErrTooManyRequests) || errors.Is(err, gobreaker.ErrOpenState) {
-				return nil, keelerrors.NewWrappedError(ErrCircuitBreaker, err)
+				return nil, errors.Join(ErrCircuitBreaker, err)
 			} else if err != nil {
 				l.Error("unexpected error in circuit breaker",
 					log.FError(err),

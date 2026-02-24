@@ -2,12 +2,11 @@ package keelmongo
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"time"
 
-	keelerrors "github.com/foomo/keel/errors"
 	keelpersistence "github.com/foomo/keel/persistence"
-	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -210,7 +209,7 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 			bson.D{bson.E{Key: "$set", Value: entity}},
 			options.FindOneAndUpdate().SetUpsert(false),
 		).Err(); errors.Is(err, mongo.ErrNoDocuments) {
-			return keelerrors.NewWrappedError(keelpersistence.ErrDirtyWrite, err)
+			return errors.Join(keelpersistence.ErrDirtyWrite, err)
 		} else if err != nil {
 			return err
 		}
@@ -367,7 +366,7 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 	}
 
 	if err := c.collection.FindOneAndDelete(ctx, bson.M{"id": id}).Err(); errors.Is(err, mongo.ErrNoDocuments) {
-		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
+		return errors.Join(keelpersistence.ErrNotFound, err)
 	} else if err != nil {
 		return err
 	}
@@ -378,7 +377,7 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 func (c *Collection) Find(ctx context.Context, filter, results any, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
+		return errors.Join(keelpersistence.ErrNotFound, err)
 	} else if err != nil {
 		return err
 	}
@@ -393,7 +392,7 @@ func (c *Collection) Find(ctx context.Context, filter, results any, opts ...*opt
 func (c *Collection) FindOne(ctx context.Context, filter, result any, opts ...*options.FindOneOptions) error {
 	res := c.collection.FindOne(ctx, filter, opts...)
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
-		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, res.Err())
+		return errors.Join(keelpersistence.ErrNotFound, res.Err())
 	} else if res.Err() != nil {
 		return res.Err()
 	}
@@ -404,7 +403,7 @@ func (c *Collection) FindOne(ctx context.Context, filter, result any, opts ...*o
 func (c *Collection) FindIterate(ctx context.Context, filter any, handler IterateHandlerFn, opts ...*options.FindOptions) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return keelerrors.NewWrappedError(keelpersistence.ErrNotFound, err)
+		return errors.Join(keelpersistence.ErrNotFound, err)
 	} else if err != nil {
 		return err
 	}
