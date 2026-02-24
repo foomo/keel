@@ -31,9 +31,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/golangci-lint
-          key: ${{ runner.os }}-golangci-lint-${{ hashFiles('**/go.mod') }}
+          key: golangci-lint-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
           restore-keys: |
-            ${{ runner.os }}-golangci-lint-
+            golangci-lint-${{ runner.os }}--
 
       - name: Run tidy
         run: make tidy && git diff --exit-code
