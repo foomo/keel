@@ -20,7 +20,7 @@ pre-commit:
     golangci-lint:
       glob: "*.go"
       run: golangci-lint run --new --fast-only
-      stage_fixed: true
+      stage_fixed: false
 
 commit-msg:
   skip: [ merge, rebase ]

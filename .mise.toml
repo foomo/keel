@@ -1,5 +1,5 @@
 [tools]
 # https://mise-tools.jdx.dev/tools/lefthook
-lefthook = "2.1.0"
+lefthook = "2.1.1"
 # https://mise-tools.jdx.dev/tools/golangci-lint
-golangci-lint = "2.9.0"
+golangci-lint = "2.10.1"
