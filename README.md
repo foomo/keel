@@ -3,7 +3,7 @@
 [![GoDoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
 
 <p align="center">
-  <img alt="sesamy" src="docs/public/keel.png"/>
+  <img alt="keel" src="docs/public/keel.png" width="400" height="400"/>
 </p>
 
 # keel

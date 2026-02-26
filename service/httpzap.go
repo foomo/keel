@@ -50,9 +50,11 @@ func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 					return fmt.Sprintf("Request body must be well-formed JSON: %v", err)
 				}
+
 				if req.Level == nil && req.DisableCaller == nil && req.DisableStacktrace == nil {
 					return "Must specify a value."
 				}
+
 				return ""
 			}(); errmess != "" {
 				w.WriteHeader(http.StatusBadRequest)
