@@ -7,13 +7,12 @@ import (
 	"time"
 
 	keelpersistence "github.com/foomo/keel/persistence"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
+	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
 )
 
 type (
@@ -28,8 +27,8 @@ type (
 		collection *mongo.Collection
 	}
 	CollectionOptions struct {
-		*options.CollectionOptions
-		*options.CreateIndexesOptions
+		*options.CollectionOptionsBuilder
+		*options.CreateIndexesOptionsBuilder
 		Indexes        []mongo.IndexModel
 		IndexesContext context.Context
 	}
@@ -42,9 +41,9 @@ type (
 
 func DefaultCollectionOptions() CollectionOptions {
 	return CollectionOptions{
-		CollectionOptions:    options.Collection(),
-		CreateIndexesOptions: options.CreateIndexes(),
-		IndexesContext:       context.Background(),
+		CollectionOptionsBuilder:    options.Collection(),
+		CreateIndexesOptionsBuilder: options.CreateIndexes(),
+		IndexesContext:              context.Background(),
 	}
 }
 
@@ -66,7 +65,7 @@ func CollectionWithReadPreference(v *readpref.ReadPref) CollectionOption {
 	}
 }
 
-func CollectionWithRegistry(v *bsoncodec.Registry) CollectionOption {
+func CollectionWithRegistry(v *bson.Registry) CollectionOption {
 	return func(o *CollectionOptions) {
 		o.SetRegistry(v)
 	}
@@ -78,10 +77,9 @@ func CollectionWithIndexes(v ...mongo.IndexModel) CollectionOption {
 	}
 }
 
-func CollectionWithIndexesMaxTime(v time.Duration) CollectionOption {
-	return func(o *CollectionOptions) {
-		o.SetMaxTime(v)
-	}
+// Deprecated: MaxTime has been removed in mongo-driver v2. Use context timeout instead.
+func CollectionWithIndexesMaxTime(_ time.Duration) CollectionOption {
+	return func(_ *CollectionOptions) {}
 }
 
 func CollectionWithIndexesContext(v int32) CollectionOption {
@@ -118,13 +116,13 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 		opt(&o)
 	}
 
-	col := db.Collection(name, o.CollectionOptions)
+	col := db.Collection(name, o.CollectionOptionsBuilder)
 	if !slices.Contains(dbs[db.Name()], name) {
 		dbs[db.Name()] = append(dbs[db.Name()], name)
 	}
 
 	if len(o.Indexes) > 0 {
-		if _, err := col.Indexes().CreateMany(o.IndexesContext, o.Indexes, o.CreateIndexesOptions); err != nil {
+		if _, err := col.Indexes().CreateMany(o.IndexesContext, o.Indexes, o.CreateIndexesOptionsBuilder); err != nil {
 			return nil, err
 		}
 
@@ -133,8 +131,15 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 		}
 
 		for _, index := range o.Indexes {
-			if index.Options != nil && index.Options.Name != nil {
-				indices[db.Name()][name] = append(indices[db.Name()][name], *index.Options.Name)
+			if index.Options != nil {
+				var indexOpts options.IndexOptions
+				for _, set := range index.Options.Opts {
+					_ = set(&indexOpts)
+				}
+
+				if indexOpts.Name != nil {
+					indices[db.Name()][name] = append(indices[db.Name()][name], *indexOpts.Name)
+				}
 			}
 		}
 	}
@@ -161,7 +166,7 @@ func (c *Collection) Col() *mongo.Collection {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
-func (c *Collection) Get(ctx context.Context, id string, result any, opts ...*options.FindOneOptions) error {
+func (c *Collection) Get(ctx context.Context, id string, result any, opts ...options.Lister[options.FindOneOptions]) error {
 	if id == "" {
 		return keelpersistence.ErrNotFound
 	}
@@ -217,7 +222,7 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 		ctx,
 		bson.D{bson.E{Key: "id", Value: id}},
 		bson.D{bson.E{Key: "$set", Value: entity}},
-		options.Update().SetUpsert(true),
+		options.UpdateOne().SetUpsert(true),
 	); err != nil {
 		return err
 	}
@@ -277,11 +282,7 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 		}
 	}
 
-	// Specify an option to turn the bulk insertion in order of operation
-	bulkOption := options.BulkWriteOptions{}
-	bulkOption.SetOrdered(false)
-
-	res, err := c.Col().BulkWrite(ctx, operations, &bulkOption)
+	res, err := c.Col().BulkWrite(ctx, operations, options.BulkWrite().SetOrdered(false))
 	if err != nil {
 		return err
 	} else if versionUpserts > 0 && (res.MatchedCount < versionUpserts || res.ModifiedCount != res.MatchedCount) {
@@ -374,7 +375,7 @@ func (c *Collection) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *Collection) Find(ctx context.Context, filter, results any, opts ...*options.FindOptions) error {
+func (c *Collection) Find(ctx context.Context, filter, results any, opts ...options.Lister[options.FindOptions]) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return errors.Join(keelpersistence.ErrNotFound, err)
@@ -389,7 +390,7 @@ func (c *Collection) Find(ctx context.Context, filter, results any, opts ...*opt
 	return cursor.Err()
 }
 
-func (c *Collection) FindOne(ctx context.Context, filter, result any, opts ...*options.FindOneOptions) error {
+func (c *Collection) FindOne(ctx context.Context, filter, result any, opts ...options.Lister[options.FindOneOptions]) error {
 	res := c.collection.FindOne(ctx, filter, opts...)
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 		return errors.Join(keelpersistence.ErrNotFound, res.Err())
@@ -400,7 +401,7 @@ func (c *Collection) FindOne(ctx context.Context, filter, result any, opts ...*o
 	return res.Decode(result)
 }
 
-func (c *Collection) FindIterate(ctx context.Context, filter any, handler IterateHandlerFn, opts ...*options.FindOptions) error {
+func (c *Collection) FindIterate(ctx context.Context, filter any, handler IterateHandlerFn, opts ...options.Lister[options.FindOptions]) error {
 	cursor, err := c.collection.Find(ctx, filter, opts...)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return errors.Join(keelpersistence.ErrNotFound, err)
@@ -419,7 +420,7 @@ func (c *Collection) FindIterate(ctx context.Context, filter any, handler Iterat
 	return cursor.Err()
 }
 
-func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, results any, opts ...*options.AggregateOptions) error {
+func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, results any, opts ...options.Lister[options.AggregateOptions]) error {
 	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
@@ -432,7 +433,7 @@ func (c *Collection) Aggregate(ctx context.Context, pipeline mongo.Pipeline, res
 	return cursor.Err()
 }
 
-func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeline, handler IterateHandlerFn, opts ...*options.AggregateOptions) error {
+func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeline, handler IterateHandlerFn, opts ...options.Lister[options.AggregateOptions]) error {
 	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return err
@@ -450,7 +451,7 @@ func (c *Collection) AggregateIterate(ctx context.Context, pipeline mongo.Pipeli
 }
 
 // Count returns the count of documents
-func (c *Collection) Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error) {
+func (c *Collection) Count(ctx context.Context, filter any, opts ...options.Lister[options.CountOptions]) (int64, error) {
 	return c.collection.CountDocuments(ctx, filter, opts...)
 }
 

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/foomo/keel/examples/persistence/mongo/store"
 	keelmongo "github.com/foomo/keel/persistence/mongo"
@@ -20,7 +20,7 @@ func NewDummyRepository(collection *keelmongo.Collection) *DummyRepository {
 	}
 }
 
-func (r *DummyRepository) Get(ctx context.Context, id string, opts ...*options.FindOneOptions) (*store.Dummy, error) {
+func (r *DummyRepository) Get(ctx context.Context, id string, opts ...options.Lister[options.FindOneOptions]) (*store.Dummy, error) {
 	var ret store.Dummy
 	if err := r.collection.Get(ctx, id, &ret, opts...); err != nil {
 		return nil, err
