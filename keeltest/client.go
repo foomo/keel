@@ -43,18 +43,26 @@ func NewHTTPClient(opts ...HTTPClientOption) *HTTPClient {
 }
 
 func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) {
-	if req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil); err != nil {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil)
+	if err != nil {
 		return nil, 0, err
-	} else if resp, err := c.Do(req); err != nil {
-		return nil, 0, err
-	} else if body, err := c.readBody(resp); err != nil {
-		return nil, 0, err
-	} else {
-		return body, resp.StatusCode, nil
 	}
+
+	resp, err := c.Do(req) //nolint:gosec // G704
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return body, resp.StatusCode, nil
 }
 
-func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([]byte, int, error) {
+func (c *HTTPClient) Post(ctx context.Context, path string, data any) ([]byte, int, error) {
 	var req *http.Request
 
 	if v, err := json.Marshal(data); err != nil {
@@ -67,21 +75,17 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data interface{}) ([
 
 	req.Header.Set("Content-Type", "application/json")
 
-	if resp, err := c.Do(req); err != nil {
+	resp, err := c.Do(req) //nolint:gosec // G704
+	if err != nil {
 		return nil, 0, err
-	} else if body, err := c.readBody(resp); err != nil {
-		return nil, 0, err
-	} else {
-		return body, resp.StatusCode, nil
 	}
-}
 
-func (c *HTTPClient) readBody(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
 
-	if body, err := io.ReadAll(resp.Body); err != nil {
-		return nil, err
-	} else {
-		return body, nil
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, 0, err
 	}
+
+	return body, resp.StatusCode, nil
 }

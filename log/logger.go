@@ -113,7 +113,7 @@ func SetDisableStacktrace(value bool) error {
 }
 
 // Must logs a fatal error if given
-func Must(l *zap.Logger, err error, msgAndArgs ...interface{}) {
+func Must(l *zap.Logger, err error, msgAndArgs ...any) {
 	if err != nil {
 		if l == nil {
 			l = Logger()

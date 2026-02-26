@@ -55,7 +55,7 @@ func GZip(opts ...GZipOption) RoundTripware {
 
 	return func(l *zap.Logger, next Handler) Handler {
 		pool := sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return gzip.NewWriter(nil)
 			},
 		}

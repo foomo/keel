@@ -13,7 +13,7 @@ type (
 		marshal   MarshalFn
 		header    nats.Header
 	}
-	MarshalFn func(v interface{}) ([]byte, error)
+	MarshalFn func(v any) ([]byte, error)
 )
 
 func (s *Publisher) JS() nats.JetStreamContext {
@@ -28,7 +28,7 @@ func (s *Publisher) Subject() string {
 	return s.subject
 }
 
-func (s *Publisher) NewMsg(v interface{}) (*nats.Msg, error) {
+func (s *Publisher) NewMsg(v any) (*nats.Msg, error) {
 	data, err := s.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (s *Publisher) PubOpts(opts ...nats.PubOpt) []nats.PubOpt {
 	return append(s.pubOpts, opts...)
 }
 
-func (s *Publisher) PublishMsg(data interface{}, opts ...nats.PubOpt) (*nats.PubAck, error) {
+func (s *Publisher) PublishMsg(data any, opts ...nats.PubOpt) (*nats.PubAck, error) {
 	if msg, err := s.NewMsg(data); err != nil {
 		return nil, err
 	} else {
@@ -55,7 +55,7 @@ func (s *Publisher) PublishMsg(data interface{}, opts ...nats.PubOpt) (*nats.Pub
 	}
 }
 
-func (s *Publisher) PublishMsgAsync(data interface{}, opts ...nats.PubOpt) (nats.PubAckFuture, error) {
+func (s *Publisher) PublishMsgAsync(data any, opts ...nats.PubOpt) (nats.PubAckFuture, error) {
 	if msg, err := s.NewMsg(data); err != nil {
 		return nil, err
 	} else {
@@ -63,6 +63,6 @@ func (s *Publisher) PublishMsgAsync(data interface{}, opts ...nats.PubOpt) (nats
 	}
 }
 
-func (s *Publisher) Marshal(v interface{}) ([]byte, error) {
+func (s *Publisher) Marshal(v any) ([]byte, error) {
 	return s.marshal(v)
 }

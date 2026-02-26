@@ -13,7 +13,7 @@ import (
 var (
 	config       *viper.Viper
 	requiredKeys []string
-	defaults     = map[string]interface{}{}
+	defaults     = map[string]any{}
 	types        = map[string]string{}
 )
 
@@ -238,18 +238,18 @@ func MustGetStringSlice(c *viper.Viper, key string) func() []string {
 	}
 }
 
-func GetStringMap(c *viper.Viper, key string, fallback map[string]interface{}) func() map[string]interface{} {
+func GetStringMap(c *viper.Viper, key string, fallback map[string]any) func() map[string]any {
 	setDefault(c, key, "map[string]interface{}", fallback)
 
-	return func() map[string]interface{} {
+	return func() map[string]any {
 		return c.GetStringMap(key)
 	}
 }
 
-func MustGetStringMap(c *viper.Viper, key string) func() map[string]interface{} {
+func MustGetStringMap(c *viper.Viper, key string) func() map[string]any {
 	must(c, key, "map[string]interface{}")
 
-	return func() map[string]interface{} {
+	return func() map[string]any {
 		return c.GetStringMap(key)
 	}
 }
@@ -286,17 +286,17 @@ func MustGetStringMapStringSlice(c *viper.Viper, key string) func() map[string][
 	}
 }
 
-func GetStruct(c *viper.Viper, key string, fallback interface{}) (func(v interface{}) error, error) {
+func GetStruct(c *viper.Viper, key string, fallback any) (func(v any) error, error) {
 	c = ensure(c)
 
 	// decode default
-	var decoded map[string]interface{}
+	var decoded map[string]any
 	if err := decode(fallback, &decoded); err != nil {
 		return nil, err
 	}
 
 	// prefix key
-	configMap := make(map[string]interface{}, len(decoded))
+	configMap := make(map[string]any, len(decoded))
 	for s, i := range decoded {
 		configMap[key+"."+s] = i
 	}
@@ -305,15 +305,15 @@ func GetStruct(c *viper.Viper, key string, fallback interface{}) (func(v interfa
 		return nil, err
 	}
 
-	return func(v interface{}) error {
-		var cfg map[string]interface{}
+	return func(v any) error {
+		var cfg map[string]any
 		if err := c.Unmarshal(&cfg); err != nil {
 			return err
 		}
 
-		for _, keyPart := range strings.Split(key, ".") {
+		for keyPart := range strings.SplitSeq(key, ".") {
 			if cfgPart, ok := cfg[keyPart]; ok {
-				if o, ok := cfgPart.(map[string]interface{}); ok {
+				if o, ok := cfgPart.(map[string]any); ok {
 					cfg = o
 				}
 			}
@@ -327,7 +327,7 @@ func RequiredKeys() []string {
 	return requiredKeys
 }
 
-func Defaults() map[string]interface{} {
+func Defaults() map[string]any {
 	return defaults
 }
 
@@ -361,7 +361,7 @@ func must(c *viper.Viper, key, typeof string) {
 	}
 }
 
-func decode(input, output interface{}) error {
+func decode(input, output any) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName: "yaml",
 		Result:  output,

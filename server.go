@@ -45,11 +45,11 @@ type Server struct {
 	// gracefulPeriod should equal the terminationGracePeriodSeconds
 	gracefulPeriod   time.Duration
 	running          atomic.Bool
-	syncClosers      []interface{}
+	syncClosers      []any
 	syncClosersLock  sync.RWMutex
 	syncReadmers     []interfaces.Readmer
 	syncReadmersLock sync.RWMutex
-	syncProbes       map[healthz.Type][]interface{}
+	syncProbes       map[healthz.Type][]any
 	syncProbesLock   sync.RWMutex
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -66,7 +66,7 @@ func NewServer(opts ...Option) *Server {
 		gracefulPeriod:  time.Duration(env.GetInt("KEEL_GRACEFUL_PERIOD", 30)) * time.Second,
 		shutdownSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
 		syncReadmers:    []interfaces.Readmer{},
-		syncProbes:      map[healthz.Type][]interface{}{},
+		syncProbes:      map[healthz.Type][]any{},
 		ctx:             context.Background(),
 		c:               config.Config(),
 		l:               log.Logger(),
@@ -239,11 +239,9 @@ func (s *Server) AddServices(services ...Service) {
 }
 
 // AddCloser adds a closer to be called on shutdown
-func (s *Server) AddCloser(closer interface{}) {
-	for _, value := range s.closers() {
-		if value == closer {
-			return
-		}
+func (s *Server) AddCloser(closer any) {
+	if slices.Contains(s.closers(), closer) {
+		return
 	}
 
 	if IsCloser(closer) {
@@ -254,7 +252,7 @@ func (s *Server) AddCloser(closer interface{}) {
 }
 
 // AddClosers adds the given closers to be called on shutdown
-func (s *Server) AddClosers(closers ...interface{}) {
+func (s *Server) AddClosers(closers ...any) {
 	for _, closer := range closers {
 		s.AddCloser(closer)
 	}
@@ -273,7 +271,7 @@ func (s *Server) AddReadmers(readmers ...interfaces.Readmer) {
 }
 
 // AddHealthzer adds a probe to be called on healthz checks
-func (s *Server) AddHealthzer(typ healthz.Type, probe interface{}) {
+func (s *Server) AddHealthzer(typ healthz.Type, probe any) {
 	if IsHealthz(probe) {
 		s.addProbes(typ, probe)
 	} else {
@@ -282,29 +280,29 @@ func (s *Server) AddHealthzer(typ healthz.Type, probe interface{}) {
 }
 
 // AddHealthzers adds the given probes to be called on healthz checks
-func (s *Server) AddHealthzers(typ healthz.Type, probes ...interface{}) {
+func (s *Server) AddHealthzers(typ healthz.Type, probes ...any) {
 	for _, probe := range probes {
 		s.AddHealthzer(typ, probe)
 	}
 }
 
 // AddAlwaysHealthzers adds the probes to be called on any healthz checks
-func (s *Server) AddAlwaysHealthzers(probes ...interface{}) {
+func (s *Server) AddAlwaysHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeAlways, probes...)
 }
 
 // AddStartupHealthzers adds the startup probes to be called on healthz checks
-func (s *Server) AddStartupHealthzers(probes ...interface{}) {
+func (s *Server) AddStartupHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeStartup, probes...)
 }
 
 // AddLivenessHealthzers adds the liveness probes to be called on healthz checks
-func (s *Server) AddLivenessHealthzers(probes ...interface{}) {
+func (s *Server) AddLivenessHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeLiveness, probes...)
 }
 
 // AddReadinessHealthzers adds the readiness probes to be called on healthz checks
-func (s *Server) AddReadinessHealthzers(probes ...interface{}) {
+func (s *Server) AddReadinessHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeReadiness, probes...)
 }
 
@@ -354,14 +352,14 @@ func (s *Server) Run() {
 	}
 }
 
-func (s *Server) closers() []interface{} {
+func (s *Server) closers() []any {
 	s.syncClosersLock.RLock()
 	defer s.syncClosersLock.RUnlock()
 
 	return s.syncClosers
 }
 
-func (s *Server) addClosers(v ...interface{}) {
+func (s *Server) addClosers(v ...any) {
 	s.syncClosersLock.Lock()
 	defer s.syncClosersLock.Unlock()
 
@@ -382,14 +380,14 @@ func (s *Server) addReadmers(v ...interfaces.Readmer) {
 	s.syncReadmers = append(s.syncReadmers, v...)
 }
 
-func (s *Server) probes() map[healthz.Type][]interface{} {
+func (s *Server) probes() map[healthz.Type][]any {
 	s.syncProbesLock.RLock()
 	defer s.syncProbesLock.RUnlock()
 
 	return s.syncProbes
 }
 
-func (s *Server) addProbes(typ healthz.Type, v ...interface{}) {
+func (s *Server) addProbes(typ healthz.Type, v ...any) {
 	s.syncProbesLock.Lock()
 	defer s.syncProbesLock.Unlock()
 
@@ -524,7 +522,7 @@ func (s *Server) readmeServices() string {
 
 		for _, value := range s.initServices {
 			if v, ok := value.(*service.HTTP); ok {
-				t := reflect.TypeOf(v)
+				t := reflect.TypeFor[*service.HTTP]()
 				rows = append(rows, []string{
 					markdown.Code(v.Name()),
 					markdown.Code(t.String()),

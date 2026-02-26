@@ -58,7 +58,7 @@ func GZip(opts ...GZipOption) Middleware {
 func GZipWithOptions(opts GZipOptions) Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		pool := sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return new(gzip.Reader)
 			},
 		}

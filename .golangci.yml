@@ -11,7 +11,6 @@ linters:
   disable:
     # Project specific linters
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: false, auto-fix: false]
-    - modernize
     # Discouraged linters
     - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
     - embeddedstructfieldcheck #  Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
@@ -54,18 +53,23 @@ linters:
 
   # https://golangci-lint.run/docs/linters/
   settings:
+    # https://golangci-lint.run/docs/linters/configuration/#exhaustive
     exhaustive:
       default-signifies-exhaustive: true
+    # https://golangci-lint.run/docs/linters/configuration/#gocritic
     gocritic:
       disabled-checks:
         - assignOp
         - ifElseChain
         - deprecatedComment
+    # https://golangci-lint.run/docs/linters/configuration/#gomoddirectives
     gomoddirectives:
       replace-local: true
+    # https://golangci-lint.run/docs/linters/configuration/#gosec
     gosec:
       severity: medium
       confidence: medium
+    # https://golangci-lint.run/docs/linters/configuration/#revive
     revive:
       rules:
         - name: exported
@@ -73,7 +77,6 @@ linters:
         - name: package-comments
           disabled: true
   exclusions:
-    generated: lax
     presets:
       - comments
       - common-false-positives

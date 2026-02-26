@@ -24,7 +24,7 @@ func New(t *testing.T) *Assertions { //nolint:thelper
 	}
 }
 
-func (a *Assertions) InlineEqual(actual interface{}, msgAndArgs ...interface{}) {
+func (a *Assertions) InlineEqual(actual any, msgAndArgs ...any) {
 	a.t.Helper()
 
 	if expected, ok := keeltest.Inline(a.t, 2, "%v", actual); ok {
@@ -32,7 +32,7 @@ func (a *Assertions) InlineEqual(actual interface{}, msgAndArgs ...interface{}) 
 	}
 }
 
-func (a *Assertions) InlineJSONEq(actual interface{}, msgAndArgs ...interface{}) {
+func (a *Assertions) InlineJSONEq(actual any, msgAndArgs ...any) {
 	a.t.Helper()
 	// marshal value
 	actualBytes, err := json.Marshal(actual)

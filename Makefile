@@ -39,7 +39,7 @@ endif
 
 .PHONY: check
 ## Run lint & tests
-check: tidy lint test
+check: tidy generate lint test
 
 .PHONY: tidy
 ## Run go mod tidy
@@ -75,7 +75,7 @@ test:
 ## Run go tests with `race` flag
 test.race:
 	@echo "〉go test with -race"
-	@GO_TEST_TAGS=-skip,race go test -tags=safe -coverprofile=coverage.out -race work
+	@GO_TEST_TAGS=-skip go test -tags=safe -coverprofile=coverage.out -race work
 
 .PHONY: test.update
 ## Run go tests with `update` flag

@@ -179,7 +179,7 @@ func MustGetGetIntSlice(key string) []int {
 func RequiredKeys() []string {
 	var ret []string
 
-	requiredKeys.Range(func(key, value interface{}) bool {
+	requiredKeys.Range(func(key, value any) bool {
 		if v, ok := key.(string); ok {
 			ret = append(ret, v)
 		}
@@ -190,10 +190,10 @@ func RequiredKeys() []string {
 	return ret
 }
 
-func Defaults() map[string]interface{} {
-	ret := map[string]interface{}{}
+func Defaults() map[string]any {
+	ret := map[string]any{}
 
-	defaults.Range(func(key, value interface{}) bool {
+	defaults.Range(func(key, value any) bool {
 		if k, ok := key.(string); ok {
 			ret[k] = value
 		}
@@ -207,7 +207,7 @@ func Defaults() map[string]interface{} {
 func Types() map[string]string {
 	ret := map[string]string{}
 
-	types.Range(func(key, value interface{}) bool {
+	types.Range(func(key, value any) bool {
 		if v, ok := value.(string); ok {
 			if k, ok := key.(string); ok {
 				ret[k] = v

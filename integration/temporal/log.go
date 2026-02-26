@@ -36,7 +36,7 @@ func GetActivityLogger(ctx context.Context, fields ...zap.Field) tlog.Logger {
 }
 
 func LoggerWith(l tlog.Logger, fields ...zap.Field) tlog.Logger {
-	v := make([]interface{}, len(fields))
+	v := make([]any, len(fields))
 	for i, field := range fields {
 		v[i] = field
 	}
