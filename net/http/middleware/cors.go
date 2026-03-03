@@ -89,13 +89,13 @@ func CORS(opts ...CORSOption) Middleware {
 
 // CORSWithOptions middleware
 func CORSWithOptions(opts CORSOptions) Middleware {
-	allowOriginPatterns := make([]string, len(opts.AllowOrigins))
+	allowOriginPatterns := make([]*regexp.Regexp, len(opts.AllowOrigins))
 	for i, origin := range opts.AllowOrigins {
 		pattern := regexp.QuoteMeta(origin)
 		pattern = strings.ReplaceAll(pattern, "\\*", ".*")
 		pattern = strings.ReplaceAll(pattern, "\\?", ".")
 		pattern = "^" + pattern + "$"
-		allowOriginPatterns[i] = pattern
+		allowOriginPatterns[i] = regexp.MustCompile(pattern)
 	}
 
 	allowMethods := strings.Join(opts.AllowMethods, ",")
@@ -159,7 +159,7 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 						break
 					}
 
-					if match, _ := regexp.MatchString(re, origin); match {
+					if re.MatchString(origin) {
 						allowOrigin = origin
 						break
 					}

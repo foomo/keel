@@ -8,10 +8,10 @@ import (
 )
 
 func BenchmarkLabelerAdd(b *testing.B) {
-	l := &log.Labeler{}
 	field := zap.String("key", "value")
 
 	for b.Loop() {
+		l := &log.Labeler{}
 		l.Add(field)
 	}
 }

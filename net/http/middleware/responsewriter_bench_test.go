@@ -28,18 +28,18 @@ func BenchmarkWrapResponseWriter(b *testing.B) {
 func BenchmarkResponseWriterWrite(b *testing.B) {
 	b.Run("single-large", func(b *testing.B) {
 		data := make([]byte, 4096)
-		w := middleware.WrapResponseWriter(httptest.NewRecorder())
 
 		for b.Loop() {
+			w := middleware.WrapResponseWriter(httptest.NewRecorder())
 			_, _ = w.Write(data)
 		}
 	})
 
 	b.Run("many-small", func(b *testing.B) {
 		data := make([]byte, 64)
-		w := middleware.WrapResponseWriter(httptest.NewRecorder())
 
 		for b.Loop() {
+			w := middleware.WrapResponseWriter(httptest.NewRecorder())
 			for range 64 {
 				_, _ = w.Write(data)
 			}

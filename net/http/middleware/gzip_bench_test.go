@@ -3,6 +3,7 @@ package middleware_test
 import (
 	"bytes"
 	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,6 +30,7 @@ func BenchmarkGZipDecompression(b *testing.B) {
 			compressed := compressGzip(b, []byte(payload))
 
 			handler := middleware.GZip()(zap.NewNop(), "bench", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				io.Copy(io.Discard, r.Body) //nolint:errcheck
 				w.WriteHeader(http.StatusOK)
 			}))
 
