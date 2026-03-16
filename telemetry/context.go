@@ -6,11 +6,9 @@ import (
 
 	pkgsemconv "github.com/foomo/keel/semconv"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/foomo/keel/internal/runtimeutil"
-	"github.com/foomo/keel/log"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -212,14 +210,5 @@ func (c Context) startSpan(prefix string, skip int, opts ...trace.SpanStartOptio
 }
 
 func (c Context) log(ctx context.Context, lvl zapcore.Level, msg string, skip int, kv ...attribute.KeyValue) {
-	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		kv = append(kv,
-			pkgsemconv.TraceID(spanCtx.TraceID().String()),
-			pkgsemconv.SpanID(spanCtx.SpanID().String()),
-		)
-	}
-
-	kv = append(kv, pkgsemconv.CodeCaller(skip+1)...)
-
-	zap.L().WithOptions(zap.WithCaller(false)).Log(lvl, msg, log.Attributes(kv...)...)
+	Log(ctx, lvl, msg, skip+1, kv...)
 }
