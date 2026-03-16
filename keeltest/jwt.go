@@ -12,7 +12,7 @@ import (
 func NewJWT(t *testing.T) *keeljwt.JWT {
 	t.Helper()
 
-	publicPem, privatePem := testingx.NewRSAKeys(t)
+	publicPem, privatePem := testingx.GenerateRSAKeyPair(t)
 
 	jwtKey, _, err := keeljwt.NewKeysFromFilenames(publicPem, privatePem, nil)
 	require.NoError(t, err)

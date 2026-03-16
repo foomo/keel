@@ -31,6 +31,7 @@ ifeq (, $(shell command -v mise))
 endif
 	@mise install
 
+.PHONY: .lefthook
 # Configure git hooks for lefthook
 .lefthook:
 	@lefthook install --reset-hooks-path
