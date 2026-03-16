@@ -89,13 +89,13 @@ func CORS(opts ...CORSOption) Middleware {
 
 // CORSWithOptions middleware
 func CORSWithOptions(opts CORSOptions) Middleware {
-	allowOriginPatterns := make([]string, len(opts.AllowOrigins))
+	allowOriginPatterns := make([]*regexp.Regexp, len(opts.AllowOrigins))
 	for i, origin := range opts.AllowOrigins {
 		pattern := regexp.QuoteMeta(origin)
 		pattern = strings.ReplaceAll(pattern, "\\*", ".*")
 		pattern = strings.ReplaceAll(pattern, "\\?", ".")
 		pattern = "^" + pattern + "$"
-		allowOriginPatterns[i] = pattern
+		allowOriginPatterns[i] = regexp.MustCompile(pattern)
 	}
 
 	allowMethods := strings.Join(opts.AllowMethods, ",")
@@ -159,7 +159,7 @@ func CORSWithOptions(opts CORSOptions) Middleware {
 						break
 					}
 
-					if match, _ := regexp.MatchString(re, origin); match {
+					if re.MatchString(origin) {
 						allowOrigin = origin
 						break
 					}
@@ -245,30 +245,28 @@ func matchSubdomain(domain, pattern string) bool {
 		return false
 	}
 
-	domComp := strings.Split(domAuth, ".")
-	patComp := strings.Split(patAuth, ".")
+	// Compare components right-to-left without allocating slices.
+	// Walk backward through both strings, extracting one dot-delimited
+	// component at a time and comparing them.
+	domPos := len(domAuth)
+	patPos := len(patAuth)
 
-	for i := len(domComp)/2 - 1; i >= 0; i-- {
-		opp := len(domComp) - 1 - i
-		domComp[i], domComp[opp] = domComp[opp], domComp[i]
-	}
+	for domPos > 0 && patPos > 0 {
+		// Extract rightmost remaining component from domain.
+		domDot := strings.LastIndexByte(domAuth[:domPos], '.')
+		domSeg := domAuth[domDot+1 : domPos]
+		domPos = domDot // -1 when no more dots, which terminates next iteration
 
-	for i := len(patComp)/2 - 1; i >= 0; i-- {
-		opp := len(patComp) - 1 - i
-		patComp[i], patComp[opp] = patComp[opp], patComp[i]
-	}
+		// Extract rightmost remaining component from pattern.
+		patDot := strings.LastIndexByte(patAuth[:patPos], '.')
+		patSeg := patAuth[patDot+1 : patPos]
+		patPos = patDot
 
-	for i, v := range domComp {
-		if len(patComp) <= i {
-			return false
-		}
-
-		p := patComp[i]
-		if p == "*" {
+		if patSeg == "*" {
 			return true
 		}
 
-		if p != v {
+		if patSeg != domSeg {
 			return false
 		}
 	}

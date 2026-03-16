@@ -33,7 +33,9 @@ func MustExists(key string) {
 
 // Get env var or fallback
 func Get(key, fallback string) string {
-	defaults.Store(key, fallback)
+	if _, ok := defaults.Load(key); !ok {
+		defaults.Store(key, fallback)
+	}
 
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "string")

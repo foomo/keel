@@ -84,6 +84,20 @@ test.update:
 	@echo "〉go test with -update"
 	@GO_TEST_TAGS=-skip go test -tags=safe -coverprofile=coverage.out -update work
 
+.PHONY: test.bench
+## Run benchmarks & compare against baseline
+test.bench: go.work
+	@echo "〉go test -bench"
+	@GO_TEST_TAGS=-skip go test -tags=safe -run=^$$ -bench=. -benchmem -count=10 work > .benchmark.txt && benchstat benchmark.txt .benchmark.txt
+	@rm .benchmark.txt
+
+.PHONY: test.bench.update
+## Run benchmarks & update baseline
+test.bench.update: go.work
+	@echo "〉go test -bench (updating baseline)"
+	@GO_TEST_TAGS=-skip go test -tags=safe -run=^$$ -bench=. -benchmem -count=10 work > benchmark.txt
+	@echo "✅ benchmark.txt updated"
+
 .PHONY: outdated
 ## Show outdated direct dependencies
 outdated:
