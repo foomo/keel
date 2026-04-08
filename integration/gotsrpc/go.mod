@@ -20,7 +20,7 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/foomo/go v0.4.0 // indirect
+	github.com/foomo/go v0.7.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

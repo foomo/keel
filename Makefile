@@ -68,19 +68,19 @@ generate:
 
 .PHONY: test
 ## Run go tests
-test:
+test: go.work
 	@echo "〉go test"
 	@GO_TEST_TAGS=-skip go test -tags=safe -coverprofile=coverage.out work
 
 .PHONY: test.race
 ## Run go tests with `race` flag
-test.race:
+test.race: go.work
 	@echo "〉go test with -race"
 	@GO_TEST_TAGS=-skip go test -tags=safe -coverprofile=coverage.out -race work
 
 .PHONY: test.update
 ## Run go tests with `update` flag
-test.update:
+test.update: go.work
 	@echo "〉go test with -update"
 	@GO_TEST_TAGS=-skip go test -tags=safe -coverprofile=coverage.out -update work
 

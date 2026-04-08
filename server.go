@@ -21,6 +21,7 @@ import (
 	internalotel "github.com/foomo/keel/internal/otel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
+	"github.com/foomo/keel/messaging"
 	"github.com/foomo/keel/metrics"
 	"github.com/foomo/keel/service"
 	"github.com/foomo/keel/telemetry"
@@ -36,6 +37,8 @@ import (
 
 // Server struct
 type Server struct {
+	subscribers     []messaging.Subscriber[any]
+	publishers      []messaging.Publisher[any]
 	services        []Service
 	initServices    []Service
 	meterProvider   metric.MeterProvider
