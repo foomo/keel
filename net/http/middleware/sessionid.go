@@ -98,7 +98,7 @@ func SessionIDWithGenerator(v SessionIDGenerator) SessionIDOption {
 }
 
 // SessionID middleware
-func SessionID(opts ...SessionIDOption) Middleware {
+func SessionID(opts ...SessionIDOption) keelhttp.Middleware {
 	options := GetDefaultSessionIDOptions()
 
 	for _, opt := range opts {
@@ -111,7 +111,7 @@ func SessionID(opts ...SessionIDOption) Middleware {
 }
 
 // SessionIDWithOptions middleware
-func SessionIDWithOptions(opts SessionIDOptions) Middleware {
+func SessionIDWithOptions(opts SessionIDOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

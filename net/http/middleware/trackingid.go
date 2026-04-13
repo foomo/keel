@@ -99,7 +99,7 @@ func TrackingIDWithGenerator(v TrackingIDGenerator) TrackingIDOption {
 }
 
 // TrackingID middleware
-func TrackingID(opts ...TrackingIDOption) Middleware {
+func TrackingID(opts ...TrackingIDOption) keelhttp.Middleware {
 	options := GetDefaultTrackingIDOptions()
 
 	for _, opt := range opts {
@@ -112,7 +112,7 @@ func TrackingID(opts ...TrackingIDOption) Middleware {
 }
 
 // TrackingIDWithOptions middleware
-func TrackingIDWithOptions(opts TrackingIDOptions) Middleware {
+func TrackingIDWithOptions(opts TrackingIDOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/foomo/keel/log"
+	keelhttp "github.com/foomo/keel/net/http"
 	httplog "github.com/foomo/keel/net/http/log"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -36,7 +37,7 @@ func GetDefaultTelemetryOptions() TelemetryOptions {
 }
 
 // Telemetry middleware
-func Telemetry(opts ...TelemetryOption) Middleware {
+func Telemetry(opts ...TelemetryOption) keelhttp.Middleware {
 	options := GetDefaultTelemetryOptions()
 
 	for _, opt := range opts {
@@ -68,7 +69,7 @@ func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
 }
 
 // TelemetryWithOptions middleware
-func TelemetryWithOptions(opts TelemetryOptions) Middleware {
+func TelemetryWithOptions(opts TelemetryOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		if opts.Name != "" {
 			name = opts.Name

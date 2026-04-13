@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -79,7 +80,7 @@ func RequestIDWithSetContext(v bool) RequestIDOption {
 }
 
 // RequestID middleware
-func RequestID(opts ...RequestIDOption) Middleware {
+func RequestID(opts ...RequestIDOption) keelhttp.Middleware {
 	options := GetDefaultRequestIDOptions()
 
 	for _, opt := range opts {
@@ -92,7 +93,7 @@ func RequestID(opts ...RequestIDOption) Middleware {
 }
 
 // RequestIDWithOptions middleware
-func RequestIDWithOptions(opts RequestIDOptions) Middleware {
+func RequestIDWithOptions(opts RequestIDOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
