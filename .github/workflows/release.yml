@@ -5,6 +5,10 @@ on:
     tags:
       - v*.*.*
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        required: true
 
 permissions:
   contents: write
@@ -29,3 +33,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create submodule tags
+        run: make tag.submodules TAG=${{ github.event.inputs.tag || github.ref_name }}

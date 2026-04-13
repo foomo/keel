@@ -40,7 +40,7 @@ endif
 
 .PHONY: check
 ## Run lint & tests
-check: tidy generate lint test
+check: tidy generate lint test audit
 
 .PHONY: tidy
 ## Run go mod tidy
@@ -87,6 +87,8 @@ test.update: go.work
 .PHONY: outdated
 ## Show outdated direct dependencies
 outdated:
+	@echo "〉mise"
+	@mise outdated -l --local
 	@echo "〉go mod outdated"
 	@go list -u -m -json all | go-mod-outdated -update -direct
 
