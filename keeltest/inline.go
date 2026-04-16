@@ -47,7 +47,7 @@ func Inline(t *testing.T, skip int, msgAndArgs ...any) (string, bool) {
 		t.Fatal("missing inline message")
 	} else {
 		fileLines[line-1] = fmt.Sprintf("%s // INLINE: %s", fileLine, value)
-		if err := os.WriteFile(file, []byte(strings.Join(fileLines, "\n")), fileStat.Mode().Perm()); err != nil {
+		if err := os.WriteFile(file, []byte(strings.Join(fileLines, "\n")), fileStat.Mode().Perm()); err != nil { //nolint:gosec
 			t.Fatal("failed to write inline", log.FError(err))
 		}
 

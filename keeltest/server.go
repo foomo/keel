@@ -3,12 +3,14 @@ package keeltest
 import (
 	"context"
 	"slices"
+	"testing"
 
+	testingx "github.com/foomo/go/testing"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/foomo/keel/config"
 	"github.com/foomo/keel/log"
@@ -27,19 +29,17 @@ type Server struct {
 	c             *viper.Viper
 }
 
-func NewServer(opts ...Option) *Server {
+func NewServer(tb testing.TB, opts ...Option) *Server {
+	tb.Helper()
+
 	inst := &Server{
-		ctx: context.Background(),
-		c:   config.Config(),
-		l:   zap.L(),
-	}
-
-	{
-		inst.meterProvider = noop.NewMeterProvider()
-		inst.meter = telemetry.Meter()
-
-		inst.traceProvider = telemetry.NewNoopTraceProvider()
-		inst.tracer = telemetry.Tracer()
+		ctx:           tb.Context(),
+		c:             config.Config(),
+		l:             zaptest.NewLogger(tb),
+		meter:         telemetry.Meter(),
+		tracer:        telemetry.Tracer(),
+		meterProvider: telemetry.MeterProvider(),
+		traceProvider: telemetry.TracerProvider(),
 	}
 
 	for _, opt := range opts {
@@ -47,6 +47,10 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	return inst
+}
+
+func NewExampleServer(opts ...Option) *Server {
+	return NewServer(testingx.NewExampleTB(), opts...)
 }
 
 // Logger returns server logger
