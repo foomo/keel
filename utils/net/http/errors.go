@@ -37,6 +37,16 @@ func BadRequestServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request
 	ServerError(l, w, r, http.StatusBadRequest, err)
 }
 
+// MethodNotAllowedServerError http response
+func MethodNotAllowedServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
+	ServerError(l, w, r, http.StatusMethodNotAllowed, err)
+}
+
+// RequestEntityTooLargeServerError http response
+func RequestEntityTooLargeServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
+	ServerError(l, w, r, http.StatusRequestEntityTooLarge, err)
+}
+
 // NotFoundServerError http response
 func NotFoundServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) {
 	ServerError(l, w, r, http.StatusNotFound, err)
@@ -54,7 +64,7 @@ func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int
 			l = log.WithHTTPRequest(l, r)
 			l.Error("http server error", log.Attribute(semconv.HTTPResponseStatusCode(code)))
 		}
-		// w.Header().Set(keelhttp.HeaderXError, err.Error()) TODO make configurable with better value
+
 		http.Error(w, http.StatusText(code), code)
 	}
 }
