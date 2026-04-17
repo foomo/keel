@@ -47,10 +47,10 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foomo/go v0.10.0 // indirect
 	github.com/foomo/goflow v0.2.2 // indirect
-	github.com/foomo/goflux v0.2.5 // indirect
+	github.com/foomo/goflux v0.3.0 // indirect
 	github.com/foomo/gofuncy v0.2.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
-	github.com/foomo/opentelemetry-go v0.3.0 // indirect
+	github.com/foomo/opentelemetry-go v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

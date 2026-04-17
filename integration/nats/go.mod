@@ -6,7 +6,9 @@ replace github.com/foomo/keel => ../../
 
 require (
 	github.com/foomo/keel v0.23.1
+	github.com/foomo/opentelemetry-go v0.4.0
 	github.com/nats-io/nats.go v1.51.0
+	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/zap v1.27.1
 )
 
@@ -30,10 +32,9 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foomo/go v0.10.0 // indirect
 	github.com/foomo/goflow v0.2.2 // indirect
-	github.com/foomo/goflux v0.2.5 // indirect
+	github.com/foomo/goflux v0.3.0 // indirect
 	github.com/foomo/gofuncy v0.2.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
-	github.com/foomo/opentelemetry-go v0.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -103,7 +104,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/host v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.68.0 // indirect
-	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.19.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.19.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect

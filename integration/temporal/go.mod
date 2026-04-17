@@ -24,7 +24,7 @@ require (
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/foomo/go v0.10.0 // indirect
-	github.com/foomo/opentelemetry-go v0.3.0 // indirect
+	github.com/foomo/opentelemetry-go v0.4.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
