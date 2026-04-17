@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	keelhttp "github.com/foomo/keel/net/http"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	"github.com/foomo/keel/net/http/middleware"
 )
 
 // ServiceHTTP struct
@@ -21,14 +21,14 @@ type ServiceHTTP struct {
 	l      *zap.Logger
 }
 
-func NewServiceHTTP(l *zap.Logger, name string, handler http.Handler, middlewares ...middleware.Middleware) *ServiceHTTP {
+func NewServiceHTTP(l *zap.Logger, name string, handler http.Handler, middlewares ...keelhttp.Middleware) *ServiceHTTP {
 	if l == nil {
 		l = log.Logger()
 	}
 	// enrich the log
 	l = log.WithHTTPServerName(l, name)
 
-	server := httptest.NewUnstartedServer(middleware.Compose(l, name, handler, middlewares...))
+	server := httptest.NewUnstartedServer(keelhttp.Compose(l, name, handler, middlewares...))
 	server.Config.ErrorLog = zap.NewStdLog(l)
 
 	return &ServiceHTTP{

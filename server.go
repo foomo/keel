@@ -22,6 +22,7 @@ import (
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
 	"github.com/foomo/keel/metrics"
+	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/service"
 	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
@@ -32,6 +33,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+)
+
+const (
+	ServiceNameInternalHTTP = "internal"
+	ServiceAddrInternalHTTP = ":8080"
+	ServiceNamePublicHTTP   = "public"
+	ServiceAddrPublicHTTP   = ":8000"
 )
 
 // Server struct
@@ -231,6 +239,23 @@ func (s *Server) AddService(v Service) {
 	}
 }
 
+func (s *Server) AddHTTPService(name, addr string, handler http.Handler, middleware ...keelhttp.Middleware) {
+	addrFn := config.GetString(s.Config(), "service.http."+name+".addr", addr)
+	s.AddService(service.NewHTTP(s.l, name, addrFn(), handler, middleware...))
+}
+
+func (s *Server) AddInternalHTTPService(handler http.Handler, middleware ...keelhttp.Middleware) {
+	s.AddHTTPService(ServiceNameInternalHTTP, ServiceAddrInternalHTTP, handler, middleware...)
+}
+
+func (s *Server) AddPublicHTTPService(handler http.Handler, middleware ...keelhttp.Middleware) {
+	s.AddHTTPService(ServiceNamePublicHTTP, ServiceAddrPublicHTTP, handler, middleware...)
+}
+
+func (s *Server) AddGoRoutine(name string, handler service.GoRoutineFn, opts ...service.GoRoutineOption) {
+	s.AddService(service.NewGoRoutine(s.l, name, handler, opts...))
+}
+
 // AddServices adds multiple service
 func (s *Server) AddServices(services ...Service) {
 	for _, value := range services {
@@ -240,15 +265,15 @@ func (s *Server) AddServices(services ...Service) {
 
 // AddCloser adds a closer to be called on shutdown
 func (s *Server) AddCloser(closer any) {
+	if !IsCloser(closer) {
+		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
+	}
+
 	if slices.Contains(s.closers(), closer) {
 		return
 	}
 
-	if IsCloser(closer) {
-		s.addClosers(closer)
-	} else {
-		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
-	}
+	s.addClosers(closer)
 }
 
 // AddClosers adds the given closers to be called on shutdown

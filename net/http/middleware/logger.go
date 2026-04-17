@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	httplog "github.com/foomo/keel/net/http/log"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -33,7 +34,7 @@ func GetDefaultLoggerOptions() LoggerOptions {
 }
 
 // Logger middleware
-func Logger(opts ...LoggerOption) Middleware {
+func Logger(opts ...LoggerOption) keelhttp.Middleware {
 	options := GetDefaultLoggerOptions()
 
 	for _, opt := range opts {
@@ -74,7 +75,7 @@ func LoggerWithInjectLabeler(v bool) LoggerOption {
 }
 
 // LoggerWithOptions middleware
-func LoggerWithOptions(opts LoggerOptions) Middleware {
+func LoggerWithOptions(opts LoggerOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

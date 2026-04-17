@@ -3,10 +3,11 @@ package middleware
 import (
 	"net/http"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	"go.uber.org/zap"
 )
 
-func Skip(mw Middleware, skippers ...Skipper) Middleware {
+func Skip(mw keelhttp.Middleware, skippers ...Skipper) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		wrapped := mw(l, name, next)
 

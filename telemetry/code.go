@@ -1,13 +1,13 @@
-package semconv
+package telemetry
 
 import (
-	"github.com/foomo/keel/internal/runtimeutil"
+	runtimex "github.com/foomo/go/runtime"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 func CodeCaller(skip int) []attribute.KeyValue {
-	if shortName, _, file, line, ok := runtimeutil.Caller(skip + 1); ok {
+	if shortName, _, file, line, ok := runtimex.Caller(skip + 1); ok {
 		return []attribute.KeyValue{
 			semconv.CodeFunctionName(shortName),
 			semconv.CodeFilePath(file),
@@ -19,5 +19,5 @@ func CodeCaller(skip int) []attribute.KeyValue {
 }
 
 func CodeStacktrace(num, skip int) attribute.KeyValue {
-	return semconv.CodeStacktrace(runtimeutil.StackTrace(num, skip+1))
+	return semconv.CodeStacktrace(runtimex.StackTrace(num, skip+1))
 }

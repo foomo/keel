@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	stdhttp "github.com/foomo/gostandards/http"
+	keelhttp "github.com/foomo/keel/net/http"
 	httputils "github.com/foomo/keel/utils/net/http"
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/klauspost/compress/gzip"
@@ -42,7 +43,7 @@ func GZipWithMinSize(v int) GZipOption {
 }
 
 // GZip middleware
-func GZip(opts ...GZipOption) Middleware {
+func GZip(opts ...GZipOption) keelhttp.Middleware {
 	options := DefaultGZipOptions
 
 	for _, opt := range opts {
@@ -55,7 +56,7 @@ func GZip(opts ...GZipOption) Middleware {
 }
 
 // GZipWithOptions middleware
-func GZipWithOptions(opts GZipOptions) Middleware {
+func GZipWithOptions(opts GZipOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		pool := sync.Pool{
 			New: func() any {

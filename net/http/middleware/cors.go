@@ -75,7 +75,7 @@ func CORSWithMaxAge(v int) CORSOption {
 }
 
 // CORS middleware
-func CORS(opts ...CORSOption) Middleware {
+func CORS(opts ...CORSOption) keelhttp.Middleware {
 	options := GetDefaultCORSOptions()
 
 	for _, opt := range opts {
@@ -88,7 +88,7 @@ func CORS(opts ...CORSOption) Middleware {
 }
 
 // CORSWithOptions middleware
-func CORSWithOptions(opts CORSOptions) Middleware {
+func CORSWithOptions(opts CORSOptions) keelhttp.Middleware {
 	allowOriginPatterns := make([]string, len(opts.AllowOrigins))
 	for i, origin := range opts.AllowOrigins {
 		pattern := regexp.QuoteMeta(origin)
