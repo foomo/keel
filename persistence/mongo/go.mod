@@ -5,17 +5,18 @@ go 1.26.0
 replace github.com/foomo/keel => ../../
 
 require (
-	github.com/foomo/keel v0.23.0
+	github.com/foomo/keel v0.23.1
 	github.com/go-logr/zapr v1.3.0
 	github.com/pkg/errors v0.9.1
-	go.mongodb.org/mongo-driver/v2 v2.5.0
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo v0.0.0-20260316150309-fbcde6f7dcbb
+	go.mongodb.org/mongo-driver/v2 v2.5.1
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo v0.0.0-20260415084528-15d661a0ba8a
 	go.uber.org/zap v1.27.1
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
+	github.com/foomo/opentelemetry-go v0.3.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect

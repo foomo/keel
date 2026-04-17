@@ -5,12 +5,12 @@ go 1.26.0
 replace github.com/foomo/keel => ../../
 
 require (
-	github.com/foomo/keel v0.23.0
+	github.com/foomo/keel v0.23.1
 	github.com/pkg/errors v0.9.1
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
-	go.temporal.io/api v1.62.3
-	go.temporal.io/sdk v1.41.0
+	go.temporal.io/api v1.62.9
+	go.temporal.io/sdk v1.42.0
 	go.temporal.io/sdk/contrib/opentelemetry v0.7.0
 	go.uber.org/zap v1.27.1
 )
@@ -23,6 +23,8 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
+	github.com/foomo/go v0.10.0 // indirect
+	github.com/foomo/opentelemetry-go v0.3.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect

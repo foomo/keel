@@ -6,7 +6,7 @@ replace github.com/foomo/keel => ../../
 
 require (
 	github.com/foomo/gotsrpc/v2 v2.14.1
-	github.com/foomo/keel v0.0.0-00010101000000-000000000000
+	github.com/foomo/keel v0.23.1
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
 	go.uber.org/zap v1.27.1
@@ -20,7 +20,9 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/foomo/go v0.10.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
+	github.com/foomo/opentelemetry-go v0.3.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect

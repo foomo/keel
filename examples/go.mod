@@ -12,15 +12,15 @@ replace (
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/foomo/keel v0.23.1
-	github.com/foomo/keel/net/stream v0.0.0-00010101000000-000000000000
-	github.com/foomo/keel/persistence/mongo v0.0.0-00010101000000-000000000000
-	github.com/foomo/keel/persistence/postgres v0.0.0-00010101000000-000000000000
+	github.com/foomo/keel/net/stream v0.23.1
+	github.com/foomo/keel/persistence/mongo v0.23.1
+	github.com/foomo/keel/persistence/postgres v0.23.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/nats-io/nats.go v1.51.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
-	go.mongodb.org/mongo-driver/v2 v2.5.0
+	go.mongodb.org/mongo-driver/v2 v2.5.1
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
@@ -45,11 +45,12 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/foomo/go v0.9.0 // indirect
+	github.com/foomo/go v0.10.0 // indirect
 	github.com/foomo/goflow v0.2.2 // indirect
 	github.com/foomo/goflux v0.2.5 // indirect
 	github.com/foomo/gofuncy v0.2.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
+	github.com/foomo/opentelemetry-go v0.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -77,7 +78,7 @@ require (
 	github.com/hashicorp/serf v0.10.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
-	github.com/lib/pq v1.11.2 // indirect
+	github.com/lib/pq v1.12.3 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.21 // indirect
@@ -118,7 +119,7 @@ require (
 	go.etcd.io/etcd/client/v2 v2.305.29 // indirect
 	go.etcd.io/etcd/client/v3 v3.6.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo v0.0.0-20260316150309-fbcde6f7dcbb // indirect
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo v0.0.0-20260415084528-15d661a0ba8a // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/host v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect

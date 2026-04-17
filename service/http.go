@@ -11,7 +11,7 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/pkg/errors"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"

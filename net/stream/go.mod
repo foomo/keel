@@ -5,8 +5,8 @@ go 1.26.0
 replace github.com/foomo/keel => ../../
 
 require (
-	github.com/foomo/go v0.9.0
-	github.com/foomo/keel v0.23.0
+	github.com/foomo/go v0.10.0
+	github.com/foomo/keel v0.23.1
 	github.com/nats-io/nats.go v1.51.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -33,6 +33,7 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/foomo/opentelemetry-go v0.3.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
