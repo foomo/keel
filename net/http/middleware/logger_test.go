@@ -12,7 +12,7 @@ import (
 )
 
 func ExampleLogger() {
-	svr := keeltest.NewServer()
+	svr := keeltest.NewExampleServer()
 
 	// get logger
 	l := svr.Logger()
@@ -43,7 +43,7 @@ func ExampleLogger() {
 }
 
 func ExampleLoggerWithInjectLabeler() {
-	svr := keeltest.NewServer()
+	svr := keeltest.NewExampleServer()
 
 	// get logger
 	l := svr.Logger()

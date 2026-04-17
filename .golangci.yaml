@@ -10,6 +10,7 @@ linters:
   default: all
   disable:
     # Project specific linters
+    - tparallel
     - containedctx # containedctx is a linter that detects struct contained context.Context field [fast: false, auto-fix: false]
     # Discouraged linters
     - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
@@ -53,6 +54,9 @@ linters:
 
   # https://golangci-lint.run/docs/linters/
   settings:
+    # https://golangci-lint.run/docs/linters/configuration/#paralleltest
+    paralleltest:
+      ignore-missing-subtests: true
     # https://golangci-lint.run/docs/linters/configuration/#exhaustive
     exhaustive:
       default-signifies-exhaustive: true

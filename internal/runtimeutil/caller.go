@@ -28,17 +28,18 @@ func StackTrace(num, skip int) string {
 	n := runtime.Callers(skip+1, pcs)
 	pcs = pcs[:n]
 
-	var ret string
+	var ret strings.Builder
 
 	frames := runtime.CallersFrames(pcs)
 	for {
 		frame, more := frames.Next()
 
-		ret += fmt.Sprintf("%s\n  %s:%d\n", frame.Function, frame.File, frame.Line)
-		if !more || len(ret) == num {
+		fmt.Fprintf(&ret, "%s\n  %s:%d\n", frame.Function, frame.File, frame.Line)
+
+		if !more || len(ret.String()) == num {
 			break
 		}
 	}
 
-	return strings.Trim(ret, "\n")
+	return strings.Trim(ret.String(), "\n")
 }

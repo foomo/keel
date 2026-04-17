@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	keelsemconv "github.com/foomo/keel/semconv"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -81,9 +81,9 @@ func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get("X-Request-Id"); id != "" {
-		return With(l, Attribute(keelsemconv.HTTPXRequestID(id)))
+		return With(l, Attribute(foomosemconv.HTTPXRequestID(id)))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
-		return With(l, Attribute(keelsemconv.HTTPXRequestID(id)))
+		return With(l, Attribute(foomosemconv.HTTPXRequestID(id)))
 	} else {
 		return l
 	}
@@ -91,9 +91,9 @@ func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
 	if value := r.Header.Get("X-Referer"); value != "" {
-		return With(l, Attribute(keelsemconv.HTTPXRequestReferer(value)))
+		return With(l, Attribute(foomosemconv.HTTPXRequestReferer(value)))
 	} else if value := r.Referer(); value != "" {
-		return With(l, Attribute(keelsemconv.HTTPXRequestReferer(value)))
+		return With(l, Attribute(foomosemconv.HTTPXRequestReferer(value)))
 	} else {
 		return l
 	}
@@ -111,9 +111,9 @@ func WithHTTPHost(l *zap.Logger, r *http.Request) *zap.Logger {
 
 func WithHTTPTrackingID(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get("X-Tracking-Id"); id != "" {
-		return With(l, Attribute(keelsemconv.TrackingID(id)))
+		return With(l, Attribute(foomosemconv.TrackingID(id)))
 	} else if id, ok := keelhttpcontext.GetTrackingID(r.Context()); ok && id != "" {
-		return With(l, Attribute(keelsemconv.TrackingID(id)))
+		return With(l, Attribute(foomosemconv.TrackingID(id)))
 	} else {
 		return l
 	}

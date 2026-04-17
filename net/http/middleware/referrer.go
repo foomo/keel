@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strings"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/context"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -41,7 +42,7 @@ func RefererWithSetContext(v bool) RefererOption {
 }
 
 // Referer middleware
-func Referer(opts ...RefererOption) Middleware {
+func Referer(opts ...RefererOption) keelhttp.Middleware {
 	options := GetDefaultRefererOptions()
 
 	for _, opt := range opts {
@@ -54,7 +55,7 @@ func Referer(opts ...RefererOption) Middleware {
 }
 
 // RefererWithOptions middleware
-func RefererWithOptions(opts RefererOptions) Middleware {
+func RefererWithOptions(opts RefererOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

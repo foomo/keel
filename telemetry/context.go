@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime/pprof"
 
-	pkgsemconv "github.com/foomo/keel/semconv"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -14,7 +14,7 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -81,7 +81,7 @@ func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		if e != nil {
-			sp.RecordError(e, trace.WithAttributes(pkgsemconv.CodeStacktrace(5, 2)))
+			sp.RecordError(e, trace.WithAttributes(CodeStacktrace(5, 2)))
 			sp.SetStatus(codes.Error, errors.Cause(e).Error())
 		} else {
 			c.SetSpanStatusOK()
@@ -129,7 +129,7 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	if sp.IsRecording() {
 		sp.RecordError(err,
 			trace.WithAttributes(kv...),
-			trace.WithAttributes(pkgsemconv.CodeStacktrace(5, 1)),
+			trace.WithAttributes(CodeStacktrace(5, 1)),
 		)
 		sp.SetStatus(codes.Error, errors.Cause(err).Error())
 	}
@@ -140,7 +140,7 @@ func (c Context) RecordSpanError(err error, kv ...attribute.KeyValue) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.RecordError(err,
-			trace.WithAttributes(append(kv, pkgsemconv.CodeStacktrace(5, 1))...),
+			trace.WithAttributes(append(kv, CodeStacktrace(5, 1))...),
 		)
 	}
 }
@@ -175,7 +175,7 @@ func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv
 
 // StartProfile starts a profile for the handler.
 func (c Context) StartProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
-	attr := pkgsemconv.ProfileName(name)
+	attr := foomosemconv.ProfileName(name)
 	c.Span().SetAttributes(attr)
 	pyroscope.TagWrapper(c.Context, PyroscopeLabels(append(kv, attr)...), func(ctx context.Context) {
 		handler(Ctx(ctx))
@@ -214,12 +214,12 @@ func (c Context) startSpan(prefix string, skip int, opts ...trace.SpanStartOptio
 func (c Context) log(ctx context.Context, lvl zapcore.Level, msg string, skip int, kv ...attribute.KeyValue) {
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
 		kv = append(kv,
-			pkgsemconv.TraceID(spanCtx.TraceID().String()),
-			pkgsemconv.SpanID(spanCtx.SpanID().String()),
+			foomosemconv.TraceID(spanCtx.TraceID().String()),
+			foomosemconv.SpanID(spanCtx.SpanID().String()),
 		)
 	}
 
-	kv = append(kv, pkgsemconv.CodeCaller(skip+1)...)
+	kv = append(kv, CodeCaller(skip+1)...)
 
 	zap.L().WithOptions(zap.WithCaller(false)).Log(lvl, msg, log.Attributes(kv...)...)
 }

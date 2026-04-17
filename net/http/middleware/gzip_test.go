@@ -23,7 +23,7 @@ const (
 func TestGzip(t *testing.T) {
 	t.Parallel()
 
-	svr := keeltest.NewServer()
+	svr := keeltest.NewServer(t)
 
 	// get logger
 	l := svr.Logger()
@@ -55,8 +55,6 @@ func TestGzip(t *testing.T) {
 
 	// send payload < 1024
 	t.Run("<1024", func(t *testing.T) {
-		t.Parallel()
-
 		payload = gzipPayload1023
 		body, err := gzipString(payload)
 		require.NoError(t, err)
@@ -81,7 +79,7 @@ func TestGzip(t *testing.T) {
 	})
 
 	// send payload > 1024
-	t.Run(">=1024", func(t *testing.T) { //nolint:paralleltest
+	t.Run(">=1024", func(t *testing.T) {
 		payload = gzipPayload1024
 		body, err := gzipString(payload)
 		require.NoError(t, err)
@@ -112,7 +110,7 @@ func TestGzip(t *testing.T) {
 func TestGZipBadRequest(t *testing.T) {
 	t.Parallel()
 
-	svr := keeltest.NewServer()
+	svr := keeltest.NewServer(t)
 
 	// get logger
 	l := svr.Logger()

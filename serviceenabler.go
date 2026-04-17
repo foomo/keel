@@ -113,7 +113,7 @@ func (w *ServiceEnabler) disable(ctx context.Context) error {
 }
 
 func (w *ServiceEnabler) watch(ctx context.Context) {
-	go func() {
+	go func() { //nolint:gosec
 		for {
 			time.Sleep(time.Second)
 
