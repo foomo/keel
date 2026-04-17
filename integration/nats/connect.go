@@ -28,10 +28,12 @@ func Connect(s *keel.Server, rawURL string, opts ...nats.Option) (*nats.Conn, er
 	if err != nil {
 		return nil, err
 	}
+
 	reconnects, err := natsconv.NewClientReconnects(m)
 	if err != nil {
 		return nil, err
 	}
+
 	asyncErrors, err := natsconv.NewClientAsyncErrors(m)
 	if err != nil {
 		return nil, err
@@ -71,13 +73,16 @@ func Connect(s *keel.Server, rawURL string, opts ...nats.Option) (*nats.Conn, er
 
 		nats.ErrorHandler(func(conn *nats.Conn, sub *nats.Subscription, err error) {
 			kind := classifyAsyncError(err)
+
 			extraAttrs := []attribute.KeyValue{}
 			if sub != nil && sub.Subject != "" {
 				extraAttrs = append(extraAttrs, asyncErrors.AttrSubject(sub.Subject))
 			}
+
 			if addr, _ := serverAddrPort(conn); addr != "" {
 				extraAttrs = append(extraAttrs, asyncErrors.AttrServerAddress(addr))
 			}
+
 			asyncErrors.Add(ctx, 1, kind, extraAttrs...)
 
 			fields := []zap.Field{
@@ -88,6 +93,7 @@ func Connect(s *keel.Server, rawURL string, opts ...nats.Option) (*nats.Conn, er
 			if sub != nil {
 				fields = append(fields, zap.String("subject", sub.Subject))
 			}
+
 			l.Warn("async error", fields...)
 		}),
 
@@ -124,7 +130,9 @@ func serverAttrs(nc *nats.Conn) []attribute.KeyValue {
 	if err != nil {
 		return nil
 	}
+
 	port, _ := strconv.Atoi(u.Port())
+
 	return []attribute.KeyValue{
 		semconv.ServerAddress(u.Hostname()),
 		semconv.ServerPort(port),
@@ -139,7 +147,9 @@ func serverAddrPort(nc *nats.Conn) (string, int) {
 	if err != nil {
 		return "", 0
 	}
+
 	port, _ := strconv.Atoi(u.Port())
+
 	return u.Hostname(), port
 }
 
