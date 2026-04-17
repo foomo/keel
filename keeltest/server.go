@@ -6,15 +6,13 @@ import (
 	"testing"
 
 	testingx "github.com/foomo/go/testing"
+	"github.com/foomo/keel/config"
+	"github.com/foomo/keel/log"
+	"github.com/foomo/keel/telemetry"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
-
-	"github.com/foomo/keel/config"
-	"github.com/foomo/keel/log"
-	"github.com/foomo/keel/telemetry"
 )
 
 type Server struct {
@@ -34,8 +32,8 @@ func NewServer(tb testing.TB, opts ...Option) *Server {
 
 	inst := &Server{
 		ctx:           tb.Context(),
+		l:             zap.NewNop(),
 		c:             config.Config(),
-		l:             zaptest.NewLogger(tb),
 		meter:         telemetry.Meter(),
 		tracer:        telemetry.Tracer(),
 		meterProvider: telemetry.MeterProvider(),
