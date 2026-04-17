@@ -4,8 +4,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fbiville/markdown-table-formatter v0.3.0 h1:PIm1UNgJrFs8q1htGTw+wnnNYvwXQMMMIKNZop2SSho=
 github.com/fbiville/markdown-table-formatter v0.3.0/go.mod h1:q89TDtSEVDdTaufgSbfHpNVdPU/bmfvqNkrC5HagmLY=
-github.com/foomo/opentelemetry-go v0.3.0 h1:KdQ4pRwurYfQTzyHH+xN7Eh12DpsmDX4dz/MKS/6r9Q=
-github.com/foomo/opentelemetry-go v0.3.0/go.mod h1:BarnA2DamgzhVHs39GbeS+3Jp8Y294bLNbMGj4/IQu0=
+github.com/foomo/opentelemetry-go v0.4.0 h1:UQneCUSokIYJXzFUKQSI8rlelbUuf6atgSZMhvD+Nzo=
+github.com/foomo/opentelemetry-go v0.4.0/go.mod h1:R3Se/rc5FRAs4ThE6JQ9Oq3cOLo2MOsUzZLJxZquwxA=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=

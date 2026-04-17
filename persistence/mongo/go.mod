@@ -16,7 +16,7 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
-	github.com/foomo/opentelemetry-go v0.3.0 // indirect
+	github.com/foomo/opentelemetry-go v0.4.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
