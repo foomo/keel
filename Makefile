@@ -97,7 +97,7 @@ audit:
 	@echo "〉security audit"
 	#@trivy fs . --format table --severity HIGH,CRITICAL
 	@go install golang.org/x/vuln/cmd/govulncheck@latest
-	@go govulncheck ./...
+	@govulncheck ./...
 
 .PHONY: outdated
 ## Show outdated direct dependencies
