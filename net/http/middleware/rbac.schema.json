@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/foomo/keel/net/http/middleware/rbac.schema.json",
+  "title": "RBAC middleware configuration",
+  "description": "Path-based access-control rules consumed by middleware.RBAC. Authoritative validation lives in middleware.NewRBACMatcher; this schema covers structural validation for editors.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["defaultPolicy"],
+  "properties": {
+    "defaultPolicy": {
+      "description": "Action applied when no rule matches the request path.",
+      "type": "string",
+      "enum": ["allow", "deny"]
+    },
+    "rules": {
+      "description": "Path-keyed allow/deny rules. Path matching prefers exact paths, then the longest matching prefix.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {
+          "description": "Exact request path (e.g. \"/api/foo/GetBar\") or a prefix ending in '*' (e.g. \"/api/foo/*\"). The '*' suffix matches the empty string and any suffix.",
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/"
+        },
+        "allowRoles": {
+          "description": "Roles granted access. Empty or omitted means \"no positive constraint\" — useful for deny-only rules.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "denyRoles": {
+          "description": "Roles denied access. Evaluated before allowRoles; a match here rejects regardless of allowRoles.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
