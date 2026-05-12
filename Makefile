@@ -95,9 +95,8 @@ test.bench: go.work
 ## Run security audit
 audit:
 	@echo "〉security audit"
-	#@trivy fs . --format table --severity HIGH,CRITICAL
 	@go install golang.org/x/vuln/cmd/govulncheck@latest
-	@go govulncheck ./...
+	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && govulncheck ./...) &&) true
 
 .PHONY: outdated
 ## Show outdated direct dependencies
@@ -109,10 +108,10 @@ outdated:
 
 .PHONY: upgrade
 ## Show outdated direct dependencies
-upgrade: go.work
+upgrade:
 	@echo "〉go mod upgrade"
-	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && go get -u ./...) &&) true
-	@$(Make) tidy
+	@go list -u -m -f '{{if and (not .Indirect) .Update}}{{.Path}}{{end}}' all | xargs -n1 -I{} go get {}@latest
+	@$(MAKE) tidy
 
 ### Release
 
