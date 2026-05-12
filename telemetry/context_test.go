@@ -17,6 +17,9 @@ import (
 func TestCtx(t *testing.T) {
 	t.Parallel()
 
+	// tp := oteltesting.ReportTraces(t, glossytrace.NewTest(t))
+	// mp := oteltesting.ReportMetrics(t, glossymetric.NewTest(t))
+
 	var err error
 
 	zap.ReplaceGlobals(zaptest.NewLogger(t,
@@ -30,7 +33,6 @@ func TestCtx(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Log", func(t *testing.T) {
-		t.Parallel()
 		ctx := telemetry.Ctx(t.Context())
 
 		attr := attribute.String("foo", "bar")
@@ -40,7 +42,7 @@ func TestCtx(t *testing.T) {
 		ctx.LogError("Error", attr)
 	})
 
-	t.Run("StartSpan", func(t *testing.T) { //nolint:paralleltest
+	t.Run("StartSpan", func(t *testing.T) {
 		spanRecorder.Reset()
 
 		ctx := telemetry.Ctx(t.Context()).StartSpan()
@@ -51,7 +53,7 @@ func TestCtx(t *testing.T) {
 		require.Len(t, spanRecorder.Ended(), 1)
 	})
 
-	t.Run("EndSpan Ok", func(t *testing.T) { //nolint:paralleltest
+	t.Run("EndSpan Ok", func(t *testing.T) {
 		spanRecorder.Reset()
 
 		ctx := telemetry.Ctx(t.Context()).StartSpan()
@@ -65,7 +67,7 @@ func TestCtx(t *testing.T) {
 		assert.Equal(t, codes.Ok, spans[0].Status().Code)
 	})
 
-	t.Run("EndSpan Error", func(t *testing.T) { //nolint:paralleltest
+	t.Run("EndSpan Error", func(t *testing.T) {
 		spanRecorder.Reset()
 
 		ctx := telemetry.Ctx(t.Context()).StartSpan()

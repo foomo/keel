@@ -19,7 +19,7 @@ func TestCORS(t *testing.T) {
 		target string
 		origin string
 		method string
-		with   middleware.Middleware
+		with   keelhttp.Middleware
 		expect func(t *testing.T, r *http.Request, w *httptest.ResponseRecorder)
 	}{
 		{
@@ -106,7 +106,7 @@ func TestCORS(t *testing.T) {
 			handler := tt.with(zaptest.NewLogger(t), tt.name, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			}))
-			r := httptest.NewRequest(tt.method, tt.target, nil)
+			r := httptest.NewRequestWithContext(t.Context(), tt.method, tt.target, nil)
 			r.Header.Add(keelhttp.HeaderOrigin, tt.origin)
 
 			w := httptest.NewRecorder()

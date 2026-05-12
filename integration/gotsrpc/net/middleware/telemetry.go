@@ -11,8 +11,8 @@ import (
 	"github.com/foomo/gotsrpc/v2"
 	"github.com/foomo/keel/env"
 	"github.com/foomo/keel/log"
+	keelhttp "github.com/foomo/keel/net/http"
 	httplog "github.com/foomo/keel/net/http/log"
-	"github.com/foomo/keel/net/http/middleware"
 	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/foomo/keel/semconv/gotsrpcconv"
 	"github.com/foomo/keel/telemetry"
@@ -79,7 +79,7 @@ func TelemetryWithPayloadAttributeDisabled(v bool) TelemetryOption {
 }
 
 // Telemetry middleware
-func Telemetry(opts ...TelemetryOption) middleware.Middleware {
+func Telemetry(opts ...TelemetryOption) keelhttp.Middleware {
 	options := DefaultTelemetryOptions()
 
 	for _, opt := range opts {
@@ -92,7 +92,7 @@ func Telemetry(opts ...TelemetryOption) middleware.Middleware {
 }
 
 // TelemetryWithOptions middleware
-func TelemetryWithOptions(opts TelemetryOptions) middleware.Middleware {
+func TelemetryWithOptions(opts TelemetryOptions) keelhttp.Middleware {
 	m, err := gotsrpcconv.NewExecutionDuration(
 		opts.meter,
 		metric.WithExplicitBucketBoundaries(opts.bucketBoundaries...),

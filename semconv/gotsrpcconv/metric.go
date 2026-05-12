@@ -16,7 +16,7 @@ var (
 
 // ExecutionDuration is an instrument used to record metric values conforming
 // to the "gotsrpc.execution.duration" semantic conventions. It represents the
-// duration of HTTP server requests.
+// duration of GOTSRPC execution.
 type ExecutionDuration struct {
 	metric.Float64Histogram
 }
@@ -112,6 +112,7 @@ func (m ExecutionDuration) Record(
 func (m ExecutionDuration) RecordSet(ctx context.Context, val float64, set attribute.Set) {
 	if set.Len() == 0 {
 		m.Float64Histogram.Record(ctx, val)
+		return
 	}
 
 	o := recOptPool.Get().(*[]metric.RecordOption) //nolint:forcetypeassert
@@ -126,5 +127,5 @@ func (m ExecutionDuration) RecordSet(ctx context.Context, val float64, set attri
 }
 
 func (ExecutionDuration) AttrError(val bool) attribute.KeyValue {
-	return attribute.Bool("gotsprc.error", val)
+	return attribute.Bool("gotsrpc.error", val)
 }

@@ -48,7 +48,7 @@ func (c *HTTPClient) Get(ctx context.Context, path string) ([]byte, int, error) 
 		return nil, 0, err
 	}
 
-	resp, err := c.Do(req) //nolint:gosec // G704
+	resp, err := c.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -75,7 +75,7 @@ func (c *HTTPClient) Post(ctx context.Context, path string, data any) ([]byte, i
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.Do(req) //nolint:gosec // G704
+	resp, err := c.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}

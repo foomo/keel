@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -27,7 +27,7 @@ func GetDefaultServerHeaderOptions() ServerHeaderOptions {
 }
 
 // ServerHeader middleware
-func ServerHeader(opts ...ServerHeaderOption) Middleware {
+func ServerHeader(opts ...ServerHeaderOption) keelhttp.Middleware {
 	options := GetDefaultServerHeaderOptions()
 
 	for _, opt := range opts {
@@ -54,7 +54,7 @@ func ServerHeaderWithHeader(v string) ServerHeaderOption {
 }
 
 // ServerHeaderWithOptions middleware
-func ServerHeaderWithOptions(opts ServerHeaderOptions) Middleware {
+func ServerHeaderWithOptions(opts ServerHeaderOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		if opts.Name != "" {
 			name = opts.Name

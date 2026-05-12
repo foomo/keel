@@ -1,9 +1,9 @@
 package keeltest
 
 import (
-	"context"
-
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -31,9 +31,14 @@ func WithConfig(c *viper.Viper) Option {
 	}
 }
 
-// WithContext option
-func WithContext(ctx context.Context) Option {
+func WithMeterProvider(v metric.MeterProvider) Option {
 	return func(inst *Server) {
-		inst.ctx = ctx
+		inst.meterProvider = v
+	}
+}
+
+func WithTracerProvider(v trace.TracerProvider) Option {
+	return func(inst *Server) {
+		inst.traceProvider = v
 	}
 }

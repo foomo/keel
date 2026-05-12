@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ func BasicAuthWithRealm(v string) BasicAuthOption {
 }
 
 // BasicAuth middleware
-func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) Middleware {
+func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) keelhttp.Middleware {
 	options := GetDefaultBasicAuthOptions()
 
 	for _, opt := range opts {
@@ -49,7 +50,7 @@ func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) Mi
 }
 
 // BasicAuthWithOptions middleware
-func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOptions) Middleware {
+func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

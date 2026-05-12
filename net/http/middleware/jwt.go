@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	gojwt "github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -126,7 +127,7 @@ func JWTWithSetContext(v bool) JWTOption {
 }
 
 // JWT middleware
-func JWT(v *jwt.JWT, contextKey any, opts ...JWTOption) Middleware {
+func JWT(v *jwt.JWT, contextKey any, opts ...JWTOption) keelhttp.Middleware {
 	options := GetDefaultJWTOptions()
 
 	for _, opt := range opts {
@@ -139,7 +140,7 @@ func JWT(v *jwt.JWT, contextKey any, opts ...JWTOption) Middleware {
 }
 
 // JWTWithOptions middleware
-func JWTWithOptions(v *jwt.JWT, contextKey any, opts JWTOptions) Middleware {
+func JWTWithOptions(v *jwt.JWT, contextKey any, opts JWTOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

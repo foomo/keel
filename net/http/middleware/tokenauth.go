@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"net/http"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -34,7 +35,7 @@ func TokenAuthWithTokenProvider(v TokenProvider) TokenAuthOption {
 }
 
 // TokenAuth middleware
-func TokenAuth(token string, opts ...TokenAuthOption) Middleware {
+func TokenAuth(token string, opts ...TokenAuthOption) keelhttp.Middleware {
 	options := GetDefaultTokenAuthOptions()
 
 	for _, opt := range opts {
@@ -47,7 +48,7 @@ func TokenAuth(token string, opts ...TokenAuthOption) Middleware {
 }
 
 // TokenAuthWithOptions middleware
-func TokenAuthWithOptions(token string, opts TokenAuthOptions) Middleware {
+func TokenAuthWithOptions(token string, opts TokenAuthOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

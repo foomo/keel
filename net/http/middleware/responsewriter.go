@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	http2 "github.com/foomo/keel/net/http"
+	keelhttp "github.com/foomo/keel/net/http"
 )
 
 // responseWriter is a wrapper that includes that http statusCode and size for logging
@@ -52,7 +52,7 @@ func (w *responseWriter) Status() string {
 
 func (w *responseWriter) WriteHeader(statusCode int) {
 	if w.writeResponseTimeHeader {
-		w.Header().Set(http2.HeaderXResponseTime, strconv.FormatInt(time.Since(w.start).Microseconds(), 10))
+		w.Header().Set(keelhttp.HeaderXResponseTime, strconv.FormatInt(time.Since(w.start).Microseconds(), 10))
 	}
 
 	w.ResponseWriter.WriteHeader(statusCode)

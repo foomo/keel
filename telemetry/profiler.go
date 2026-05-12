@@ -10,7 +10,7 @@ import (
 	otelpyroscope "github.com/grafana/otel-profiling-go"
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {

@@ -4,16 +4,15 @@ import (
 	"context"
 	"runtime/pprof"
 
-	pkgsemconv "github.com/foomo/keel/semconv"
-	"github.com/pkg/errors"
-	"go.uber.org/zap/zapcore"
-
 	"github.com/foomo/keel/internal/runtimeutil"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"github.com/grafana/pyroscope-go"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap/zapcore"
 )
 
 type Context struct {
@@ -79,7 +78,7 @@ func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		if e != nil {
-			sp.RecordError(e, trace.WithAttributes(pkgsemconv.CodeStacktrace(5, 2)))
+			sp.RecordError(e, trace.WithAttributes(CodeStacktrace(5, 2)))
 			sp.SetStatus(codes.Error, errors.Cause(e).Error())
 		} else {
 			c.SetSpanStatusOK()
@@ -127,7 +126,7 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	if sp.IsRecording() {
 		sp.RecordError(err,
 			trace.WithAttributes(kv...),
-			trace.WithAttributes(pkgsemconv.CodeStacktrace(5, 1)),
+			trace.WithAttributes(CodeStacktrace(5, 1)),
 		)
 		sp.SetStatus(codes.Error, errors.Cause(err).Error())
 	}
@@ -138,7 +137,7 @@ func (c Context) RecordSpanError(err error, kv ...attribute.KeyValue) {
 	sp := c.Span()
 	if sp.IsRecording() {
 		sp.RecordError(err,
-			trace.WithAttributes(append(kv, pkgsemconv.CodeStacktrace(5, 1))...),
+			trace.WithAttributes(append(kv, CodeStacktrace(5, 1))...),
 		)
 	}
 }
@@ -173,7 +172,7 @@ func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv
 
 // StartProfile starts a profile for the handler.
 func (c Context) StartProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
-	attr := pkgsemconv.ProfileName(name)
+	attr := foomosemconv.ProfileName(name)
 	c.Span().SetAttributes(attr)
 	pyroscope.TagWrapper(c.Context, PyroscopeLabels(append(kv, attr)...), func(ctx context.Context) {
 		handler(Ctx(ctx))

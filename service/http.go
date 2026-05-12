@@ -7,15 +7,14 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
-	"time"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/pkg/errors"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
-	"github.com/foomo/keel/net/http/middleware"
 )
 
 // HTTP struct
@@ -30,7 +29,7 @@ type HTTP struct {
 // ~ Constructor
 // ------------------------------------------------------------------------------------------------
 
-func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...middleware.Middleware) *HTTP {
+func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...keelhttp.Middleware) *HTTP {
 	if l == nil {
 		l = log.Logger()
 	}
@@ -41,14 +40,9 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 	)
 
 	return &HTTP{
-		l:    l,
-		name: name,
-		server: &http.Server{
-			Addr:        addr,
-			Handler:     middleware.Compose(l, name, handler, middlewares...),
-			ErrorLog:    zap.NewStdLog(l),
-			IdleTimeout: 30 * time.Second,
-		},
+		l:      l,
+		name:   name,
+		server: keelhttp.NewServer(l, name, addr, handler, middlewares...),
 	}
 }
 

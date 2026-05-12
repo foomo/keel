@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
@@ -49,7 +50,7 @@ func ResponseTimeWithSetHeader(v bool) ResponseTimeOption {
 }
 
 // ResponseTime middleware
-func ResponseTime(opts ...ResponseTimeOption) Middleware {
+func ResponseTime(opts ...ResponseTimeOption) keelhttp.Middleware {
 	options := GetDefaultResponseTimeOptions()
 
 	for _, opt := range opts {
@@ -62,7 +63,7 @@ func ResponseTime(opts ...ResponseTimeOption) Middleware {
 }
 
 // ResponseTimeWithOptions middleware
-func ResponseTimeWithOptions(opts ResponseTimeOptions) Middleware {
+func ResponseTimeWithOptions(opts ResponseTimeOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

@@ -26,7 +26,7 @@ func GetDefaultPoweredByHeaderOptions() PoweredByHeaderOptions {
 }
 
 // PoweredByHeader middleware
-func PoweredByHeader(opts ...PoweredByHeaderOption) Middleware {
+func PoweredByHeader(opts ...PoweredByHeaderOption) keelhttp.Middleware {
 	options := GetDefaultPoweredByHeaderOptions()
 
 	for _, opt := range opts {
@@ -53,7 +53,7 @@ func PoweredByHeaderWithMessage(v string) PoweredByHeaderOption {
 }
 
 // PoweredByHeaderWithOptions middleware
-func PoweredByHeaderWithOptions(opts PoweredByHeaderOptions) Middleware {
+func PoweredByHeaderWithOptions(opts PoweredByHeaderOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())

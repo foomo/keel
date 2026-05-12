@@ -3,9 +3,6 @@ version: 2
 project_name: keel
 
 release:
-  github:
-    owner: foomo
-    name: keel
   prerelease: auto
 
 builds:
@@ -16,9 +13,7 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    files:
-      - LICENSE
-      - README.md
+    files: [ LICENSE, README.md ]
 
 changelog:
   use: github-native

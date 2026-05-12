@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -34,7 +35,7 @@ func RecoverWithDisablePrintStack(v bool) RecoverOption {
 }
 
 // Recover middleware
-func Recover(opts ...RecoverOption) Middleware {
+func Recover(opts ...RecoverOption) keelhttp.Middleware {
 	options := GetDefaultRecoverOptions()
 
 	for _, opt := range opts {
@@ -47,7 +48,7 @@ func Recover(opts ...RecoverOption) Middleware {
 }
 
 // RecoverWithOptions middleware
-func RecoverWithOptions(opts RecoverOptions) Middleware {
+func RecoverWithOptions(opts RecoverOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
