@@ -39,7 +39,7 @@ import (
 // matched rule path; allowed requests are not logged. The 401/403
 // split follows the extractor's authenticated flag: unauthenticated →
 // 401, authenticated-but-disallowed → 403.
-func RBAC(m *rbac.RBACMatcher, extract rbac.RBACRolesExtractor) keelhttp.Middleware {
+func RBAC(m *rbac.Matcher, extract rbac.RolesExtractor) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			span := trace.SpanFromContext(r.Context())
@@ -51,7 +51,7 @@ func RBAC(m *rbac.RBACMatcher, extract rbac.RBACRolesExtractor) keelhttp.Middlew
 
 			// Fast path: allowed requests skip logging entirely — they
 			// are the common case and would dwarf denies under traffic.
-			if d.Outcome == rbac.RBACOutcomeAllow || d.Outcome == rbac.RBACOutcomeNoRuleAllow {
+			if d.Outcome == rbac.OutcomeAllow || d.Outcome == rbac.OutcomeNoRuleAllow {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -71,7 +71,7 @@ func RBAC(m *rbac.RBACMatcher, extract rbac.RBACRolesExtractor) keelhttp.Middlew
 			}
 
 			status := http.StatusForbidden
-			if d.Outcome == rbac.RBACOutcomeUnauthenticated {
+			if d.Outcome == rbac.OutcomeUnauthenticated {
 				status = http.StatusUnauthorized
 			}
 
