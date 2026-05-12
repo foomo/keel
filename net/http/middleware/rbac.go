@@ -1,11 +1,12 @@
 package middleware
 
 import (
+	"net/http"
+
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/rbac"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 // RBAC middleware: a generic, path-based HTTP RBAC gate.

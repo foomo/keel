@@ -1,12 +1,13 @@
 package rbac_test
 
 import (
-	"github.com/foomo/keel/net/http/rbac"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/foomo/keel/net/http/rbac"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

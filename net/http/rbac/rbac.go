@@ -160,28 +160,6 @@ func NewRBACMatcher(cfg RBACConfig) (*RBACMatcher, error) {
 	return m, nil
 }
 
-// match returns the most-specific rule for path: exact match wins, else
-// the longest matching prefix wins. Returns nil when no rule applies.
-//
-// "/api/foo/*" (compiled prefix "/api/foo/") matches both "/api/foo"
-// and "/api/foo/anything" — the trailing slash is treated as optional
-// for the bare base path.
-func (m *RBACMatcher) match(path string) *CompiledRBACRule {
-	if r, ok := m.exact[path]; ok {
-		return &r
-	}
-
-	for i := range m.prefix {
-		p := m.prefix[i].prefix
-		if strings.HasPrefix(path, p) ||
-			(strings.HasSuffix(p, "/") && path == strings.TrimRight(p, "/")) {
-			return &m.prefix[i]
-		}
-	}
-
-	return nil
-}
-
 // RBACOutcome is the terminal classification of a request. It drives
 // both the HTTP response (allow → pass-through, deny → 403,
 // unauthenticated → 401) and the log label.
@@ -232,6 +210,28 @@ func (m *RBACMatcher) Evaluate(extract RBACRolesExtractor, r *http.Request) Rbac
 	}
 
 	return RbacDecision{Outcome: RBACOutcomeDeny, Rule: rule, Roles: roles, Authed: authed}
+}
+
+// match returns the most-specific rule for path: exact match wins, else
+// the longest matching prefix wins. Returns nil when no rule applies.
+//
+// "/api/foo/*" (compiled prefix "/api/foo/") matches both "/api/foo"
+// and "/api/foo/anything" — the trailing slash is treated as optional
+// for the bare base path.
+func (m *RBACMatcher) match(path string) *CompiledRBACRule {
+	if r, ok := m.exact[path]; ok {
+		return &r
+	}
+
+	for i := range m.prefix {
+		p := m.prefix[i].prefix
+		if strings.HasPrefix(path, p) ||
+			(strings.HasSuffix(p, "/") && path == strings.TrimRight(p, "/")) {
+			return &m.prefix[i]
+		}
+	}
+
+	return nil
 }
 
 // rbacAllowed applies a rule's AllowRoles/DenyRoles lists to the roles.
