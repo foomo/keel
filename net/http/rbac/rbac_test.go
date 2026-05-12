@@ -1,6 +1,7 @@
-package middleware_test
+package rbac_test
 
 import (
+	"github.com/foomo/keel/net/http/rbac"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,7 +19,7 @@ import (
 // staticRBACExtractor returns a fixed (roles, authed) for every
 // request — keeps each subtest self-contained without having to wire
 // per-test extraction.
-func staticRBACExtractor(roles []string, authed bool) middleware.RBACRolesExtractor {
+func staticRBACExtractor(roles []string, authed bool) rbac.RBACRolesExtractor {
 	return func(_ *http.Request) ([]string, bool) { return roles, authed }
 }
 
@@ -29,10 +30,10 @@ func newRBACHandler() http.Handler {
 	})
 }
 
-func mountRBAC(t *testing.T, cfg middleware.RBACConfig, extract middleware.RBACRolesExtractor) (http.Handler, *observer.ObservedLogs) {
+func mountRBAC(t *testing.T, cfg rbac.RBACConfig, extract rbac.RBACRolesExtractor) (http.Handler, *observer.ObservedLogs) {
 	t.Helper()
 
-	matcher, err := middleware.NewRBACMatcher(cfg)
+	matcher, err := rbac.NewRBACMatcher(cfg)
 	require.NoError(t, err)
 
 	core, recorded := observer.New(zap.WarnLevel)
@@ -45,9 +46,9 @@ func mountRBAC(t *testing.T, cfg middleware.RBACConfig, extract middleware.RBACR
 func TestRBAC_outcomes(t *testing.T) {
 	t.Parallel()
 
-	cfg := middleware.RBACConfig{
-		DefaultPolicy: middleware.RBACPolicyAllow,
-		Rules: []middleware.RBACRule{
+	cfg := rbac.RBACConfig{
+		DefaultPolicy: rbac.RBACPolicyAllow,
+		Rules: []rbac.RBACRule{
 			{Path: "/admin/*", AllowRoles: []string{"admin"}},
 			{Path: "/banned/*", DenyRoles: []string{"banned"}},
 			{Path: "/editor/*", AllowRoles: []string{"editor", "admin"}},
@@ -142,9 +143,9 @@ func TestRBAC_outcomes(t *testing.T) {
 func TestRBAC_defaultDeny(t *testing.T) {
 	t.Parallel()
 
-	cfg := middleware.RBACConfig{
-		DefaultPolicy: middleware.RBACPolicyDeny,
-		Rules: []middleware.RBACRule{
+	cfg := rbac.RBACConfig{
+		DefaultPolicy: rbac.RBACPolicyDeny,
+		Rules: []rbac.RBACRule{
 			{Path: "/open/*"},
 		},
 	}
@@ -185,9 +186,9 @@ func TestRBAC_defaultDeny(t *testing.T) {
 func TestRBAC_pathMatching(t *testing.T) {
 	t.Parallel()
 
-	cfg := middleware.RBACConfig{
-		DefaultPolicy: middleware.RBACPolicyDeny,
-		Rules: []middleware.RBACRule{
+	cfg := rbac.RBACConfig{
+		DefaultPolicy: rbac.RBACPolicyDeny,
+		Rules: []rbac.RBACRule{
 			{Path: "/api/foo/*", AllowRoles: []string{"foo"}},
 			{Path: "/api/foo/AdminOnly", AllowRoles: []string{"admin"}},
 			{Path: "/api/foo/bar/*", AllowRoles: []string{"bar"}},
@@ -240,32 +241,32 @@ func TestNewRBACMatcher_invalidConfig(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		cfg         middleware.RBACConfig
+		cfg         rbac.RBACConfig
 		errFragment string
 	}{
 		{
 			name:        "missing default policy",
-			cfg:         middleware.RBACConfig{},
+			cfg:         rbac.RBACConfig{},
 			errFragment: "DefaultPolicy",
 		},
 		{
 			name:        "unknown default policy",
-			cfg:         middleware.RBACConfig{DefaultPolicy: middleware.RBACPolicy("bogus")},
+			cfg:         rbac.RBACConfig{DefaultPolicy: rbac.RBACPolicy("bogus")},
 			errFragment: "bogus",
 		},
 		{
 			name: "empty rule path",
-			cfg: middleware.RBACConfig{
-				DefaultPolicy: middleware.RBACPolicyAllow,
-				Rules:         []middleware.RBACRule{{Path: ""}},
+			cfg: rbac.RBACConfig{
+				DefaultPolicy: rbac.RBACPolicyAllow,
+				Rules:         []rbac.RBACRule{{Path: ""}},
 			},
 			errFragment: "empty path",
 		},
 		{
 			name: "duplicate exact path",
-			cfg: middleware.RBACConfig{
-				DefaultPolicy: middleware.RBACPolicyAllow,
-				Rules: []middleware.RBACRule{
+			cfg: rbac.RBACConfig{
+				DefaultPolicy: rbac.RBACPolicyAllow,
+				Rules: []rbac.RBACRule{
 					{Path: "/api/foo"},
 					{Path: "/api/foo"},
 				},
@@ -274,9 +275,9 @@ func TestNewRBACMatcher_invalidConfig(t *testing.T) {
 		},
 		{
 			name: "duplicate prefix path",
-			cfg: middleware.RBACConfig{
-				DefaultPolicy: middleware.RBACPolicyAllow,
-				Rules: []middleware.RBACRule{
+			cfg: rbac.RBACConfig{
+				DefaultPolicy: rbac.RBACPolicyAllow,
+				Rules: []rbac.RBACRule{
 					{Path: "/api/foo/*"},
 					{Path: "/api/foo/*"},
 				},
@@ -288,7 +289,7 @@ func TestNewRBACMatcher_invalidConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := middleware.NewRBACMatcher(tc.cfg)
+			_, err := rbac.NewRBACMatcher(tc.cfg)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errFragment)
 		})
@@ -301,9 +302,9 @@ func TestNewRBACMatcher_acceptsExactAndPrefixForSameBase(t *testing.T) {
 	// "/api/foo" (exact) and "/api/foo/*" (prefix "/api/foo/") are not
 	// duplicates — the prefix has a trailing slash that the exact path
 	// does not.
-	_, err := middleware.NewRBACMatcher(middleware.RBACConfig{
-		DefaultPolicy: middleware.RBACPolicyAllow,
-		Rules: []middleware.RBACRule{
+	_, err := rbac.NewRBACMatcher(rbac.RBACConfig{
+		DefaultPolicy: rbac.RBACPolicyAllow,
+		Rules: []rbac.RBACRule{
 			{Path: "/api/foo"},
 			{Path: "/api/foo/*"},
 		},
@@ -335,9 +336,9 @@ rules:
     allowRoles: [admin]
     denyRoles:  [visitor]
 `)
-		cfg, err := middleware.LoadRBACConfigFromFile(path)
+		cfg, err := rbac.LoadRBACConfigFromFile(path)
 		require.NoError(t, err)
-		assert.Equal(t, middleware.RBACPolicyDeny, cfg.DefaultPolicy)
+		assert.Equal(t, rbac.RBACPolicyDeny, cfg.DefaultPolicy)
 		require.Len(t, cfg.Rules, 2)
 		assert.Equal(t, "/api/foo/*", cfg.Rules[0].Path)
 		assert.ElementsMatch(t, []string{"admin", "contentEditor"}, cfg.Rules[0].AllowRoles)
@@ -348,7 +349,7 @@ rules:
 
 	t.Run("missing file", func(t *testing.T) {
 		t.Parallel()
-		_, err := middleware.LoadRBACConfigFromFile(filepath.Join(t.TempDir(), "does-not-exist.yaml"))
+		_, err := rbac.LoadRBACConfigFromFile(filepath.Join(t.TempDir(), "does-not-exist.yaml"))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "read")
 	})
@@ -358,7 +359,7 @@ rules:
 
 		path := writeRBACConfig(t, `defaultPolicy: allow
 rules: [this is not valid yaml`)
-		_, err := middleware.LoadRBACConfigFromFile(path)
+		_, err := rbac.LoadRBACConfigFromFile(path)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "decode")
 	})
@@ -367,9 +368,9 @@ rules: [this is not valid yaml`)
 		t.Parallel()
 
 		path := writeRBACConfig(t, "defaultPolicy: allow\nrules: []\n")
-		cfg, err := middleware.LoadRBACConfigFromFile(path)
+		cfg, err := rbac.LoadRBACConfigFromFile(path)
 		require.NoError(t, err)
-		assert.Equal(t, middleware.RBACPolicyAllow, cfg.DefaultPolicy)
+		assert.Equal(t, rbac.RBACPolicyAllow, cfg.DefaultPolicy)
 		assert.Empty(t, cfg.Rules)
 	})
 
@@ -383,10 +384,10 @@ defaultPolicy: bogus
 rules:
   - path: ""
 `)
-		cfg, err := middleware.LoadRBACConfigFromFile(path)
+		cfg, err := rbac.LoadRBACConfigFromFile(path)
 		require.NoError(t, err, "loader should only decode")
 
-		_, err = middleware.NewRBACMatcher(cfg)
+		_, err = rbac.NewRBACMatcher(cfg)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "bogus")
 	})
