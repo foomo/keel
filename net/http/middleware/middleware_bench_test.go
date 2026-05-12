@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/foomo/keel/net/http/middleware"
+	keelhttp "github.com/foomo/keel/net/http"
 	"go.uber.org/zap"
 )
 
@@ -20,14 +20,14 @@ func BenchmarkCompose(b *testing.B) {
 
 	lengths := []int{1, 5, 10, 20}
 	for _, n := range lengths {
-		middlewares := make([]middleware.Middleware, n)
+		middlewares := make([]keelhttp.Middleware, n)
 		for i := range n {
 			middlewares[i] = noop
 		}
 
 		b.Run(fmt.Sprintf("chain-%d", n), func(b *testing.B) {
 			for b.Loop() {
-				middleware.Compose(l, "bench", handler, middlewares...)
+				keelhttp.Compose(l, "bench", handler, middlewares...)
 			}
 		})
 	}
@@ -42,16 +42,16 @@ func BenchmarkComposeServe(b *testing.B) {
 
 	l := zap.NewNop()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r := httptest.NewRequestWithContext(b.Context(), http.MethodGet, "/", nil)
 
 	lengths := []int{1, 5, 10, 20}
 	for _, n := range lengths {
-		middlewares := make([]middleware.Middleware, n)
+		middlewares := make([]keelhttp.Middleware, n)
 		for i := range n {
 			middlewares[i] = passthrough
 		}
 
-		composed := middleware.Compose(l, "bench", handler, middlewares...)
+		composed := keelhttp.Compose(l, "bench", handler, middlewares...)
 		w := httptest.NewRecorder()
 
 		b.Run(fmt.Sprintf("serve-%d", n), func(b *testing.B) {

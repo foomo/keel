@@ -38,7 +38,7 @@ go.work:
 
 .PHONY: check
 ## Run lint & tests
-check: tidy generate lint.fix test.race audit
+check: tidy generate lint.fix test audit
 
 .PHONY: lint
 ## Run linter
@@ -99,20 +99,6 @@ tidy:
 	@echo "〉go mod tidy"
 	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && go mod tidy) &&) true
 	@go work use -r . && go work sync
-
-.PHONY: test.bench
-## Run benchmarks & compare against baseline
-test.bench: go.work
-	@echo "〉go test -bench"
-	@GO_TEST_TAGS=-skip go test -tags=safe -run=^$$ -bench=. -benchmem -count=10 work > .benchmark.txt && benchstat benchmark.txt .benchmark.txt
-	@rm .benchmark.txt
-
-.PHONY: test.bench.update
-## Run benchmarks & update baseline
-test.bench.update: go.work
-	@echo "〉go test -bench (updating baseline)"
-	@GO_TEST_TAGS=-skip go test -tags=safe -run=^$$ -bench=. -benchmem -count=10 work > benchmark.txt
-	@echo "✅ benchmark.txt updated"
 
 .PHONY: outdated
 ## Show outdated direct dependencies

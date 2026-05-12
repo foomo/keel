@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/foomo/keel/log"
-	pkgsemconv "github.com/foomo/keel/semconv"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -37,12 +37,12 @@ func Log(ctx context.Context, lvl zapcore.Level, msg string, skip int, kv ...att
 
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
 		attrs = append(attrs,
-			pkgsemconv.TraceID(spanCtx.TraceID().String()),
-			pkgsemconv.SpanID(spanCtx.SpanID().String()),
+			foomosemconv.TraceID(spanCtx.TraceID().String()),
+			foomosemconv.SpanID(spanCtx.SpanID().String()),
 		)
 	}
 
-	attrs = append(attrs, pkgsemconv.CodeCaller(skip+1)...)
+	attrs = append(attrs, CodeCaller(skip+1)...)
 
 	zap.L().WithOptions(zap.WithCaller(false)).Log(lvl, msg, log.Attributes(attrs...)...)
 }

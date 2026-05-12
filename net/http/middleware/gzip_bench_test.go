@@ -35,7 +35,7 @@ func BenchmarkGZipDecompression(b *testing.B) {
 			}))
 
 			for b.Loop() {
-				r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(compressed))
+				r := httptest.NewRequestWithContext(b.Context(), http.MethodPost, "/", bytes.NewReader(compressed))
 				r.Header.Set(stdhttp.HeaderContentEncoding.String(), stdhttp.EncodingGzip.String())
 
 				w := httptest.NewRecorder()

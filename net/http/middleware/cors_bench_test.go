@@ -61,7 +61,7 @@ func BenchmarkCORSOriginMatching(b *testing.B) {
 
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
-			r := httptest.NewRequest(tc.method, "https://localhost/", nil)
+			r := httptest.NewRequestWithContext(b.Context(), tc.method, "https://localhost/", nil)
 			r.Header.Set(keelhttp.HeaderOrigin, tc.origin)
 
 			w := httptest.NewRecorder()
