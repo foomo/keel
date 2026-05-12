@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/foomo/keel/net/http/middleware/rbac.schema.json",
+  "$id": "https://github.com/foomo/keel/net/http/rbac/rbac.schema.json",
   "title": "RBAC middleware configuration",
-  "description": "Path-based access-control rules consumed by middleware.RBAC. Authoritative validation lives in middleware.NewRBACMatcher; this schema covers structural validation for editors.",
+  "description": "Path-based access-control rules consumed by middleware.RBAC. Authoritative validation lives in rbac.NewRBACMatcher; this schema covers structural validation for editors.",
   "type": "object",
   "additionalProperties": false,
   "required": ["defaultPolicy"],
