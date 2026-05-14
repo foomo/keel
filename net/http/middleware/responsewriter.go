@@ -68,11 +68,14 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 	if w.wroteHeader {
 		return
 	}
+
 	w.wroteHeader = true
 	w.statusCode = statusCode
+
 	if w.writeResponseTimeHeader {
 		w.Header().Set(keelhttp.HeaderXResponseTime, strconv.FormatInt(time.Since(w.start).Microseconds(), 10))
 	}
+
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
@@ -80,6 +83,7 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 	if !w.wroteHeader {
 		w.WriteHeader(http.StatusOK)
 	}
+
 	size, err := w.ResponseWriter.Write(b)
 	w.size += size
 
