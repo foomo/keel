@@ -6,15 +6,15 @@ import (
 	"github.com/foomo/keel/markdown"
 )
 
-var (
-	dbs     = map[string][]string{}
-	indices = map[string]map[string][]string{}
-)
-
 func Readme() string {
 	var rows [][]string
 
 	md := &markdown.Markdown{}
+
+	// Read-lock the registries while we iterate them; NewCollection may be
+	// writing concurrently from other goroutines.
+	registryMu.RLock()
+	defer registryMu.RUnlock()
 
 	for db, collections := range dbs {
 		for _, collection := range collections {
