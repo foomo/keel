@@ -44,7 +44,7 @@ func NewServer(l *zap.Logger, protocol Protocol, addr string, opts ...ServerOpti
 	return s
 }
 
-// The handler responds to POST requests at any path (routing is the caller's job).
+// Handler responds to POST requests at any path (routing is the caller's job).
 func (s *Server) Handler() http.Handler {
 	return http.HandlerFunc(s.handle)
 }
