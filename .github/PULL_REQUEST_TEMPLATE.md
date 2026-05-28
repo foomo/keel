@@ -13,6 +13,7 @@
 - [ ] ♻️ Refactoring
 - [ ] ⚡ Performance
 - [ ] ✅ Tests
+- [ ] 🔐 Security
 - [ ] 🔧 Build/CI
 
 ### Related Issue
