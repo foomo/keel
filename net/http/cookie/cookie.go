@@ -140,7 +140,7 @@ func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts .
 		opt(&options)
 	}
 
-	cookie := &http.Cookie{
+	cookie := &http.Cookie{ //nolint:gosec // G124: provided by options
 		Name:     c.Name,
 		Value:    value,
 		Path:     options.Path,

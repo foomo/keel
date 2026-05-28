@@ -19,7 +19,7 @@ func ExampleNewZapLoggerProvider() {
 	record.SetSeverity(log.SeverityInfo)
 	record.SetBody(log.StringValue("something really cool"))
 
-	tl := telemetry.Logger()
+	tl := telemetry.LoggerProvider().Logger(telemetry.Name)
 	tl.Emit(ctx, record)
 
 	// Output:

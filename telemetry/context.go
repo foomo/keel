@@ -4,18 +4,15 @@ import (
 	"context"
 	"runtime/pprof"
 
-	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
 	"github.com/foomo/keel/internal/runtimeutil"
-	"github.com/foomo/keel/log"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"github.com/grafana/pyroscope-go"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap/zapcore"
 )
 
 type Context struct {
@@ -212,14 +209,5 @@ func (c Context) startSpan(prefix string, skip int, opts ...trace.SpanStartOptio
 }
 
 func (c Context) log(ctx context.Context, lvl zapcore.Level, msg string, skip int, kv ...attribute.KeyValue) {
-	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
-		kv = append(kv,
-			foomosemconv.TraceID(spanCtx.TraceID().String()),
-			foomosemconv.SpanID(spanCtx.SpanID().String()),
-		)
-	}
-
-	kv = append(kv, CodeCaller(skip+1)...)
-
-	zap.L().WithOptions(zap.WithCaller(false)).Log(lvl, msg, log.Attributes(kv...)...)
+	Log(ctx, lvl, msg, skip+1, kv...)
 }

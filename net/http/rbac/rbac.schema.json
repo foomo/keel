@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/foomo/keel/net/http/rbac/rbac.schema.json",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "Config": {
+      "properties": {
+        "defaultPolicy": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "deny"
+          ],
+          "description": "Action applied when no rule matches the request path"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/Rule"
+          },
+          "type": "array",
+          "description": "Path-keyed allow/deny rules. Path matching prefers exact paths, then the longest matching prefix"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "defaultPolicy"
+      ],
+      "description": "Config is the file-shape configuration for the middleware."
+    },
+    "Rule": {
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/",
+          "description": "Exact request path (e.g. \"/api/foo/GetBar\") or a prefix ending in\n'*' (e.g. \"/api/foo/*\"). The '*' suffix matches the empty string and any suffix."
+        },
+        "allowRoles": {
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": "array",
+          "description": "Roles granted access. Empty or omitted means \"no positive constraint\" — useful for deny-only rules."
+        },
+        "denyRoles": {
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": "array",
+          "description": "Roles denied access. Evaluated before allowRoles; a match here rejects regardless of allowRoles."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "description": "Rule declares allow/deny role lists for a single path pattern."
+    }
+  },
+  "title": "RBAC middleware configuration",
+  "description": "Path-based access-control rules consumed by middleware.RBAC. Authoritative validation lives in rbac.NewMatcher; this schema covers structural validation for editors."
+}

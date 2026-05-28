@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"sync"
 	"time"
 
 	keelpersistence "github.com/foomo/keel/persistence"
@@ -13,6 +14,17 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 	"go.mongodb.org/mongo-driver/v2/mongo/writeconcern"
+)
+
+// dbs and indices form a package-level registry of every collection and
+// named index ever created via NewCollection. It exists purely so Readme()
+// can render the docs table — nothing in the runtime path reads it.
+// registryMu guards both maps: NewCollection writes them and Readme reads
+// them, potentially from different goroutines.
+var (
+	dbs        = map[string][]string{}
+	indices    = map[string]map[string][]string{}
+	registryMu sync.RWMutex
 )
 
 type (
@@ -117,6 +129,12 @@ func NewCollection(db *mongo.Database, name string, opts ...CollectionOption) (*
 	}
 
 	col := db.Collection(name, o.CollectionOptionsBuilder)
+
+	// Take a write lock for the rest of the function: both dbs and indices
+	// are package-level maps and we may mutate either (or both) below.
+	registryMu.Lock()
+	defer registryMu.Unlock()
+
 	if !slices.Contains(dbs[db.Name()], name) {
 		dbs[db.Name()] = append(dbs[db.Name()], name)
 	}
