@@ -573,7 +573,7 @@ func (s *Server) readmeServices() string {
 		for _, value := range s.services {
 			t := reflect.TypeOf(value)
 			rows = append(rows, []string{
-				markdown.Code(value.Name()),
+				markdown.Code(t.Name()),
 				markdown.Code(t.String()),
 				markdown.String(value),
 			})
