@@ -1,6 +1,7 @@
-[![Build Status](https://github.com/foomo/keel/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/foomo/keel/actions/workflows/test.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/foomo/keel)](https://goreportcard.com/report/github.com/foomo/keel)
-[![GoDoc](https://godoc.org/github.com/foomo/keel?status.svg)](https://godoc.org/github.com/foomo/keel)
+[![Go Report Card](https://goreportcard.com/badge/github.com/foomo/keel?style=flat-square)](https://goreportcard.com/report/github.com/foomo/keel)
+[![GoDoc](https://img.shields.io/badge/GoDoc-✓-informational.svg?style=flat-square&logo=go)](https://godoc.org/github.com/foomo/keel)
+[![Coverage](https://img.shields.io/codecov/c/github/foomo/keel?style=flat-square&logo=github)](https://app.codecov.io/gh/foomo/keel)
+[![GitHub Stars](https://img.shields.io/github/stars/foomo/keel.svg?style=flat-square&logo=github)](https://github.com/foomo/keel)
 
 <p align="center">
   <img alt="keel" src="docs/public/keel.png" width="400" height="400"/>
