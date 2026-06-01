@@ -1,4 +1,4 @@
-package nats
+package service
 
 import (
 	"context"
@@ -87,7 +87,7 @@ func NewEmbeddedServer(opts ...options.Option[*EmbeddedServer]) (*EmbeddedServer
 	return &EmbeddedServer{server: ns, clientURL: u.String()}, nil
 }
 
-func MustNewService(opts ...options.Option[*EmbeddedServer]) *EmbeddedServer {
+func MustNewEmbeddedServer(opts ...options.Option[*EmbeddedServer]) *EmbeddedServer {
 	s, err := NewEmbeddedServer(opts...)
 	if err != nil {
 		panic(err)

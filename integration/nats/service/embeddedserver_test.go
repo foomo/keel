@@ -1,4 +1,4 @@
-package nats_test
+package service_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	testingx "github.com/foomo/go/testing"
 	tagx "github.com/foomo/go/testing/tag"
 	"github.com/foomo/gofuncy"
-	"github.com/foomo/keel/integration/nats"
+	"github.com/foomo/keel/integration/nats/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,25 +20,21 @@ func TestNewService(t *testing.T) {
 
 	port := testingx.FreePort(t)
 
-	s, err := nats.NewEmbeddedServer(
-		nats.EmbeddedServerWithPort(port),
-		nats.EmbeddedServerWithHost("localhost"),
+	s, err := service.NewEmbeddedServer(
+		service.EmbeddedServerWithPort(port),
+		service.EmbeddedServerWithHost("localhost"),
 	)
 	require.NoError(t, err)
 
 	assert.Equal(t, fmt.Sprintf("nats://localhost:%d", port), s.Server().ClientURL())
 
 	gofuncy.Start(t.Context(), func(ctx context.Context) error {
-		return s.Start(t.Context())
+		return s.Start(ctx)
 	})
 
-	testingx.WaitFor(t, time.Second, func() bool {
-		return s.Server().Running()
-	})
+	require.Eventually(t, s.Server().Running, time.Second, 100*time.Millisecond)
 
 	require.NoError(t, s.Close(t.Context()))
 
-	testingx.WaitFor(t, time.Second, func() bool {
-		return !s.Server().Running()
-	})
+	require.Eventually(t, func() bool { return !s.Server().Running() }, time.Second, 100*time.Millisecond)
 }
