@@ -4,36 +4,30 @@ import (
 	"context"
 
 	"go.temporal.io/sdk/worker"
-	"go.uber.org/zap"
-
-	"github.com/foomo/keel/log"
 )
 
-type service struct {
-	l    *zap.Logger
+type test struct {
 	w    worker.Worker
 	name string
 }
 
 // ------------------------------------------------------------------------------------------------
-// ~ Constructor
+// ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
-func NewService(l *zap.Logger, name string, w worker.Worker) *service {
-	if l == nil {
-		l = log.Logger()
-	}
-	// enrich the log
-	l = log.WithHTTPServerName(l, name)
-
-	return &service{l: l, name: name, w: w}
+func NewTestService(name string, w worker.Worker) *test {
+	return &test{name: name, w: w}
 }
 
 // ------------------------------------------------------------------------------------------------
 // ~ Getter
 // ------------------------------------------------------------------------------------------------
 
-func (s *service) Name() string {
+func (s *test) URL() string {
+	return ""
+}
+
+func (s *test) Name() string {
 	return s.name
 }
 
@@ -41,14 +35,12 @@ func (s *service) Name() string {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
-func (s *service) Start(ctx context.Context) error {
-	s.l.Info("starting temporal worker")
-	return s.w.Start()
+func (s *test) Start(ctx context.Context) error {
+	_ = s.w.Start()
+	return nil
 }
 
-func (s *service) Close(ctx context.Context) error {
-	s.l.Info("stopping temporal worker")
+func (s *test) Close(ctx context.Context) error {
 	s.w.Stop()
-
 	return nil
 }

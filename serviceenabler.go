@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/foomo/keel/interfaces"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -109,7 +110,25 @@ func (w *ServiceEnabler) disable(ctx context.Context) error {
 	w.setEnabled(false)
 	w.l.Info("stopping dynamic service")
 
-	return w.service.Close(ctx)
+	if i, ok := interfaces.IsCloser(w.service); ok {
+		i.Close()
+		return nil
+	}
+
+	if i, ok := interfaces.IsErrorCloser(w.service); ok {
+		return i.Close()
+	}
+
+	if i, ok := interfaces.IsCloserWithContext(w.service); ok {
+		i.Close(ctx)
+		return nil
+	}
+
+	if i, ok := interfaces.IsErrorCloserWithContext(w.service); ok {
+		return i.Close(ctx)
+	}
+
+	return nil
 }
 
 func (w *ServiceEnabler) watch(ctx context.Context) {

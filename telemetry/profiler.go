@@ -68,7 +68,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 
 		switch attr.Key {
 		case "service.name":
-			name = attr.Value.Emit()
+			name = attr.Value.String()
 			continue
 		case semconv.VCSRefHeadRevisionKey:
 			key = "service_git_ref"
@@ -80,7 +80,7 @@ func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 			key = strings.ReplaceAll(string(attr.Key), ".", "_")
 		}
 
-		tags[key] = attr.Value.Emit()
+		tags[key] = attr.Value.String()
 	}
 
 	p, err := pyroscope.Start(pyroscope.Config{

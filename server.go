@@ -425,11 +425,11 @@ func (s *Server) addProbes(typ healthz.Type, v ...any) {
 
 // startService starts the given services
 func (s *Server) startService(services ...Service) {
-	c := make(chan struct{}, 1)
+	done := make(chan struct{}, 1)
 
 	for _, value := range services {
 		s.g.Go(func() error {
-			c <- struct{}{}
+			done <- struct{}{}
 
 			if err := value.Start(s.ctx); errors.Is(err, http.ErrServerClosed) {
 				log.WithError(s.l, err).Debug("server has closed")
@@ -440,10 +440,10 @@ func (s *Server) startService(services ...Service) {
 
 			return nil
 		})
-		<-c
+		<-done
 	}
 
-	close(c)
+	close(done)
 }
 
 func (s *Server) readmeCloser() string {
@@ -573,7 +573,7 @@ func (s *Server) readmeServices() string {
 		for _, value := range s.services {
 			t := reflect.TypeOf(value)
 			rows = append(rows, []string{
-				markdown.Code(value.Name()),
+				markdown.Code(t.Name()),
 				markdown.Code(t.String()),
 				markdown.String(value),
 			})
