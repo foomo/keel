@@ -102,8 +102,8 @@ github.com/fbiville/markdown-table-formatter v0.3.0 h1:PIm1UNgJrFs8q1htGTw+wnnNY
 github.com/fbiville/markdown-table-formatter v0.3.0/go.mod h1:q89TDtSEVDdTaufgSbfHpNVdPU/bmfvqNkrC5HagmLY=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
-github.com/foomo/go v0.11.0 h1:YSKHryh9+F/b9NKxmwySZGYdzINsNZNFHwaGZU3pmng=
-github.com/foomo/go v0.11.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
+github.com/foomo/go v0.12.0 h1:Y5mKeLVll1yzM8UGsPdNc/z7Rrr4J7QVwNVO65ZbnE0=
+github.com/foomo/go v0.12.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
 github.com/foomo/goflux v0.4.4 h1:T7QhIPdZze3bNEeNjdEAzBV08/ikEgmTmK3maWucAo4=
 github.com/foomo/goflux v0.4.4/go.mod h1:c2qy02JR9Y5qlVl49nDSEipCQENbGhDZzjT8p72G7Xs=
 github.com/foomo/gofuncy v0.2.0 h1:fanMIpHocWfoP+u8sevF+Qb/gEh38QeiS6FjeXB+Sx0=

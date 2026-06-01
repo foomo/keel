@@ -12,29 +12,42 @@ import (
 	"github.com/nats-io/nats-server/v2/server"
 )
 
-const DefaultServiceURL = "nats://0.0.0.0:4222"
+const DefaultEmbeddedServerURL = "nats://0.0.0.0:4222"
 
-type Service struct {
-	server     *server.Server
-	port       int
-	host       string
-	maxPending int64
-	clientURL  string
+type EmbeddedServer struct {
+	server      *server.Server
+	port        int
+	host        string
+	maxPending  int64
+	clientURL   string
+	natsOptions []options.Option[*server.Options]
 }
 
 // ------------------------------------------------------------------------------------------------
 // ~ Options
 // ------------------------------------------------------------------------------------------------
 
-func ServiceWithPort(v int) options.Option[*Service] {
-	return func(o *Service) {
+func EmbeddedServerWithPort(v int) options.Option[*EmbeddedServer] {
+	return func(o *EmbeddedServer) {
 		o.port = v
 	}
 }
 
-func ServiceWithMaxPending(v int64) options.Option[*Service] {
-	return func(o *Service) {
+func EmbeddedServerWithMaxPending(v int64) options.Option[*EmbeddedServer] {
+	return func(o *EmbeddedServer) {
 		o.maxPending = v
+	}
+}
+
+func EmbeddedServerWithHost(v string) options.Option[*EmbeddedServer] {
+	return func(o *EmbeddedServer) {
+		o.host = v
+	}
+}
+
+func EmbeddedServerWithNatsOptions(v ...options.Option[*server.Options]) options.Option[*EmbeddedServer] {
+	return func(o *EmbeddedServer) {
+		o.natsOptions = append(o.natsOptions, v...)
 	}
 }
 
@@ -42,8 +55,8 @@ func ServiceWithMaxPending(v int64) options.Option[*Service] {
 // ~ Constructor
 // ------------------------------------------------------------------------------------------------
 
-func NewService(opts ...options.Option[*Service]) (*Service, error) {
-	inst := &Service{
+func NewEmbeddedServer(opts ...options.Option[*EmbeddedServer]) (*EmbeddedServer, error) {
+	inst := &EmbeddedServer{
 		port:       4222,
 		host:       "0.0.0.0",
 		maxPending: 64 << 20, // 64 MiB
@@ -59,6 +72,8 @@ func NewService(opts ...options.Option[*Service]) (*Service, error) {
 		MaxPending: inst.maxPending,
 	}
 
+	options.Apply(natsOpts, inst.natsOptions...)
+
 	ns, err := server.NewServer(natsOpts)
 	if err != nil {
 		return nil, fmt.Errorf("embednats: new server: %w", err)
@@ -69,11 +84,11 @@ func NewService(opts ...options.Option[*Service]) (*Service, error) {
 	u.Scheme = "nats"
 	u.Host = net.JoinHostPort(inst.host, fmt.Sprintf("%d", inst.port))
 
-	return &Service{server: ns, clientURL: u.String()}, nil
+	return &EmbeddedServer{server: ns, clientURL: u.String()}, nil
 }
 
-func MustNewService(opts ...options.Option[*Service]) *Service {
-	s, err := NewService(opts...)
+func MustNewService(opts ...options.Option[*EmbeddedServer]) *EmbeddedServer {
+	s, err := NewEmbeddedServer(opts...)
 	if err != nil {
 		panic(err)
 	}
@@ -86,11 +101,11 @@ func MustNewService(opts ...options.Option[*Service]) *Service {
 // ------------------------------------------------------------------------------------------------
 
 // ClientURL returns the URL clients should dial.
-func (s *Service) ClientURL() string {
+func (s *EmbeddedServer) ClientURL() string {
 	return s.clientURL
 }
 
-func (s *Service) Server() *server.Server {
+func (s *EmbeddedServer) Server() *server.Server {
 	return s.server
 }
 
@@ -98,7 +113,7 @@ func (s *Service) Server() *server.Server {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
-func (s *Service) Start(ctx context.Context) error {
+func (s *EmbeddedServer) Start(ctx context.Context) error {
 	s.server.Start()
 
 	if !s.server.ReadyForConnections(5 * time.Second) {
@@ -106,10 +121,12 @@ func (s *Service) Start(ctx context.Context) error {
 		return errors.New("nats server not ready")
 	}
 
+	s.server.WaitForShutdown()
+
 	return nil
 }
 
-func (s *Service) Close(ctx context.Context) error {
+func (s *EmbeddedServer) Close(ctx context.Context) error {
 	if s.server == nil {
 		return nil
 	}
