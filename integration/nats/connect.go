@@ -74,7 +74,7 @@ func Connect(s *keel.Server, rawURL string, opts ...nats.Option) (*nats.Conn, er
 		nats.ErrorHandler(func(conn *nats.Conn, sub *nats.Subscription, err error) {
 			kind := classifyAsyncError(err)
 
-			extraAttrs := []attribute.KeyValue{}
+			var extraAttrs []attribute.KeyValue
 			if sub != nil && sub.Subject != "" {
 				extraAttrs = append(extraAttrs, asyncErrors.AttrSubject(sub.Subject))
 			}

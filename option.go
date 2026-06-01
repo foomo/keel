@@ -3,6 +3,7 @@ package keel
 import (
 	"context"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/foomo/keel/service"
@@ -224,5 +225,16 @@ func WithHTTPReadmeService(enabled bool) Option {
 			inst.initServices = append(inst.initServices, svs)
 			inst.AddAlwaysHealthzers(svs)
 		}
+	}
+}
+
+// WithInitService option with default value
+func WithInitService(service Service) Option {
+	return func(inst *Server) {
+		if service == nil || slices.Contains(inst.initServices, service) {
+			return
+		}
+
+		inst.initServices = append(inst.initServices, service)
 	}
 }
