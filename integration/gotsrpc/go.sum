@@ -20,8 +20,8 @@ github.com/fbiville/markdown-table-formatter v0.3.0 h1:PIm1UNgJrFs8q1htGTw+wnnNY
 github.com/fbiville/markdown-table-formatter v0.3.0/go.mod h1:q89TDtSEVDdTaufgSbfHpNVdPU/bmfvqNkrC5HagmLY=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
-github.com/foomo/go v0.12.0 h1:Y5mKeLVll1yzM8UGsPdNc/z7Rrr4J7QVwNVO65ZbnE0=
-github.com/foomo/go v0.12.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
+github.com/foomo/go v0.13.0 h1:yD0NYRu9lvF5z4z3y1R010Hixsz0TmPZVxX7qg97f7w=
+github.com/foomo/go v0.13.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
 github.com/foomo/gostandards v0.3.0 h1:Ev88Tdu0+52UH/d0l2KcAWx542A13o42d++LSTG0DC4=
 github.com/foomo/gostandards v0.3.0/go.mod h1:8hJ56tpyFAVwavs5FuUF3po7Bq7hOTkQ1+DzFi4GCWg=
 github.com/foomo/gotsrpc/v2 v2.16.0 h1:bGP1ZPjgkXuTpUmk5tbhJ8gSPusZZ8PmxQ3c8gD+Xx0=
