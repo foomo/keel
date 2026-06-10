@@ -56,6 +56,18 @@ func DefaultClientOptions() ClientOptions {
 	}
 }
 
+// isNamespaceNotFound reports whether err indicates the namespace does not yet exist.
+// Temporal's NamespaceClient.Describe returns *serviceerror.NamespaceNotFound on current
+// servers; older servers returned *serviceerror.NotFound. Both are treated as "missing".
+func isNamespaceNotFound(err error) bool {
+	var (
+		notFound          *serviceerror.NotFound
+		namespaceNotFound *serviceerror.NamespaceNotFound
+	)
+
+	return errors.As(err, &notFound) || errors.As(err, &namespaceNotFound)
+}
+
 func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (client.Client, error) {
 	o := DefaultClientOptions()
 
@@ -77,41 +89,44 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 
 	// setup namespace
 	if o.RegisterNamespace != nil {
-		var notFoundErr *serviceerror.NotFound
-		if ns, err := nsc.Describe(ctx, o.RegisterNamespace.Namespace); errors.As(err, &notFoundErr) {
+		ns, err := nsc.Describe(ctx, o.RegisterNamespace.Namespace)
+		switch {
+		case isNamespaceNotFound(err):
 			if err := nsc.Register(ctx, o.RegisterNamespace); err != nil {
 				return nil, errors.Wrap(err, "failed to register temporal namespace")
 			}
-		} else if err != nil {
+		case err != nil:
 			return nil, errors.Wrap(err, "failed to retrieve temporal namespace info")
-		} else if nsInfo := ns.GetNamespaceInfo(); nsInfo.State != enums.NAMESPACE_STATE_REGISTERED { //nolint:nosnakecase
-			return nil, errors.New("Could not register namespace due to existing state: " + nsInfo.State.String())
-		} else if err := nsc.Update(ctx, &workflowservice.UpdateNamespaceRequest{
-			Namespace: o.RegisterNamespace.Namespace,
-			UpdateInfo: &namespace.UpdateNamespaceInfo{
-				Description: o.RegisterNamespace.Description,
-				OwnerEmail:  o.RegisterNamespace.OwnerEmail,
-				Data:        o.RegisterNamespace.Data,
-				State:       nsInfo.State,
-			},
-			Config: &namespace.NamespaceConfig{
-				WorkflowExecutionRetentionTtl: o.RegisterNamespace.WorkflowExecutionRetentionPeriod,
-				BadBinaries:                   ns.Config.BadBinaries,
-				HistoryArchivalState:          o.RegisterNamespace.HistoryArchivalState,
-				HistoryArchivalUri:            o.RegisterNamespace.HistoryArchivalUri,
-				VisibilityArchivalState:       o.RegisterNamespace.VisibilityArchivalState,
-				VisibilityArchivalUri:         o.RegisterNamespace.VisibilityArchivalUri,
-			},
-			ReplicationConfig: &replication.NamespaceReplicationConfig{
-				ActiveClusterName: o.RegisterNamespace.ActiveClusterName,
-				Clusters:          o.RegisterNamespace.Clusters,
-				State:             ns.ReplicationConfig.State,
-			},
-			SecurityToken:    o.RegisterNamespace.SecurityToken,
-			DeleteBadBinary:  "",
-			PromoteNamespace: false,
-		}); err != nil {
-			return nil, errors.Wrap(err, "failed to register temporal namespace")
+		case ns.GetNamespaceInfo().State != enums.NAMESPACE_STATE_REGISTERED: //nolint:nosnakecase
+			return nil, errors.New("Could not register namespace due to existing state: " + ns.GetNamespaceInfo().State.String())
+		default:
+			if err := nsc.Update(ctx, &workflowservice.UpdateNamespaceRequest{
+				Namespace: o.RegisterNamespace.Namespace,
+				UpdateInfo: &namespace.UpdateNamespaceInfo{
+					Description: o.RegisterNamespace.Description,
+					OwnerEmail:  o.RegisterNamespace.OwnerEmail,
+					Data:        o.RegisterNamespace.Data,
+					State:       ns.GetNamespaceInfo().State,
+				},
+				Config: &namespace.NamespaceConfig{
+					WorkflowExecutionRetentionTtl: o.RegisterNamespace.WorkflowExecutionRetentionPeriod,
+					BadBinaries:                   ns.Config.BadBinaries,
+					HistoryArchivalState:          o.RegisterNamespace.HistoryArchivalState,
+					HistoryArchivalUri:            o.RegisterNamespace.HistoryArchivalUri,
+					VisibilityArchivalState:       o.RegisterNamespace.VisibilityArchivalState,
+					VisibilityArchivalUri:         o.RegisterNamespace.VisibilityArchivalUri,
+				},
+				ReplicationConfig: &replication.NamespaceReplicationConfig{
+					ActiveClusterName: o.RegisterNamespace.ActiveClusterName,
+					Clusters:          o.RegisterNamespace.Clusters,
+					State:             ns.ReplicationConfig.State,
+				},
+				SecurityToken:    o.RegisterNamespace.SecurityToken,
+				DeleteBadBinary:  "",
+				PromoteNamespace: false,
+			}); err != nil {
+				return nil, errors.Wrap(err, "failed to register temporal namespace")
+			}
 		}
 
 		clientOpts.Namespace = o.RegisterNamespace.Namespace
