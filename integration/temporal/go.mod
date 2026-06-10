@@ -10,7 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/metric v1.44.0
-	go.temporal.io/api v1.62.12
+	go.temporal.io/api v1.62.13
 	go.temporal.io/sdk v1.44.1
 	go.temporal.io/sdk/contrib/opentelemetry v0.7.0
 	go.uber.org/zap v1.28.0
@@ -39,6 +39,7 @@ require (
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/nexus-rpc/nexus-proto-annotations v0.1.0 // indirect
 	github.com/nexus-rpc/sdk-go v0.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
