@@ -5,7 +5,7 @@ go 1.26.0
 replace github.com/foomo/keel => ../../
 
 require (
-	github.com/foomo/go v0.12.0
+	github.com/foomo/go v0.13.0
 	github.com/foomo/keel v0.26.1
 	github.com/nats-io/nats.go v1.52.0
 	github.com/pkg/errors v0.9.1
