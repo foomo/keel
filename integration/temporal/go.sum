@@ -14,8 +14,8 @@ github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a h1:yDWHCSQ40h88yi
 github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a/go.mod h1:7Ga40egUymuWXxAe151lTNnCv97MddSOVsjpPPkityA=
 github.com/fbiville/markdown-table-formatter v0.3.0 h1:PIm1UNgJrFs8q1htGTw+wnnNYvwXQMMMIKNZop2SSho=
 github.com/fbiville/markdown-table-formatter v0.3.0/go.mod h1:q89TDtSEVDdTaufgSbfHpNVdPU/bmfvqNkrC5HagmLY=
-github.com/foomo/go v0.12.0 h1:Y5mKeLVll1yzM8UGsPdNc/z7Rrr4J7QVwNVO65ZbnE0=
-github.com/foomo/go v0.12.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
+github.com/foomo/go v0.13.0 h1:yD0NYRu9lvF5z4z3y1R010Hixsz0TmPZVxX7qg97f7w=
+github.com/foomo/go v0.13.0/go.mod h1:jeSB/atkoqSoJ3+ak0+b/Xtj7IMyDj1odzJroudT7Dw=
 github.com/foomo/opentelemetry-go v0.4.0 h1:UQneCUSokIYJXzFUKQSI8rlelbUuf6atgSZMhvD+Nzo=
 github.com/foomo/opentelemetry-go v0.4.0/go.mod h1:R3Se/rc5FRAs4ThE6JQ9Oq3cOLo2MOsUzZLJxZquwxA=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
