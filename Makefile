@@ -148,6 +148,11 @@ godocs:
 
 ### Utils
 
+.PHONY: actionlint
+## Run actionlint
+actionlint:
+	@actionlint
+
 .PHONY: help
 # https://patorjk.com/software/taag/#p=display&f=Tmplr&t=keel&x=none&v=4&h=4&w=80&we=false
 ## Show help text
