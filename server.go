@@ -114,51 +114,7 @@ func NewServer(opts ...Option) *Server {
 
 			inst.l.Info("keel graceful shutdown: closers")
 
-			for _, closer := range closers {
-				var err error
-
-				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
-				switch c := closer.(type) {
-				case interfaces.Closer:
-					c.Close()
-				case interfaces.ErrorCloser:
-					err = c.Close()
-				case interfaces.CloserWithContext:
-					c.Close(timeoutCtx)
-				case interfaces.ErrorCloserWithContext:
-					err = c.Close(timeoutCtx)
-				case interfaces.Shutdowner:
-					c.Shutdown()
-				case interfaces.ErrorShutdowner:
-					err = c.Shutdown()
-				case interfaces.ShutdownerWithContext:
-					c.Shutdown(timeoutCtx)
-				case interfaces.ErrorShutdownerWithContext:
-					err = c.Shutdown(timeoutCtx)
-				case interfaces.Stopper:
-					c.Stop()
-				case interfaces.ErrorStopper:
-					err = c.Stop()
-				case interfaces.StopperWithContext:
-					c.Stop(timeoutCtx)
-				case interfaces.ErrorStopperWithContext:
-					err = c.Stop(timeoutCtx)
-				case interfaces.Unsubscriber:
-					c.Unsubscribe()
-				case interfaces.ErrorUnsubscriber:
-					err = c.Unsubscribe()
-				case interfaces.UnsubscriberWithContext:
-					c.Unsubscribe(timeoutCtx)
-				case interfaces.ErrorUnsubscriberWithContext:
-					err = c.Unsubscribe(timeoutCtx)
-				}
-
-				if err != nil {
-					l.Warn("keel graceful shutdown: closer failed", zap.Error(err))
-				} else {
-					l.Debug("keel graceful shutdown: closer closed")
-				}
-			}
+			closeAll(timeoutCtx, inst.l, closers)
 
 			inst.l.Info("keel graceful shutdown: complete")
 

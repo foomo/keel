@@ -9,6 +9,8 @@ import (
 	otelhost "go.opentelemetry.io/contrib/instrumentation/host"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/metric"
@@ -46,6 +48,32 @@ func NewStdOutMeterProvider(ctx context.Context, opts ...stdoutmetric.Option) (m
 	reader := sdkmetric.NewPeriodicReader(exporter)
 
 	return newMeterProvider(ctx, reader)
+}
+
+// NewOTLPGRPCMeterProvider creates a push-based metric.MeterProvider that exports metrics
+// over OTLP gRPC via a periodic reader. It configures the exporter from environment
+// variables (e.g. endpoint, insecure transport) unless overridden by the given options.
+// Push-based export suits short-lived workloads (e.g. Jobs) that exit before a scrape.
+func NewOTLPGRPCMeterProvider(ctx context.Context, opts ...otlpmetricgrpc.Option) (metric.MeterProvider, error) {
+	exporter, err := otlpmetricgrpc.New(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return newMeterProvider(ctx, sdkmetric.NewPeriodicReader(exporter))
+}
+
+// NewOTLPHTTPMeterProvider creates a push-based metric.MeterProvider that exports metrics
+// over OTLP HTTP via a periodic reader. It configures the exporter from environment
+// variables (e.g. endpoint, insecure transport) unless overridden by the given options.
+// Push-based export suits short-lived workloads (e.g. Jobs) that exit before a scrape.
+func NewOTLPHTTPMeterProvider(ctx context.Context, opts ...otlpmetrichttp.Option) (metric.MeterProvider, error) {
+	exporter, err := otlpmetrichttp.New(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return newMeterProvider(ctx, sdkmetric.NewPeriodicReader(exporter))
 }
 
 // NewPrometheusMeterProvider initializes and returns a Prometheus-based metric.MeterProvider with default configuration.
