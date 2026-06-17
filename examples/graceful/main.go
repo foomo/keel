@@ -20,17 +20,21 @@ func main() {
 
 	go func() {
 		c := make(chan bool, 1)
+
 		time.Sleep(2 * time.Second)
 
 		l.Info("1. starting checks")
+
 		go func() {
 			c <- true
+
 			for {
 				call(l.Named("http"), "http://localhost:8080")
 				call(l.Named("readiness"), "http://localhost:9400/healthz/readiness")
 				time.Sleep(time.Second)
 			}
 		}()
+
 		<-c
 		close(c)
 
@@ -38,6 +42,7 @@ func main() {
 		time.Sleep(5 * time.Second)
 
 		l.Info("3. sending shutdown signal")
+
 		if err := syscall.Kill(syscall.Getpid(), syscall.SIGTERM); err != nil {
 			l.Fatal(err.Error())
 		}
@@ -63,6 +68,7 @@ func main() {
 		l.Info("closing stuff")
 		time.Sleep(3 * time.Second)
 		l.Info("done closing stuff")
+
 		return nil
 	}))
 
@@ -86,10 +92,10 @@ func main() {
 	// {"level":"info","logger":"root.http","msg":"ok","url":"http://localhost:8080","status":200}
 	// {"level":"info","logger":"root.readiness","msg":"ok","url":"http://localhost:9400/healthz/readiness","status":200}
 	// {"level":"info","logger":"root","msg":"3. sending shutdown signal"}
-	// {"level":"info","logger":"root.server","msg":"keel graceful shutdown","graceful_period":"30s"}
-	// {"level":"info","logger":"root.server","msg":"keel graceful shutdown: closers"}
+	// {"level":"info","logger":"root.server","msg":"keel closer closed","graceful_period":"30s"}
+	// {"level":"info","logger":"root.server","msg":"keel closer closed: closers"}
 	// {"level":"info","logger":"root","msg":"stopping keel service","keel_service_type":"http","keel_service_name":"http"}
-	// {"level":"debug","logger":"root.server","msg":"keel graceful shutdown: closer closed","name":"*service.HTTP"}
+	// {"level":"debug","logger":"root.server","msg":"keel closer closed","name":"*service.HTTP"}
 	// {"level":"info","logger":"root.closer","msg":"closing stuff"}
 	// {"level":"error","logger":"root.http","msg":"failed to send request","url":"http://localhost:8080","error":"Get \"http://localhost:8080\": dial tcp [::1]:8080: connect: connection refused"}
 	// {"level":"debug","logger":"root.server","msg":"healthz probe failed","error_type":"*errors.errorString","error_message":"service not running","http_target":"/healthz/readiness"}
@@ -101,12 +107,12 @@ func main() {
 	// {"level":"debug","logger":"root.server","msg":"healthz probe failed","error_type":"*errors.errorString","error_message":"service not running","http_target":"/healthz/readiness"}
 	// {"level":"info","logger":"root.readiness","msg":"ok","url":"http://localhost:9400/healthz/readiness","status":503}
 	// {"level":"info","logger":"root.closer","msg":"done closing stuff"}
-	// {"level":"debug","logger":"root.server","msg":"keel graceful shutdown: closer closed","name":"interfaces.CloserFunc"}
+	// {"level":"debug","logger":"root.server","msg":"keel closer closed","name":"interfaces.CloserFunc"}
 	// {"level":"info","logger":"root.server","msg":"stopping keel service","keel_service_type":"http","keel_service_name":"healthz"}
-	// {"level":"debug","logger":"root.server","msg":"keel graceful shutdown: closer closed","name":"*service.HTTP"}
-	// {"level":"debug","logger":"root.server","msg":"keel graceful shutdown: closer closed","name":"noop.TracerProvider"}
-	// {"level":"debug","logger":"root.server","msg":"keel graceful shutdown: closer closed","name":"noop.MeterProvider"}
-	// {"level":"info","logger":"root.server","msg":"keel graceful shutdown: complete"}
+	// {"level":"debug","logger":"root.server","msg":"keel closer closed","name":"*service.HTTP"}
+	// {"level":"debug","logger":"root.server","msg":"keel closer closed","name":"noop.TracerProvider"}
+	// {"level":"debug","logger":"root.server","msg":"keel closer closed","name":"noop.MeterProvider"}
+	// {"level":"info","logger":"root.server","msg":"keel closer closed: complete"}
 	// {"level":"info","logger":"root.server","msg":"keel server stopped"}
 	// {"level":"info","logger":"root","msg":"done"}
 }
@@ -116,15 +122,18 @@ func call(l *zap.Logger, url string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		l.With(zap.Error(err)).Error("failed to create request")
 		return
 	}
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		l.With(zap.Error(err)).Error("failed to send request")
 		return
 	}
+
 	l.Info("ok", zap.Int("status", resp.StatusCode))
 }

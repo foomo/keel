@@ -105,18 +105,18 @@ func NewServer(opts ...Option) *Server {
 			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
 			defer timeoutCancel()
 
-			inst.l.Info("keel graceful shutdown",
+			inst.l.Info("keel closer closed",
 				zap.Duration("graceful_period", inst.gracefulPeriod),
 			)
 
 			// append internal closers
 			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
 
-			inst.l.Info("keel graceful shutdown: closers")
+			inst.l.Info("keel closer closed: closers")
 
 			closeAll(timeoutCtx, inst.l, closers)
 
-			inst.l.Info("keel graceful shutdown: complete")
+			inst.l.Info("keel closer closed: complete")
 
 			return ErrServerShutdown
 		})

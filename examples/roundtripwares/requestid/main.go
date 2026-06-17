@@ -40,9 +40,11 @@ func main() {
 			return
 		} else {
 			defer resp.Body.Close()
+
 			w.WriteHeader(http.StatusOK)
 			log.WithHTTPRequest(l, r).Info("handled request")
 			_, _ = w.Write([]byte(r.Header.Get(keelhttp.HeaderXRequestID) + " - " + resp.Header.Get(keelhttp.HeaderXRequestID)))
+
 			log.WithHTTPRequestOut(l, req).Info("sent internal request")
 		}
 	})

@@ -70,6 +70,7 @@ func main() {
 			httputils.InternalServerError(l, w, r, err)
 			return
 		}
+
 		l.Info("sent message", log.FValue(msg.Name))
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
@@ -81,7 +82,9 @@ func main() {
 		if err := sub.Unmarshal(msg, &data); err != nil {
 			return errors.Wrap(err, "failed to unmarshall message data")
 		}
+
 		l.Info("received message", log.FValue(data.Name), log.FMessagingDestination(msg.Subject))
+
 		return nil
 	})
 	log.Must(l, err, "failed to subscribe to subject")

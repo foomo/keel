@@ -43,7 +43,6 @@ func main() {
 	// OTEL_METRICS_RUNTIME_ENABLED="false"
 	//
 	// OTEL_TRACE_RATIO="0.5"
-
 	svr := keel.NewServer(
 		keel.WithStdOutMeter(true),
 		keel.WithStdOutTracer(true),
@@ -107,7 +106,9 @@ func main() {
 
 		svs.HandleFunc("/histogram", func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
+
 			time.Sleep(time.Second)
+
 			traceID := trace.SpanContextFromContext(r.Context())
 			histogram.Record(r.Context(), int64(rand.Int()),
 				metric.WithAttributes(

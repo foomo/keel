@@ -32,6 +32,7 @@ func main() {
 
 	// measure tome time
 	fDurationFn := log.FDurationFn()
+
 	time.Sleep(200 * time.Millisecond)
 	l.Info("measured some time", fDurationFn())
 

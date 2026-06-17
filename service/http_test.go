@@ -36,12 +36,12 @@ func _ExampleNewHTTP() {
 	// {"level":"info","msg":"starting keel server"}
 	// {"level":"info","msg":"starting keel service","keel_service_type":"http","keel_service_name":"demo","net_host_ip":"localhost","net_host_port":"8080"}
 	// {"level":"info","msg":"OK"}
-	// {"level":"info","msg":"keel graceful shutdown","graceful_period":"10s"}
-	// {"level":"info","msg":"keel graceful shutdown: closers"}
+	// {"level":"info","msg":"keel closer closed","graceful_period":"10s"}
+	// {"level":"info","msg":"keel closer closed: closers"}
 	// {"level":"info","msg":"stopping keel service","keel_service_type":"http","keel_service_name":"demo"}
-	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"*service.HTTP"}
-	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"noop.TracerProvider"}
-	// {"level":"debug","msg":"keel graceful shutdown: closer closed","name":"noop.MeterProvider"}
-	// {"level":"info","msg":"keel graceful shutdown: complete"}
+	// {"level":"debug","msg":"keel closer closed","name":"*service.HTTP"}
+	// {"level":"debug","msg":"keel closer closed","name":"noop.TracerProvider"}
+	// {"level":"debug","msg":"keel closer closed","name":"noop.MeterProvider"}
+	// {"level":"info","msg":"keel closer closed: complete"}
 	// {"level":"info","msg":"keel server stopped"}
 }
