@@ -13,7 +13,7 @@ import (
 
 // NewJetStream creates a JetStream context with production-sensible async
 // publish defaults and an instrumented async-error handler.
-func NewJetStream(s *keel.Server, nc *nats.Conn, opts ...jetstream.JetStreamOpt) (jetstream.JetStream, error) {
+func NewJetStream(s keel.Runtime, nc *nats.Conn, opts ...jetstream.JetStreamOpt) (jetstream.JetStream, error) {
 	l := s.Logger().Named("jetstream")
 	m := s.Meter()
 
