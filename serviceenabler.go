@@ -11,14 +11,12 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-type ServiceFunc func() Service
-
 type ServiceEnabler struct {
 	l               *zap.Logger
 	ctx             context.Context
 	name            string
 	service         Service
-	serviceFn       ServiceFunc
+	serviceFn       ServiceFn
 	syncEnabled     bool
 	syncEnabledLock sync.RWMutex
 	enabledFn       func() bool
@@ -26,7 +24,7 @@ type ServiceEnabler struct {
 	syncClosedLock  sync.RWMutex
 }
 
-func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFunc, enabledFn func() bool) *ServiceEnabler {
+func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFn, enabledFn func() bool) *ServiceEnabler {
 	return &ServiceEnabler{
 		l:           log.WithServiceName(l, name),
 		name:        name,
