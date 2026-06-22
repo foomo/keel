@@ -22,10 +22,11 @@ func _ExampleNewHTTPReadme() {
 	// define vars so it does not panic
 	_ = os.Setenv("EXAMPLE_REQUIRED_BOOL", "true")
 	_ = os.Setenv("EXAMPLE_REQUIRED_STRING", "foo")
+	_ = os.Setenv("OTEL_METRICS_EXPORTER", "prometheus")
 
 	svr := keel.NewServer(
 		keel.WithLogger(zap.NewNop()),
-		keel.WithPrometheusMeter(true),
+		keel.WithTelemetry(),
 		keel.WithHTTPReadmeService(true),
 		keel.WithGracefulPeriod(3*time.Second),
 	)

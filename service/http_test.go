@@ -42,6 +42,7 @@ func _ExampleNewHTTP() {
 	// {"level":"debug","msg":"keel closer closed","name":"*service.HTTP"}
 	// {"level":"debug","msg":"keel closer closed","name":"noop.TracerProvider"}
 	// {"level":"debug","msg":"keel closer closed","name":"noop.MeterProvider"}
+	// {"level":"debug","msg":"keel closer closed","name":"noop.LoggerProvider"}
 	// {"level":"info","msg":"keel closer closed: complete"}
 	// {"level":"info","msg":"keel server stopped"}
 }

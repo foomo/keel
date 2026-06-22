@@ -19,6 +19,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
+	otellog "go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -53,6 +54,7 @@ type Job struct {
 	parallelLimit   int
 	meterProvider   metric.MeterProvider
 	traceProvider   trace.TracerProvider
+	loggerProvider  otellog.LoggerProvider
 	pushers         []jobPusher
 	shutdownSignals []os.Signal
 	gracefulPeriod  time.Duration
@@ -97,6 +99,10 @@ func NewJob(opts ...JobOption) *Job {
 
 		if inst.traceProvider == nil {
 			inst.traceProvider = telemetry.NewNoopTraceProvider()
+		}
+
+		if inst.loggerProvider == nil {
+			inst.loggerProvider = telemetry.NewNoopLoggerProvider()
 		}
 	}
 
@@ -281,7 +287,7 @@ func (j *Job) finalize() {
 		}
 	}
 
-	closers := append(slices.Clone(j.syncClosers), j.traceProvider, j.meterProvider)
+	closers := append(slices.Clone(j.syncClosers), j.traceProvider, j.meterProvider, j.loggerProvider)
 	closeAll(ctx, j.l, closers)
 
 	j.l.Info("keel job finalize: complete")

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/log/global"
+	"go.opentelemetry.io/otel/log/noop"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
 )
@@ -17,6 +18,11 @@ import (
 // LoggerProvider returns the global logger provider instance used throughout the application.
 func LoggerProvider() log.LoggerProvider {
 	return global.GetLoggerProvider()
+}
+
+// NewNoopLoggerProvider returns a no-op log.LoggerProvider.
+func NewNoopLoggerProvider() log.LoggerProvider {
+	return noop.NewLoggerProvider()
 }
 
 // NewZapLoggerProvider creates a new log.LoggerProvider using a Zap logger for structured logging with OpenTelemetry.

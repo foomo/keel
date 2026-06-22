@@ -92,76 +92,39 @@ func JobWithCloser(closer any) JobOption {
 	}
 }
 
-// JobWithStdOutTracer option with default value
-func JobWithStdOutTracer(enabled bool) JobOption {
+// JobWithTelemetry option wires the OpenTelemetry trace, metric and logger providers
+// from the standard OTEL environment variables:
+//
+//	OTEL_TRACES_EXPORTER   none(default) | console | otlp
+//	OTEL_METRICS_EXPORTER  none(default) | console | otlp | prometheus
+//	OTEL_LOGS_EXPORTER     none(default) | console | otlp
+//	OTEL_EXPORTER_OTLP_PROTOCOL  grpc | http/protobuf(default)
+//	  (per-signal override: OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_PROTOCOL)
+//
+// A signal set to none leaves its provider unset, so the job falls back to a no-op
+// provider. Call this before JobWithPushgatewayMeter so its nil meter-provider guard
+// still fires when OTEL_METRICS_EXPORTER is none.
+func JobWithTelemetry() JobOption {
 	return func(inst *Job) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
+		traceProvider, err := telemetry.NewTraceProviderFromEnv(inst.ctx)
+		log.Must(inst.l, err, "failed to create trace provider")
 
-			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create stdOut trace provider")
+		if traceProvider != nil {
+			inst.traceProvider = traceProvider
 		}
-	}
-}
 
-// JobWithStdOutMeter option with default value
-func JobWithStdOutMeter(enabled bool) JobOption {
-	return func(inst *Job) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
+		meterProvider, err := telemetry.NewMeterProviderFromEnv(inst.ctx)
+		log.Must(inst.l, err, "failed to create meter provider")
 
-			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create stdOut meter provider")
+		if meterProvider != nil {
+			inst.meterProvider = meterProvider
 		}
-	}
-}
 
-// JobWithOTLPGRPCTracer option with default value
-func JobWithOTLPGRPCTracer(enabled bool) JobOption {
-	return func(inst *Job) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
+		loggerProvider, err := telemetry.NewLoggerProviderFromEnv(inst.ctx)
+		log.Must(inst.l, err, "failed to create logger provider")
 
-			inst.traceProvider, err = telemetry.NewOTLPGRPCTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
-		}
-	}
-}
-
-// JobWithOTLPHTTPTracer option with default value
-func JobWithOTLPHTTPTracer(enabled bool) JobOption {
-	return func(inst *Job) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp http trace provider")
-		}
-	}
-}
-
-// JobWithOTLPGRPCMeter option with default value. Metrics are pushed via OTLP gRPC
-// and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
-func JobWithOTLPGRPCMeter(enabled bool) JobOption {
-	return func(inst *Job) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.meterProvider, err = telemetry.NewOTLPGRPCMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp grpc meter provider")
-		}
-	}
-}
-
-// JobWithOTLPHTTPMeter option with default value. Metrics are pushed via OTLP HTTP
-// and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
-func JobWithOTLPHTTPMeter(enabled bool) JobOption {
-	return func(inst *Job) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.meterProvider, err = telemetry.NewOTLPHTTPMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp http meter provider")
+		if loggerProvider != nil {
+			inst.loggerProvider = loggerProvider
 		}
 	}
 }

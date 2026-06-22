@@ -93,100 +93,39 @@ func WithHTTPViperService(enabled bool) Option {
 	}
 }
 
-// WithStdOutTracer option with default value
-func WithStdOutTracer(enabled bool) Option {
+// WithTelemetry option wires the OpenTelemetry trace, metric and logger providers
+// from the standard OTEL environment variables:
+//
+//	OTEL_TRACES_EXPORTER   none(default) | console | otlp
+//	OTEL_METRICS_EXPORTER  none(default) | console | otlp | prometheus
+//	OTEL_LOGS_EXPORTER     none(default) | console | otlp
+//	OTEL_EXPORTER_OTLP_PROTOCOL  grpc | http/protobuf(default)
+//	  (per-signal override: OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_PROTOCOL)
+//
+// A signal set to none leaves its provider unset, so the server falls back to a
+// no-op provider. Call this before WithPushgatewayMeter so its nil meter-provider
+// guard still fires when OTEL_METRICS_EXPORTER is none.
+func WithTelemetry() Option {
 	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
+		traceProvider, err := telemetry.NewTraceProviderFromEnv(inst.ctx)
+		log.Must(inst.l, err, "failed to create trace provider")
 
-			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create stdOut trace provider")
+		if traceProvider != nil {
+			inst.traceProvider = traceProvider
 		}
-	}
-}
 
-// WithStdOutLogger option with default value
-func WithStdOutLogger(enabled bool) Option {
-	return func(inst *Server) {
-		var err error
+		meterProvider, err := telemetry.NewMeterProviderFromEnv(inst.ctx)
+		log.Must(inst.l, err, "failed to create meter provider")
 
-		_, err = telemetry.NewStdOutLoggerProvider(inst.ctx)
-		log.Must(inst.l, err, "failed to create stdOut logger provider")
-	}
-}
-
-// WithStdOutMeter option with default value
-func WithStdOutMeter(enabled bool) Option {
-	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create stdOut meter provider")
+		if meterProvider != nil {
+			inst.meterProvider = meterProvider
 		}
-	}
-}
 
-// WithOTLPGRPCTracer option with default value
-func WithOTLPGRPCTracer(enabled bool) Option {
-	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
+		loggerProvider, err := telemetry.NewLoggerProviderFromEnv(inst.ctx)
+		log.Must(inst.l, err, "failed to create logger provider")
 
-			inst.traceProvider, err = telemetry.NewOTLPGRPCTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
-		}
-	}
-}
-
-// WithOTLPHTTPTracer option with default value
-func WithOTLPHTTPTracer(enabled bool) Option {
-	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp http trace provider")
-		}
-	}
-}
-
-// WithOTLPGRPCMeter option with default value. Metrics are pushed via OTLP gRPC
-// via a periodic reader, suiting setups that export metrics instead of exposing a
-// Prometheus scrape endpoint.
-func WithOTLPGRPCMeter(enabled bool) Option {
-	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.meterProvider, err = telemetry.NewOTLPGRPCMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp grpc meter provider")
-		}
-	}
-}
-
-// WithOTLPHTTPMeter option with default value. Metrics are pushed via OTLP HTTP
-// via a periodic reader, suiting setups that export metrics instead of exposing a
-// Prometheus scrape endpoint.
-func WithOTLPHTTPMeter(enabled bool) Option {
-	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.meterProvider, err = telemetry.NewOTLPHTTPMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create otlp http meter provider")
-		}
-	}
-}
-
-// WithPrometheusMeter option with default value
-func WithPrometheusMeter(enabled bool) Option {
-	return func(inst *Server) {
-		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
-			var err error
-
-			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider(inst.ctx)
-			log.Must(inst.l, err, "failed to create prometheus meter provider")
+		if loggerProvider != nil {
+			inst.loggerProvider = loggerProvider
 		}
 	}
 }

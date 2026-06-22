@@ -27,8 +27,13 @@ var metricRequestLatency = promauto.NewHistogram(prometheus.HistogramOpts{
 func main() {
 	// Run this example with the following env vars:
 	//
-	// when otel is disabled (default: false) the stdout exporter is used
-	// OTEL_ENABLED="false"
+	// select the exporter per signal (none(default) | console | otlp | prometheus):
+	// OTEL_TRACES_EXPORTER="console"
+	// OTEL_METRICS_EXPORTER="console"
+	// OTEL_LOGS_EXPORTER="console"
+	//
+	// for otlp, pick the protocol (grpc | http/protobuf(default)):
+	// OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
 	//
 	// name your service
 	// OTEL_SERVICE_NAME="your-service-name"
@@ -44,8 +49,7 @@ func main() {
 	//
 	// OTEL_TRACE_RATIO="0.5"
 	svr := keel.NewServer(
-		keel.WithStdOutMeter(true),
-		keel.WithStdOutTracer(true),
+		keel.WithTelemetry(),
 	)
 
 	l := svr.Logger()

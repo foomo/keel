@@ -54,6 +54,7 @@ func ExampleNewGoRoutine() {
 	// {"level":"debug","msg":"keel closer closed","name":"*service.GoRoutine"}
 	// {"level":"debug","msg":"keel closer closed","name":"noop.TracerProvider"}
 	// {"level":"debug","msg":"keel closer closed","name":"noop.MeterProvider"}
+	// {"level":"debug","msg":"keel closer closed","name":"noop.LoggerProvider"}
 	// {"level":"info","msg":"keel closer closed: complete"}
 	// {"level":"info","msg":"keel server stopped"}
 }

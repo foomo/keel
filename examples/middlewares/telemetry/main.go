@@ -9,8 +9,9 @@ import (
 )
 
 func main() {
+	// Select the trace exporter via env, e.g. OTEL_TRACES_EXPORTER="console".
 	svr := keel.NewServer(
-		keel.WithStdOutTracer(true),
+		keel.WithTelemetry(),
 	)
 
 	// get logger

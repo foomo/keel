@@ -15,8 +15,9 @@ func main() {
 	job := keel.NewJob(
 		keel.JobWithName("example"),
 		keel.JobWithLogger(l.Named("job")),
-		// Push metrics on exit instead of exposing them (jobs exit before a scrape):
-		// keel.JobWithOTLPHTTPMeter(true),
+		// Wire telemetry from OTEL env vars (e.g. OTEL_METRICS_EXPORTER="otlp" to
+		// push metrics on exit instead of exposing them — jobs exit before a scrape):
+		// keel.JobWithTelemetry(),
 		// keel.JobWithPushgatewayMeter("http://localhost:9091"),
 		// Run steps concurrently (fail-fast, 0 = unbounded):
 		// keel.JobWithParallel(0),

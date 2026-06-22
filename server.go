@@ -28,6 +28,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
+	otellog "go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -48,6 +49,7 @@ type Server struct {
 	initServices    []Service
 	meterProvider   metric.MeterProvider
 	traceProvider   trace.TracerProvider
+	loggerProvider  otellog.LoggerProvider
 	shutdown        atomic.Bool
 	shutdownSignals []os.Signal
 	// gracefulPeriod should equal the terminationGracePeriodSeconds
@@ -110,7 +112,7 @@ func NewServer(opts ...Option) *Server {
 			)
 
 			// append internal closers
-			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
+			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider, inst.loggerProvider)
 
 			inst.l.Info("keel closer closed: closers")
 
@@ -133,6 +135,10 @@ func NewServer(opts ...Option) *Server {
 
 		if inst.traceProvider == nil {
 			inst.traceProvider = telemetry.NewNoopTraceProvider()
+		}
+
+		if inst.loggerProvider == nil {
+			inst.loggerProvider = telemetry.NewNoopLoggerProvider()
 		}
 	}
 
