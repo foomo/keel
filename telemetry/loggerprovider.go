@@ -5,6 +5,7 @@ import (
 
 	"github.com/foomo/keel/env"
 	otelzap "github.com/foomo/keel/internal/otel/exporters/zap"
+	otelzapbridge "go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
@@ -13,7 +14,11 @@ import (
 	"go.opentelemetry.io/otel/log/noop"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
+
+// instrumentationName is the OTEL logger scope used by the zap bridge core.
+const instrumentationName = "github.com/foomo/keel"
 
 // LoggerProvider returns the global logger provider instance used throughout the application.
 func LoggerProvider() log.LoggerProvider {
@@ -23,6 +28,12 @@ func LoggerProvider() log.LoggerProvider {
 // NewNoopLoggerProvider returns a no-op log.LoggerProvider.
 func NewNoopLoggerProvider() log.LoggerProvider {
 	return noop.NewLoggerProvider()
+}
+
+// NewZapBridgeCore returns a zapcore.Core that emits entries as OTEL log
+// records through lp, for teeing into an existing logger.
+func NewZapBridgeCore(lp log.LoggerProvider) zapcore.Core {
+	return otelzapbridge.NewCore(instrumentationName, otelzapbridge.WithLoggerProvider(lp))
 }
 
 // NewZapLoggerProvider creates a new log.LoggerProvider using a Zap logger for structured logging with OpenTelemetry.

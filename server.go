@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -139,6 +140,10 @@ func NewServer(opts ...Option) *Server {
 
 		if inst.loggerProvider == nil {
 			inst.loggerProvider = telemetry.NewNoopLoggerProvider()
+		} else {
+			inst.l = inst.l.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+				return zapcore.NewTee(c, telemetry.NewZapBridgeCore(inst.loggerProvider))
+			}))
 		}
 	}
 
