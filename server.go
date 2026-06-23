@@ -28,10 +28,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
+	otellog "go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,6 +50,7 @@ type Server struct {
 	initServices    []Service
 	meterProvider   metric.MeterProvider
 	traceProvider   trace.TracerProvider
+	loggerProvider  otellog.LoggerProvider
 	shutdown        atomic.Bool
 	shutdownSignals []os.Signal
 	// gracefulPeriod should equal the terminationGracePeriodSeconds
@@ -105,62 +108,18 @@ func NewServer(opts ...Option) *Server {
 			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
 			defer timeoutCancel()
 
-			inst.l.Info("keel graceful shutdown",
+			inst.l.Info("keel closer closed",
 				zap.Duration("graceful_period", inst.gracefulPeriod),
 			)
 
 			// append internal closers
-			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider)
+			closers := append(inst.closers(), inst.traceProvider, inst.meterProvider, inst.loggerProvider)
 
-			inst.l.Info("keel graceful shutdown: closers")
+			inst.l.Info("keel closer closed: closers")
 
-			for _, closer := range closers {
-				var err error
+			closeAll(timeoutCtx, inst.l, closers)
 
-				l := inst.l.With(log.FName(fmt.Sprintf("%T", closer)))
-				switch c := closer.(type) {
-				case interfaces.Closer:
-					c.Close()
-				case interfaces.ErrorCloser:
-					err = c.Close()
-				case interfaces.CloserWithContext:
-					c.Close(timeoutCtx)
-				case interfaces.ErrorCloserWithContext:
-					err = c.Close(timeoutCtx)
-				case interfaces.Shutdowner:
-					c.Shutdown()
-				case interfaces.ErrorShutdowner:
-					err = c.Shutdown()
-				case interfaces.ShutdownerWithContext:
-					c.Shutdown(timeoutCtx)
-				case interfaces.ErrorShutdownerWithContext:
-					err = c.Shutdown(timeoutCtx)
-				case interfaces.Stopper:
-					c.Stop()
-				case interfaces.ErrorStopper:
-					err = c.Stop()
-				case interfaces.StopperWithContext:
-					c.Stop(timeoutCtx)
-				case interfaces.ErrorStopperWithContext:
-					err = c.Stop(timeoutCtx)
-				case interfaces.Unsubscriber:
-					c.Unsubscribe()
-				case interfaces.ErrorUnsubscriber:
-					err = c.Unsubscribe()
-				case interfaces.UnsubscriberWithContext:
-					c.Unsubscribe(timeoutCtx)
-				case interfaces.ErrorUnsubscriberWithContext:
-					err = c.Unsubscribe(timeoutCtx)
-				}
-
-				if err != nil {
-					l.Warn("keel graceful shutdown: closer failed", zap.Error(err))
-				} else {
-					l.Debug("keel graceful shutdown: closer closed")
-				}
-			}
-
-			inst.l.Info("keel graceful shutdown: complete")
+			inst.l.Info("keel closer closed: complete")
 
 			return ErrServerShutdown
 		})
@@ -177,6 +136,14 @@ func NewServer(opts ...Option) *Server {
 
 		if inst.traceProvider == nil {
 			inst.traceProvider = telemetry.NewNoopTraceProvider()
+		}
+
+		if inst.loggerProvider == nil {
+			inst.loggerProvider = telemetry.NewNoopLoggerProvider()
+		} else {
+			inst.l = inst.l.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+				return zapcore.NewTee(c, telemetry.NewZapBridgeCore(inst.loggerProvider))
+			}))
 		}
 	}
 

@@ -31,13 +31,18 @@ func (r *TaskRepository) List(ctx context.Context) (map[int32]string, error) {
 	defer rows.Close()
 
 	ret := map[int32]string{}
+
 	for rows.Next() {
-		var id int32
-		var description string
+		var (
+			id          int32
+			description string
+		)
+
 		err := rows.Scan(&id, &description)
 		if err != nil {
 			return nil, err
 		}
+
 		ret[id] = description
 	}
 
@@ -52,6 +57,7 @@ func (r *TaskRepository) Insert(ctx context.Context, description string) error {
 	defer conn.Close()
 
 	_, err = conn.ExecContext(ctx, "insert into tasks(description) values($1)", description)
+
 	return err
 }
 
@@ -61,8 +67,10 @@ func (r *TaskRepository) Drop(ctx context.Context) error {
 		return err
 	}
 	defer conn.Close()
+
 	if _, err := conn.ExecContext(ctx, `DROP TABLE IF EXISTS order_numbers;`); err != nil {
 		return err
 	}
+
 	return nil
 }

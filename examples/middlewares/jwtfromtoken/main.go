@@ -34,6 +34,7 @@ func main() {
 
 	// create jwt key
 	jwtKey := jwt.NewKey("demo", &rsaKey.PublicKey, rsaKey)
+
 	log.Must(l, err, "failed to create jwt key")
 
 	// init jwt with key files

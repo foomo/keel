@@ -62,6 +62,7 @@ func main() {
 
 	// long taking initialization
 	l.Info("doing some initialization")
+
 	select {
 	case <-time.After(10 * time.Second):
 		l.Info("initialization done")

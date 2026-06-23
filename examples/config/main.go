@@ -76,13 +76,14 @@ func main() {
 		if err := structFn(&structCfg); err != nil {
 			panic(err)
 		}
+
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(fmt.Sprintf("intCfg: %d\n", intFn())))
-		_, _ = w.Write([]byte(fmt.Sprintf("boolCfg: %v\n", boolFn())))
-		_, _ = w.Write([]byte(fmt.Sprintf("stringCfg: %s\n", stringFn())))
-		_, _ = w.Write([]byte(fmt.Sprintf("stringsCfg: %v\n", stringsFn())))
-		_, _ = w.Write([]byte(fmt.Sprintf("durationCfg: %.2f\n", durationFn().Hours())))
-		_, _ = w.Write([]byte(fmt.Sprintf("stuctCfg: %s\n", spew.Sdump(structCfg))))
+		_, _ = fmt.Fprintf(w, "intCfg: %d\n", intFn())
+		_, _ = fmt.Fprintf(w, "boolCfg: %v\n", boolFn())
+		_, _ = fmt.Fprintf(w, "stringCfg: %s\n", stringFn())
+		_, _ = fmt.Fprintf(w, "stringsCfg: %v\n", stringsFn())
+		_, _ = fmt.Fprintf(w, "durationCfg: %.2f\n", durationFn().Hours())
+		_, _ = fmt.Fprintf(w, "stuctCfg: %s\n", spew.Sdump(structCfg))
 	})
 
 	svr.AddService(

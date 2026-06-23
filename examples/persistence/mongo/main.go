@@ -60,6 +60,7 @@ func main() {
 		keelmongo.CollectionWithIndexesMaxTime(time.Second*10),
 	)
 	log.Must(l, err, "failed to create collection")
+
 	repo := repository.NewDummyRepository(col)
 
 	// --- version example ---
@@ -72,6 +73,7 @@ func main() {
 
 	// fail insert for duplicate entity
 	l.Info("Try to insert with duplicate key")
+
 	if err := repo.Insert(context.Background(), &store.Dummy{
 		Entity: store.NewEntity(newEntity.ID),
 	}); mongo.IsDuplicateKeyError(err) {
@@ -84,6 +86,7 @@ func main() {
 
 	// fail insert for duplicate entity
 	l.Info("Try to upsert with duplicate key")
+
 	if err := repo.Upsert(context.Background(), &store.Dummy{
 		Entity: store.NewEntity(newEntity.ID),
 	}); mongo.IsDuplicateKeyError(err) {
@@ -95,6 +98,7 @@ func main() {
 	}
 
 	l.Info("Try to upsert many with duplicate key")
+
 	if err := repo.UpsertMany(context.Background(), []*store.Dummy{{
 		Entity: store.NewEntity(newEntity.ID),
 	}}); mongo.IsDuplicateKeyError(err) {
@@ -107,6 +111,7 @@ func main() {
 
 	// get entity x2
 	l.Info("Try to upsert with dirty write")
+
 	newEntityA, err := repo.Get(context.Background(), newEntity.ID)
 	log.Must(l, err, "failed to load new entity")
 
@@ -126,6 +131,7 @@ func main() {
 	}
 
 	l.Info("Try to upsert many with dirty write")
+
 	newEntityA, err = repo.Get(context.Background(), newEntity.ID)
 	log.Must(l, err, "failed to load new entity")
 
@@ -136,6 +142,7 @@ func main() {
 	log.Must(l, repo.UpsertMany(context.Background(), []*store.Dummy{newEntityA}), "ERROR: failed to load new entity")
 
 	l.Info("Try to upsert many with dirty write")
+
 	if err := repo.UpsertMany(context.Background(), []*store.Dummy{newEntityB}); errors.Is(err, keelpersistence.ErrDirtyWrite) {
 		l.Info("OK: expected error", log.FValue(err.Error()))
 	} else if err != nil {

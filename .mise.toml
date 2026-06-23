@@ -1,8 +1,12 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
 [settings]
 minimum_release_age = "3d"
 
 [tools]
-# https://mise-tools.jdx.dev/tools/lefthook
-lefthook = "2.1.8"
+# https://mise-tools.jdx.dev/tools/actionlint
+actionlint = "1.7.12"
 # https://mise-tools.jdx.dev/tools/golangci-lint
 golangci-lint = "2.12.2"
+# https://mise-tools.jdx.dev/tools/lefthook
+lefthook = "2.1.9"

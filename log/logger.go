@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -110,20 +108,4 @@ func SetDisableStacktrace(value bool) error {
 	zap.ReplaceGlobals(l)
 
 	return nil
-}
-
-// Must logs a fatal error if given
-func Must(l *zap.Logger, err error, msgAndArgs ...any) {
-	if err != nil {
-		if l == nil {
-			l = Logger()
-		}
-
-		var msg = "Must"
-		if len(msgAndArgs) > 0 {
-			msg, msgAndArgs = fmt.Sprintf("%v", msgAndArgs[0]), msgAndArgs[1:]
-		}
-
-		l.WithOptions(zap.AddCallerSkip(1)).Fatal(fmt.Sprintf(msg, msgAndArgs...), FError(err))
-	}
 }

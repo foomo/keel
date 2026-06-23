@@ -18,7 +18,7 @@ import (
 
 // Connect establishes a connection to a NATS server with OTel instrumentation
 // and structured logging on every lifecycle event.
-func Connect(s *keel.Server, rawURL string, opts ...nats.Option) (*nats.Conn, error) {
+func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, error) {
 	l := s.Logger().Named("nats")
 	m := s.Meter()
 

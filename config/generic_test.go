@@ -1,5 +1,3 @@
-//go:build safe
-
 package config_test
 
 import (
@@ -13,13 +11,9 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	t.Parallel()
-
 	c := viper.New()
 
 	t.Run("string", func(t *testing.T) {
-		t.Parallel()
-
 		fn := config.Get[string](c, "test.string", "fallback")
 		assert.Equal(t, "fallback", fn())
 
@@ -28,8 +22,6 @@ func TestGet(t *testing.T) {
 	})
 
 	t.Run("int", func(t *testing.T) {
-		t.Parallel()
-
 		fn := config.Get[int](c, "test.int", 42)
 		assert.Equal(t, 42, fn())
 
@@ -38,8 +30,6 @@ func TestGet(t *testing.T) {
 	})
 
 	t.Run("bool", func(t *testing.T) {
-		t.Parallel()
-
 		fn := config.Get[bool](c, "test.bool", true)
 		assert.True(t, fn())
 
@@ -48,8 +38,6 @@ func TestGet(t *testing.T) {
 	})
 
 	t.Run("duration", func(t *testing.T) {
-		t.Parallel()
-
 		fn := config.Get[time.Duration](c, "test.duration", 5*time.Second)
 		assert.Equal(t, 5*time.Second, fn())
 
@@ -58,8 +46,6 @@ func TestGet(t *testing.T) {
 	})
 
 	t.Run("string slice", func(t *testing.T) {
-		t.Parallel()
-
 		fn := config.Get[[]string](c, "test.strings", []string{"a", "b"})
 		assert.Equal(t, []string{"a", "b"}, fn())
 
@@ -69,11 +55,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestMustGet(t *testing.T) {
-	t.Parallel()
-
 	t.Run("panics when missing", func(t *testing.T) {
-		t.Parallel()
-
 		c := viper.New()
 
 		assert.Panics(t, func() {
@@ -82,8 +64,6 @@ func TestMustGet(t *testing.T) {
 	})
 
 	t.Run("returns value when set", func(t *testing.T) {
-		t.Parallel()
-
 		c := viper.New()
 		c.Set("present.key", "hello")
 		fn := config.MustGet[string](c, "present.key")
@@ -92,8 +72,6 @@ func TestMustGet(t *testing.T) {
 }
 
 func TestWatch(t *testing.T) {
-	t.Parallel()
-
 	c := viper.New()
 	fn := config.Get[string](c, "watch.test", "initial")
 
@@ -116,8 +94,6 @@ func TestWatch(t *testing.T) {
 }
 
 func TestWatchChan(t *testing.T) {
-	t.Parallel()
-
 	c := viper.New()
 	fn := config.Get[int](c, "watchch.test", 1)
 

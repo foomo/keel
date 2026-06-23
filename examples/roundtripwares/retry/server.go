@@ -17,12 +17,14 @@ func server() {
 	svs := http.NewServeMux()
 
 	counter := 0
+
 	svs.HandleFunc("/404", func(w http.ResponseWriter, r *http.Request) {
 		counter++
 		if counter < 10 {
 			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 			return
 		}
+
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})

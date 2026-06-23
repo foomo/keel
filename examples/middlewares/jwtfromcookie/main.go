@@ -43,6 +43,7 @@ func main() {
 
 	// create jwt key
 	jwtKey := jwt.NewKey("demo", &rsaKey.PublicKey, rsaKey)
+
 	log.Must(l, err, "failed to create jwt key")
 
 	// init jwt with key files
@@ -91,6 +92,7 @@ func main() {
 					middleware.JWTWithClaimsHandler(func(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims gojwt.Claims) bool {
 						if value, ok := claims.(*CustomClaims); ok {
 							var language string
+
 							switch {
 							case strings.HasPrefix(r.URL.Path, "/fr"):
 								language = "fr"
@@ -99,8 +101,10 @@ func main() {
 							default:
 								language = "de"
 							}
+
 							if value.Language != language {
 								value.Language = language
+
 								if token, err := jwtInst.GetSignedToken(claims); err != nil {
 									httputils.InternalServerError(l, w, r, err)
 									return false
@@ -110,6 +114,7 @@ func main() {
 								} else {
 									r.AddCookie(c)
 									l.Info("updated cookie", zap.String("path", r.URL.Path))
+
 									return true
 								}
 							} else {
@@ -137,6 +142,7 @@ func main() {
 							r.AddCookie(c)
 							l.Info("added cookie", zap.String("path", r.URL.Path))
 						}
+
 						return claims, true
 					}),
 					// delete cookie if e.g. sth is wrong with it
@@ -145,8 +151,10 @@ func main() {
 							httputils.InternalServerError(l, w, r, err)
 							return false
 						}
+
 						l.Info("deleted cookie")
 						http.Redirect(w, r, r.URL.String(), http.StatusTemporaryRedirect)
+
 						return false
 					}),
 				),

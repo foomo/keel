@@ -59,6 +59,7 @@ func main() {
 			httputils.InternalServerError(l, w, r, err)
 			return
 		}
+
 		l.Info("sent message")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
