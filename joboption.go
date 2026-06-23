@@ -130,8 +130,6 @@ func JobWithTelemetry() JobOption {
 }
 
 // JobWithStdOutTracer option with default value.
-//
-// Deprecated: use JobWithTelemetry with OTEL_TRACES_EXPORTER=console.
 func JobWithStdOutTracer(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -144,8 +142,6 @@ func JobWithStdOutTracer(enabled bool) JobOption {
 }
 
 // JobWithStdOutMeter option with default value.
-//
-// Deprecated: use JobWithTelemetry with OTEL_METRICS_EXPORTER=console.
 func JobWithStdOutMeter(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -158,8 +154,6 @@ func JobWithStdOutMeter(enabled bool) JobOption {
 }
 
 // JobWithOTLPGRPCTracer option with default value.
-//
-// Deprecated: use JobWithTelemetry with OTEL_TRACES_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=grpc.
 func JobWithOTLPGRPCTracer(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -172,8 +166,6 @@ func JobWithOTLPGRPCTracer(enabled bool) JobOption {
 }
 
 // JobWithOTLPHTTPTracer option with default value.
-//
-// Deprecated: use JobWithTelemetry with OTEL_TRACES_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf.
 func JobWithOTLPHTTPTracer(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -187,8 +179,6 @@ func JobWithOTLPHTTPTracer(enabled bool) JobOption {
 
 // JobWithOTLPGRPCMeter option with default value. Metrics are pushed via OTLP gRPC
 // and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
-//
-// Deprecated: use JobWithTelemetry with OTEL_METRICS_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=grpc.
 func JobWithOTLPGRPCMeter(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -202,8 +192,6 @@ func JobWithOTLPGRPCMeter(enabled bool) JobOption {
 
 // JobWithOTLPHTTPMeter option with default value. Metrics are pushed via OTLP HTTP
 // and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
-//
-// Deprecated: use JobWithTelemetry with OTEL_METRICS_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf.
 func JobWithOTLPHTTPMeter(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
