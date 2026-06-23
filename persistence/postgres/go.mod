@@ -5,7 +5,7 @@ go 1.26.0
 replace github.com/foomo/keel => ../../
 
 require (
-	github.com/foomo/keel v0.26.1
+	github.com/foomo/keel v0.27.1
 	github.com/lib/pq v1.12.3
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.28.0

@@ -13,7 +13,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
-	github.com/grafana/otel-profiling-go v0.5.1
+	github.com/grafana/otel-profiling-go v0.6.0
 	github.com/grafana/pyroscope-go v1.3.1
 	github.com/invopop/jsonschema v0.14.0
 	github.com/klauspost/compress v1.18.6
@@ -49,8 +49,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/crypto v0.52.0
-	golang.org/x/sync v0.20.0
+	golang.org/x/crypto v0.53.0
+	golang.org/x/sync v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -142,8 +142,8 @@ require (
 	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/api v0.278.0 // indirect
 	google.golang.org/genproto v0.0.0-20260511170946-3700d4141b60 // indirect
