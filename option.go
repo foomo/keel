@@ -154,6 +154,30 @@ func WithStdOutLogger(enabled bool) Option {
 	}
 }
 
+// WithOTLPHTTPLogger option with default value
+func WithOTLPHTTPLogger(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.loggerProvider, err = telemetry.NewOTLPHTTPLoggerProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http logger provider")
+		}
+	}
+}
+
+// WithOTLPGRCPLogger option with default value
+func WithOTLPGRCPLogger(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.loggerProvider, err = telemetry.NewOTLPGRCPLoggerProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc logger provider")
+		}
+	}
+}
+
 // WithStdOutMeter option with default value
 func WithStdOutMeter(enabled bool) Option {
 	return func(inst *Server) {

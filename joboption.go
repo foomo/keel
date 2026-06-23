@@ -215,6 +215,30 @@ func JobWithOTLPHTTPMeter(enabled bool) JobOption {
 	}
 }
 
+// JobWithOTLPHTTPLogger option with default value
+func JobWithOTLPHTTPLogger(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.loggerProvider, err = telemetry.NewOTLPHTTPLoggerProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http logger provider")
+		}
+	}
+}
+
+// JobWithOTLPGRCPLogger option with default value
+func JobWithOTLPGRCPLogger(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.loggerProvider, err = telemetry.NewOTLPGRCPLoggerProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc logger provider")
+		}
+	}
+}
+
 // JobWithPushgatewayMeter option pushes Prometheus metrics to a Pushgateway on job
 // exit. An empty url disables it; the url falls back to the KEEL_PUSHGATEWAY_URL
 // config/env value. It sets up a Prometheus meter provider so OTEL metrics are
