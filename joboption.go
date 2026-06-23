@@ -129,6 +129,92 @@ func JobWithTelemetry() JobOption {
 	}
 }
 
+// JobWithStdOutTracer option with default value.
+//
+// Deprecated: use JobWithTelemetry with OTEL_TRACES_EXPORTER=console.
+func JobWithStdOutTracer(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create stdOut trace provider")
+		}
+	}
+}
+
+// JobWithStdOutMeter option with default value.
+//
+// Deprecated: use JobWithTelemetry with OTEL_METRICS_EXPORTER=console.
+func JobWithStdOutMeter(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create stdOut meter provider")
+		}
+	}
+}
+
+// JobWithOTLPGRPCTracer option with default value.
+//
+// Deprecated: use JobWithTelemetry with OTEL_TRACES_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=grpc.
+func JobWithOTLPGRPCTracer(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.traceProvider, err = telemetry.NewOTLPGRPCTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
+		}
+	}
+}
+
+// JobWithOTLPHTTPTracer option with default value.
+//
+// Deprecated: use JobWithTelemetry with OTEL_TRACES_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf.
+func JobWithOTLPHTTPTracer(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http trace provider")
+		}
+	}
+}
+
+// JobWithOTLPGRPCMeter option with default value. Metrics are pushed via OTLP gRPC
+// and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
+//
+// Deprecated: use JobWithTelemetry with OTEL_METRICS_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=grpc.
+func JobWithOTLPGRPCMeter(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewOTLPGRPCMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc meter provider")
+		}
+	}
+}
+
+// JobWithOTLPHTTPMeter option with default value. Metrics are pushed via OTLP HTTP
+// and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
+//
+// Deprecated: use JobWithTelemetry with OTEL_METRICS_EXPORTER=otlp and OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf.
+func JobWithOTLPHTTPMeter(enabled bool) JobOption {
+	return func(inst *Job) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewOTLPHTTPMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http meter provider")
+		}
+	}
+}
+
 // JobWithPushgatewayMeter option pushes Prometheus metrics to a Pushgateway on job
 // exit. An empty url disables it; the url falls back to the KEEL_PUSHGATEWAY_URL
 // config/env value. It sets up a Prometheus meter provider so OTEL metrics are

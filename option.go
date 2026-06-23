@@ -130,6 +130,106 @@ func WithTelemetry() Option {
 	}
 }
 
+// WithStdOutTracer option with default value
+func WithStdOutTracer(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.traceProvider, err = telemetry.NewStdOutTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create stdOut trace provider")
+		}
+	}
+}
+
+// WithStdOutLogger option with default value
+func WithStdOutLogger(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.loggerProvider, err = telemetry.NewStdOutLoggerProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create stdOut logger provider")
+		}
+	}
+}
+
+// WithStdOutMeter option with default value
+func WithStdOutMeter(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewStdOutMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create stdOut meter provider")
+		}
+	}
+}
+
+// WithOTLPGRPCTracer option with default value
+func WithOTLPGRPCTracer(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.traceProvider, err = telemetry.NewOTLPGRPCTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc trace provider")
+		}
+	}
+}
+
+// WithOTLPHTTPTracer option with default value
+func WithOTLPHTTPTracer(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.traceProvider, err = telemetry.NewOTLPHTTPTraceProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http trace provider")
+		}
+	}
+}
+
+// WithOTLPGRPCMeter option with default value Metrics are pushed via OTLP gRPC
+// via a periodic reader, suiting setups that export metrics instead of exposing a
+// Prometheus scrape endpoint.
+func WithOTLPGRPCMeter(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewOTLPGRPCMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp grpc meter provider")
+		}
+	}
+}
+
+// WithOTLPHTTPMeter option with default value Metrics are pushed via OTLP HTTP
+// via a periodic reader, suiting setups that export metrics instead of exposing a
+// Prometheus scrape endpoint.
+func WithOTLPHTTPMeter(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewOTLPHTTPMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create otlp http meter provider")
+		}
+	}
+}
+
+// WithPrometheusMeter option with default value
+func WithPrometheusMeter(enabled bool) Option {
+	return func(inst *Server) {
+		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
+			var err error
+
+			inst.meterProvider, err = telemetry.NewPrometheusMeterProvider(inst.ctx)
+			log.Must(inst.l, err, "failed to create prometheus meter provider")
+		}
+	}
+}
+
 // WithPushgatewayMeter option pushes Prometheus metrics to a Pushgateway on an
 // interval and once more on graceful shutdown. An empty url disables it; the url
 // falls back to the service.pushgateway.url config/env value. The push interval
