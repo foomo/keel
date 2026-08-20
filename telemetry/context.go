@@ -7,7 +7,6 @@ import (
 
 	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"github.com/grafana/pyroscope-go"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -176,7 +175,7 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 		trace.WithAttributes(kv...),
 		trace.WithAttributes(CodeStacktrace(5, 1)),
 	)
-	sp.SetStatus(codes.Error, errors.Cause(err).Error())
+	sp.SetStatus(codes.Error, rootCause(err).Error())
 }
 
 // RecordSpanError records an error on the span.
@@ -236,4 +235,35 @@ func (c Context) SetProfileAttributes(kv ...attribute.KeyValue) Context {
 	pprof.SetGoroutineLabels(ctx)
 
 	return Ctx(ctx)
+}
+
+// maxCauseDepth bounds rootCause so a cyclic Cause() chain cannot spin forever.
+const maxCauseDepth = 100
+
+// rootCause unwraps err to its root cause, in the manner of
+// github.com/pkg/errors.Cause, but terminates on self-referential or cyclic
+// chains instead of looping indefinitely.
+//
+// Unlike pkg/errors.Cause this never returns nil for a non-nil err, so callers
+// may safely call Error() on the result.
+func rootCause(err error) error {
+	type causer interface {
+		Cause() error
+	}
+
+	for range maxCauseDepth {
+		cause, ok := err.(causer)
+		if !ok {
+			return err
+		}
+
+		next := cause.Cause()
+		if next == nil {
+			return err
+		}
+
+		err = next
+	}
+
+	return err
 }

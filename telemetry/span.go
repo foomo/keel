@@ -6,7 +6,6 @@ import (
 
 	goruntime "github.com/foomo/go/runtime"
 	keelsemconv "github.com/foomo/keel/semconv"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
@@ -80,7 +79,7 @@ func SetSpanStatusError(sp trace.Span, description string) {
 func End(sp trace.Span, err error) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
-		sp.SetStatus(codes.Error, errors.Cause(err).Error())
+		sp.SetStatus(codes.Error, rootCause(err).Error())
 	}
 
 	sp.End()
@@ -90,7 +89,7 @@ func End(sp trace.Span, err error) {
 func EndSpan(sp trace.Span, err error, opts ...trace.SpanEndOption) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
-		sp.SetStatus(codes.Error, errors.Cause(err).Error())
+		sp.SetStatus(codes.Error, rootCause(err).Error())
 	}
 
 	sp.End(opts...)
