@@ -91,9 +91,18 @@ func (s *HTTP) Start(ctx context.Context) error {
 	s.server.RegisterOnShutdown(func() {
 		s.running.Store(false)
 	})
+
+	// Bind before reporting healthy: an occupied port must fail the service
+	// rather than leave it marked running while nothing is listening.
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", s.server.Addr)
+	if err != nil {
+		return errors.Wrap(err, "failed to listen")
+	}
+
 	s.running.Store(true)
 
-	if err := s.server.ListenAndServe(); errors.Is(err, http.ErrServerClosed) {
+	if err := s.server.Serve(ln); errors.Is(err, http.ErrServerClosed) {
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, "failed to start service")
