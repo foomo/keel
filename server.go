@@ -408,6 +408,7 @@ func (s *Server) startService(services ...Service) {
 			} else if err != nil {
 				log.WithError(s.l, err).Error("failed to start service")
 				s.gracefulCancel()
+
 				return err
 			}
 

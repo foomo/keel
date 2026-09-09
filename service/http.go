@@ -95,6 +95,7 @@ func (s *HTTP) Start(ctx context.Context) error {
 	// Bind before reporting healthy: an occupied port must fail the service
 	// rather than leave it marked running while nothing is listening.
 	var lc net.ListenConfig
+
 	ln, err := lc.Listen(ctx, "tcp", s.server.Addr)
 	if err != nil {
 		return errors.Wrap(err, "failed to listen")
