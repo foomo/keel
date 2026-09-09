@@ -1,13 +1,66 @@
 package service_test
 
 import (
+	"net"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/service"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
+
+// TestHTTPStartPortInUse covers the case of a restarted pod whose predecessor
+// still holds the port: Start must fail and the service must never report
+// healthy, or the pod would come up without ever accepting a request.
+func TestHTTPStartPortInUse(t *testing.T) {
+	t.Parallel()
+
+	l := zaptest.NewLogger(t)
+
+	var lc net.ListenConfig
+
+	occupied, err := lc.Listen(t.Context(), "tcp", "localhost:0")
+	require.NoError(t, err)
+
+	t.Cleanup(func() { _ = occupied.Close() })
+
+	s := service.NewHTTP(l, "blocked", occupied.Addr().String(), http.NewServeMux())
+
+	require.Error(t, s.Healthz(), "service must not be healthy before it started")
+	require.Error(t, s.Start(t.Context()), "start must fail while the port is occupied")
+	require.ErrorIs(t, s.Healthz(), service.ErrServiceNotRunning,
+		"service must not report healthy when it never got a listener")
+}
+
+// TestHTTPStartFreePort guards the fix against regressing the happy path.
+func TestHTTPStartFreePort(t *testing.T) {
+	t.Parallel()
+
+	l := zaptest.NewLogger(t)
+
+	var lc net.ListenConfig
+
+	free, err := lc.Listen(t.Context(), "tcp", "localhost:0")
+	require.NoError(t, err)
+
+	addr := free.Addr().String()
+	require.NoError(t, free.Close())
+
+	s := service.NewHTTP(l, "free", addr, http.NewServeMux())
+
+	done := make(chan error, 1)
+	go func() { done <- s.Start(t.Context()) }()
+
+	require.Eventually(t, func() bool { return s.Healthz() == nil }, 5*time.Second, 10*time.Millisecond,
+		"service must report healthy once it is listening")
+
+	require.NoError(t, s.Close(t.Context()))
+	require.NoError(t, <-done)
+}
 
 func _ExampleNewHTTP() {
 	svr := keel.NewServer(
