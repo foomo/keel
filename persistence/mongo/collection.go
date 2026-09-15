@@ -215,6 +215,66 @@ func (c *Collection) Exists(ctx context.Context, id string) (bool, error) {
 	return ret > 0, err
 }
 
+// UpsertUpdate builds the update document for an upsert of entity: the entity
+// itself under $set, plus any fields it declares via EntityWithInsertOnlyFields
+// under $setOnInsert. An upsert that resolves to an update therefore leaves those
+// fields at their stored value, while one that inserts writes them once.
+//
+// Upsert and UpsertMany use this internally. It is exported so callers driving
+// their own bulk writes - an import feed filtering on a staleness predicate, say -
+// can build the same document without restating the policy. Such callers remain
+// responsible for the filter, for stamping updatedAt (see EntityWithTimestamps),
+// and for executing the write.
+//
+// The $setOnInsert clause only takes effect when the write model enables upserting;
+// with SetUpsert(false) it is inert.
+func UpsertUpdate(entity Entity, now time.Time) bson.D {
+	update := bson.D{bson.E{Key: "$set", Value: entity}}
+
+	if v, ok := entity.(EntityWithInsertOnlyFields); ok {
+		if insertOnly := v.InsertOnlyFields(now); len(insertOnly) > 0 {
+			update = append(update, bson.E{Key: "$setOnInsert", Value: insertOnly})
+		}
+	}
+
+	return update
+}
+
+// ApplyTimestamps stamps updatedAt on entity, and fills in a missing createdAt
+// unless the entity defers that to $setOnInsert via EntityWithInsertOnlyFields.
+// Entities that do not implement EntityWithTimestamps are left untouched.
+//
+// Upsert and UpsertMany call this for you. It is exported as the companion to
+// UpsertUpdate, so callers driving their own bulk writes apply the same timestamp
+// policy rather than restating it per call site - in particular, a blind writer
+// must not stamp createdAt itself, or it overwrites the stored value.
+//
+// Note that this mutates entity.
+func ApplyTimestamps(entity Entity, now time.Time) {
+	v, ok := entity.(EntityWithTimestamps)
+	if !ok {
+		return
+	}
+
+	// An entity declaring insert-only fields carries its own createdAt policy, so
+	// leave a zero value alone: $setOnInsert supplies it exactly when the write
+	// turns out to be an insert, and omitempty keeps it out of $set otherwise.
+	_, insertOnly := entity.(EntityWithInsertOnlyFields)
+	if ct := v.GetCreatedAt(); ct.IsZero() && !insertOnly {
+		v.SetCreatedAt(now)
+	}
+
+	v.SetUpdatedAt(now)
+}
+
+// stampCreatedAt fills in a missing createdAt on the paths that insert the
+// document directly, where $setOnInsert never applies.
+func stampCreatedAt(entity Entity, now time.Time) {
+	if v, ok := entity.(EntityWithTimestamps); ok && v.GetCreatedAt().IsZero() {
+		v.SetCreatedAt(now)
+	}
+}
+
 func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error {
 	if id == "" {
 		return errors.New("id must not be empty")
@@ -222,14 +282,9 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 		return errors.New("entity must not be nil")
 	}
 
-	if v, ok := entity.(EntityWithTimestamps); ok {
-		now := time.Now()
-		if ct := v.GetCreatedAt(); ct.IsZero() {
-			v.SetCreatedAt(now)
-		}
+	now := time.Now()
 
-		v.SetUpdatedAt(now)
-	}
+	ApplyTimestamps(entity, now)
 
 	if v, ok := entity.(EntityWithVersion); ok {
 		currentVersion := v.GetVersion()
@@ -238,10 +293,13 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 
 		if currentVersion == 0 {
 			// insert the new document
+			stampCreatedAt(entity, now)
+
 			return c.Insert(ctx, entity)
 		} else if err := c.collection.FindOneAndUpdate(
 			ctx,
 			bson.D{bson.E{Key: "id", Value: id}, bson.E{Key: "version", Value: currentVersion}},
+			// never upserts, so insert-only fields cannot apply here
 			bson.D{bson.E{Key: "$set", Value: entity}},
 			options.FindOneAndUpdate().SetUpsert(false),
 		).Err(); errors.Is(err, mongo.ErrNoDocuments) {
@@ -252,7 +310,7 @@ func (c *Collection) Upsert(ctx context.Context, id string, entity Entity) error
 	} else if _, err := c.collection.UpdateOne(
 		ctx,
 		bson.D{bson.E{Key: "id", Value: id}},
-		bson.D{bson.E{Key: "$set", Value: entity}},
+		UpsertUpdate(entity, now),
 		options.UpdateOne().SetUpsert(true),
 	); err != nil {
 		return err
@@ -268,6 +326,9 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 		operations     []mongo.WriteModel
 	)
 
+	// one timestamp for the whole batch, so entities written together agree
+	now := time.Now()
+
 	for _, entity := range entities {
 		if entity == nil {
 			return errors.New("entity must not be nil")
@@ -275,14 +336,7 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 			return errors.New("id must not be empty")
 		}
 
-		if v, ok := entity.(EntityWithTimestamps); ok {
-			now := time.Now()
-			if ct := v.GetCreatedAt(); ct.IsZero() {
-				v.SetCreatedAt(now)
-			}
-
-			v.SetUpdatedAt(now)
-		}
+		ApplyTimestamps(entity, now)
 
 		if v, ok := entity.(EntityWithVersion); ok {
 			currentVersion := v.GetVersion()
@@ -290,6 +344,8 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 			v.IncreaseVersion()
 
 			if currentVersion == 0 {
+				stampCreatedAt(entity, now)
+
 				operations = append(operations,
 					mongo.NewInsertOneModel().SetDocument(entity),
 				)
@@ -299,6 +355,7 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 				operations = append(operations,
 					mongo.NewUpdateOneModel().
 						SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}, bson.E{Key: "version", Value: currentVersion}}).
+						// never upserts, so insert-only fields cannot apply here
 						SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
 						SetUpsert(false),
 				)
@@ -307,7 +364,7 @@ func (c *Collection) UpsertMany(ctx context.Context, entities []Entity) error {
 			operations = append(operations,
 				mongo.NewUpdateOneModel().
 					SetFilter(bson.D{bson.E{Key: "id", Value: entity.GetID()}}).
-					SetUpdate(bson.D{bson.E{Key: "$set", Value: entity}}).
+					SetUpdate(UpsertUpdate(entity, now)).
 					SetUpsert(true),
 			)
 		}
