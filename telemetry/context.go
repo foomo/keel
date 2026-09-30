@@ -5,9 +5,9 @@ import (
 	"runtime/pprof"
 	"time"
 
+	goerrors "github.com/foomo/go/errors"
 	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"github.com/grafana/pyroscope-go"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -171,20 +171,24 @@ func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) {
 
 // RecordError records an error on the span and logs it.
 func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
-	sp := c.Span()
-	sp.RecordError(err,
-		trace.WithAttributes(kv...),
-		trace.WithAttributes(CodeStacktrace(5, 1)),
-	)
-	sp.SetStatus(codes.Error, errors.Cause(err).Error())
+	if err != nil {
+		sp := c.Span()
+		sp.RecordError(err,
+			trace.WithAttributes(kv...),
+			trace.WithAttributes(CodeStacktrace(5, 1)),
+		)
+		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
+	}
 }
 
 // RecordSpanError records an error on the span.
 func (c Context) RecordSpanError(err error, kv ...attribute.KeyValue) {
-	sp := c.Span()
-	sp.RecordError(err,
-		trace.WithAttributes(append(kv, CodeStacktrace(5, 1))...),
-	)
+	if err != nil {
+		sp := c.Span()
+		sp.RecordError(err,
+			trace.WithAttributes(append(kv, CodeStacktrace(5, 1))...),
+		)
+	}
 }
 
 // AddSpanEvent adds an event to the span.

@@ -1,11 +1,11 @@
 module github.com/foomo/keel/persistence/postgres
 
-go 1.26.0
+go 1.27.0
 
 replace github.com/foomo/keel => ../../
 
 require (
-	github.com/foomo/keel v0.30.1
+	github.com/foomo/keel v0.31.0
 	github.com/lib/pq v1.12.3
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.28.0
@@ -15,7 +15,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/foomo/opentelemetry-go v0.4.0 // indirect
-	go.opentelemetry.io/otel v1.45.0 // indirect
-	go.opentelemetry.io/otel/trace v1.45.0 // indirect
+	go.opentelemetry.io/otel v1.47.0-rc.1.0.20260924072922-c131dcfc3885 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0-rc.1.0.20260924072922-c131dcfc3885 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 )
