@@ -6,11 +6,11 @@ import (
 	"github.com/foomo/keel/env"
 	otelzap "github.com/foomo/keel/internal/otel/exporters/zap"
 	otelzapbridge "go.opentelemetry.io/contrib/bridges/otelzap"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
 	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/log/noop"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
@@ -22,7 +22,7 @@ const instrumentationName = "github.com/foomo/keel"
 
 // LoggerProvider returns the global logger provider instance used throughout the application.
 func LoggerProvider() log.LoggerProvider {
-	return otel.GetLoggerProvider()
+	return global.GetLoggerProvider()
 }
 
 // NewNoopLoggerProvider returns a no-op log.LoggerProvider.
@@ -100,7 +100,7 @@ func newLoggerProvider(ctx context.Context, p sdklog.Processor) (log.LoggerProvi
 		sdklog.WithResource(resource),
 		sdklog.WithProcessor(p),
 	)
-	otel.SetLoggerProvider(provider)
+	global.SetLoggerProvider(provider)
 
 	return provider, nil
 }
