@@ -3,11 +3,13 @@ package keel_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -21,20 +23,19 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-// shutdownSignal is only handled by the suite servers, so sending it does not
+// shutdownSignal is only registered by the signal trigger, so sending it does not
 // stop servers of tests running in parallel.
 const shutdownSignal = syscall.SIGUSR2
 
 type KeelTestSuite struct {
 	suite.Suite
-	l        *zap.Logger
-	svr      *keel.Server
-	mux      *http.ServeMux
-	addr     string
-	zapAddr  string
-	sleeping chan struct{}
-	done     chan struct{}
-	cancel   context.CancelFunc
+	l       *zap.Logger
+	svr     *keel.Server
+	mux     *http.ServeMux
+	addr    string
+	zapAddr string
+	done    chan struct{}
+	cancel  context.CancelFunc
 }
 
 // BeforeTest hook
@@ -42,17 +43,11 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 	ports := testingx.FreePorts(s.T(), 2)
 	s.addr = fmt.Sprintf("localhost:%d", ports[0])
 	s.zapAddr = fmt.Sprintf("localhost:%d", ports[1])
-	s.sleeping = make(chan struct{})
 	s.done = nil
 
 	s.l = zaptest.NewLogger(s.T())
 	s.mux = http.NewServeMux()
 	s.mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	s.mux.HandleFunc("/sleep", func(w http.ResponseWriter, r *http.Request) {
-		close(s.sleeping)
-		time.Sleep(500 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 	})
 	s.mux.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +70,6 @@ func (s *KeelTestSuite) BeforeTest(suiteName, testName string) {
 	s.svr = keel.NewServer(
 		keel.WithContext(ctx),
 		keel.WithLogger(s.l),
-		keel.WithShutdownSignals(shutdownSignal),
 	)
 	s.cancel = cancel
 }
@@ -167,51 +161,6 @@ func (s *KeelTestSuite) TestServiceHTTPZap() {
 	})
 }
 
-func (s *KeelTestSuite) TestGraceful() {
-	s.svr.AddServices(
-		service.NewHTTP(s.l, "test", s.addr, s.mux),
-	)
-
-	s.runServer()
-
-	type result struct {
-		statusCode int
-		err        error
-	}
-
-	// start long running request
-	sleepResult := make(chan result, 1)
-
-	go func() {
-		statusCode, _, err := s.httpGet(s.url("/sleep"))
-		sleepResult <- result{statusCode: statusCode, err: err}
-	}()
-
-	select {
-	case <-s.sleeping:
-	case <-time.After(5 * time.Second):
-		s.FailNow("request to /sleep did not arrive")
-	}
-
-	// shutdown while the request is in flight
-	s.Require().NoError(syscall.Kill(syscall.Getpid(), shutdownSignal))
-	s.waitServerStopped()
-
-	// in flight request must complete
-	select {
-	case res := <-sleepResult:
-		if s.NoError(res.err) {
-			s.Equal(http.StatusOK, res.statusCode)
-		}
-	case <-time.After(5 * time.Second):
-		s.FailNow("request to /sleep did not complete")
-	}
-
-	// server must be down
-	_, _, err := s.httpGet(s.url("/ok"))
-	s.Require().Error(err)
-}
-
 // runServer helper
 func (s *KeelTestSuite) runServer() {
 	s.done = make(chan struct{})
@@ -283,6 +232,249 @@ func TestKeelTestSuite(t *testing.T) {
 	suite.Run(t, new(KeelTestSuite))
 }
 
+// TestServerGracefulShutdown asserts the graceful shutdown contract for every
+// trigger: readiness fails and new connections are refused while in-flight
+// requests complete with a live context, then Run returns.
+func TestServerGracefulShutdown(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		opts    []keel.Option
+		trigger func(t *testing.T, svr *keel.Server, fail chan<- error)
+	}{
+		{
+			name: "shutdown cancel",
+			trigger: func(t *testing.T, svr *keel.Server, _ chan<- error) {
+				t.Helper()
+				svr.ShutdownCancel()()
+			},
+		},
+		{
+			name: "signal",
+			opts: []keel.Option{keel.WithShutdownSignals(shutdownSignal)},
+			trigger: func(t *testing.T, _ *keel.Server, _ chan<- error) {
+				t.Helper()
+				require.NoError(t, syscall.Kill(syscall.Getpid(), shutdownSignal))
+			},
+		},
+		{
+			name: "service failure",
+			trigger: func(t *testing.T, _ *keel.Server, fail chan<- error) {
+				t.Helper()
+
+				fail <- errors.New("boom")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			l := zaptest.NewLogger(t)
+			ports := testingx.FreePorts(t, 2)
+			appURL := fmt.Sprintf("http://localhost:%d", ports[0])
+			readinessURL := fmt.Sprintf("http://localhost:%d/healthz/readiness", ports[1])
+
+			entered := make(chan struct{})
+			release := make(chan struct{})
+			handlerCtxErr := make(chan error, 1)
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {})
+			mux.HandleFunc("/block", func(w http.ResponseWriter, r *http.Request) {
+				close(entered)
+				<-release
+
+				handlerCtxErr <- r.Context().Err()
+			})
+
+			svr := keel.NewServer(append([]keel.Option{
+				keel.WithContext(t.Context()),
+				keel.WithLogger(l),
+				keel.WithGracefulPeriod(5 * time.Second),
+			}, tt.opts...)...)
+
+			fail := make(chan error, 1)
+			gate := make(chan struct{})
+			gateCalls := make(chan closerCall, 1)
+
+			// closers run in registration order: the gate holds the shutdown before
+			// any service is closed, and healthz is added last so that readiness
+			// stays observable while the app service drains
+			svr.AddCloser(&testCloser{name: "gate", calls: gateCalls, gate: gate})
+			svr.AddServices(
+				service.NewHTTP(l, "app", fmt.Sprintf("localhost:%d", ports[0]), mux),
+				service.NewGoRoutine(l, "worker", func(ctx context.Context, _ *zap.Logger) error {
+					select {
+					case err := <-fail:
+						return err
+					case <-ctx.Done():
+						return nil
+					}
+				}),
+				service.NewHealthz(l, "healthz", fmt.Sprintf("localhost:%d", ports[1]), "/healthz", svr.ProbesForTest()),
+			)
+
+			done := startServer(t, svr)
+
+			// unblock on failure, so the server can drain on cleanup
+			unblock := sync.OnceFunc(func() { close(release) })
+			t.Cleanup(unblock)
+
+			openGate := sync.OnceFunc(func() { close(gate) })
+			t.Cleanup(openGate)
+
+			requireEventuallyStatus(t, appURL+"/ok", http.StatusOK)
+			requireEventuallyStatus(t, readinessURL, http.StatusOK)
+
+			// start in-flight request
+			inFlight := make(chan httpResult, 1)
+
+			go func() { inFlight <- httpGet(t.Context(), appURL+"/block") }()
+
+			receive(t, entered, "request did not reach the handler")
+
+			tt.trigger(t, svr, fail)
+
+			// no service is closed yet: readiness must fail before the listeners close
+			receive(t, gateCalls, "shutdown did not start")
+			requireEventuallyStatus(t, readinessURL, http.StatusServiceUnavailable)
+			requireEventuallyStatus(t, appURL+"/ok", http.StatusOK)
+
+			openGate()
+
+			require.Eventually(t, func() bool {
+				return httpGet(t.Context(), appURL+"/ok").err != nil
+			}, 5*time.Second, 10*time.Millisecond, "new connections must be refused while draining")
+
+			select {
+			case <-done:
+				t.Fatal("server stopped before the in-flight request completed")
+			default:
+			}
+
+			unblock()
+
+			require.NoError(t, receive(t, handlerCtxErr, "handler did not complete"), "in-flight request context must stay alive")
+
+			res := receive(t, inFlight, "in-flight request did not complete")
+			require.NoError(t, res.err)
+			require.Equal(t, http.StatusOK, res.statusCode)
+
+			receive(t, done, "server did not stop")
+			require.ErrorIs(t, svr.Healthz(), keel.ErrServerNotRunning)
+		})
+	}
+}
+
+// TestServerShutdownClosers asserts closers run in registration order and a
+// failing closer does not prevent the remaining ones from running.
+func TestServerShutdownClosers(t *testing.T) {
+	t.Parallel()
+
+	calls := make(chan closerCall, 3)
+
+	svr := keel.NewServer(
+		keel.WithContext(t.Context()),
+		keel.WithLogger(zaptest.NewLogger(t)),
+	)
+	svr.AddClosers(
+		&testCloser{name: "first", calls: calls},
+		&testCloser{name: "failing", calls: calls, err: errors.New("boom")},
+		&testCloser{name: "last", calls: calls},
+	)
+
+	done := startServer(t, svr)
+
+	svr.ShutdownCancel()()
+	receive(t, done, "server did not stop")
+
+	for _, name := range []string{"first", "failing", "last"} {
+		require.Equal(t, name, receive(t, calls, "closer was not called").name)
+	}
+}
+
+// TestServerGracefulPeriodExceeded asserts the graceful period bounds the
+// shutdown: a hanging closer is given up on and the remaining closers still run.
+func TestServerGracefulPeriodExceeded(t *testing.T) {
+	t.Parallel()
+
+	calls := make(chan closerCall, 2)
+
+	svr := keel.NewServer(
+		keel.WithContext(t.Context()),
+		keel.WithLogger(zaptest.NewLogger(t)),
+		keel.WithGracefulPeriod(100*time.Millisecond),
+	)
+	svr.AddClosers(
+		&testCloser{name: "hanging", calls: calls, block: true},
+		&testCloser{name: "last", calls: calls},
+	)
+
+	done := startServer(t, svr)
+
+	svr.ShutdownCancel()()
+	receive(t, done, "server did not stop after the graceful period")
+
+	hanging := receive(t, calls, "hanging closer was not called")
+	require.Equal(t, "hanging", hanging.name)
+	require.ErrorIs(t, hanging.err, context.DeadlineExceeded)
+	require.Equal(t, "last", receive(t, calls, "last closer was not called").name)
+}
+
+// TestServerContextCancel asserts cancelling the server context is a hard stop:
+// in-flight requests see their context cancelled, but closers still get a live
+// context bounded by the graceful period, e.g. to flush telemetry.
+func TestServerContextCancel(t *testing.T) {
+	t.Parallel()
+
+	l := zaptest.NewLogger(t)
+	addr := fmt.Sprintf("localhost:%d", testingx.FreePort(t))
+	ctx, cancel := context.WithCancel(t.Context())
+
+	entered := make(chan struct{})
+	handlerCtxErr := make(chan error, 1)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {})
+	mux.HandleFunc("/block", func(w http.ResponseWriter, r *http.Request) {
+		close(entered)
+		<-r.Context().Done()
+
+		handlerCtxErr <- r.Context().Err()
+	})
+
+	calls := make(chan closerCall, 1)
+
+	svr := keel.NewServer(
+		keel.WithContext(ctx),
+		keel.WithLogger(l),
+		keel.WithGracefulPeriod(5*time.Second),
+	)
+	svr.AddService(service.NewHTTP(l, "app", addr, mux))
+	svr.AddCloser(&testCloser{name: "closer", calls: calls})
+
+	done := startServer(t, svr)
+
+	requireEventuallyStatus(t, "http://"+addr+"/ok", http.StatusOK)
+
+	go func() { _ = httpGet(t.Context(), "http://"+addr+"/block") }()
+
+	receive(t, entered, "request did not reach the handler")
+
+	cancel()
+
+	require.ErrorIs(t, receive(t, handlerCtxErr, "handler did not complete"), context.Canceled)
+
+	call := receive(t, calls, "closer was not called")
+	require.NoError(t, call.err, "closer must not receive a cancelled context")
+	require.True(t, call.hasDeadline, "closer context must be bounded by the graceful period")
+
+	receive(t, done, "server did not stop")
+}
+
 // TestServerPortInUse covers a pod restarting while its port is still held, e.g.
 // after an OOMKill. The server must stop instead of staying alive with a service
 // that never got a listener, so the container is restarted rather than reporting
@@ -308,19 +500,8 @@ func TestServerPortInUse(t *testing.T) {
 	blocked := service.NewHTTP(l, "blocked", occupied.Addr().String(), http.NewServeMux())
 	svr.AddService(blocked)
 
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-
-		svr.Run()
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(15 * time.Second):
-		t.Fatal("server kept running although a service could not bind its port")
-	}
+	done := startServer(t, svr)
+	receive(t, done, "server kept running although a service could not bind its port")
 
 	require.Error(t, blocked.Healthz(), "service must not report healthy without a listener")
 	require.Error(t, svr.Healthz(), "server must not report healthy after it stopped")
@@ -356,19 +537,8 @@ func TestServerPortInUseStopsOtherServices(t *testing.T) {
 	blocked := service.NewHTTP(l, "blocked", occupied.Addr().String(), http.NewServeMux())
 	svr.AddServices(healthy, blocked)
 
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-
-		svr.Run()
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(15 * time.Second):
-		t.Fatal("server kept running although a service could not bind its port")
-	}
+	done := startServer(t, svr)
+	receive(t, done, "server kept running although a service could not bind its port")
 
 	dialer := net.Dialer{Timeout: time.Second}
 

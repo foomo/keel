@@ -105,7 +105,9 @@ func NewServer(opts ...Option) *Server {
 			<-inst.gracefulCtx.Done()
 			inst.shutdown.Store(true)
 
-			timeoutCtx, timeoutCancel := context.WithTimeout(inst.ctx, inst.gracefulPeriod)
+			// detach from the server context so closers get the full graceful period
+			// even if the server context has been canceled
+			timeoutCtx, timeoutCancel := context.WithTimeout(context.WithoutCancel(inst.ctx), inst.gracefulPeriod)
 			defer timeoutCancel()
 
 			inst.l.Info("keel closer closed",
