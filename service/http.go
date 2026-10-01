@@ -98,7 +98,7 @@ func (s *HTTP) Start(ctx context.Context) error {
 
 	ln, err := lc.Listen(ctx, "tcp", s.server.Addr)
 	if err != nil {
-		return errors.Wrap(err, "failed to listen")
+		return errors.Wrapf(err, "failed to listen to addr: %s", s.server.Addr)
 	}
 
 	s.running.Store(true)
