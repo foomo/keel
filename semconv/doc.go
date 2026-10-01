@@ -5,6 +5,5 @@
 // [go.opentelemetry.io/otel/attribute.Key] constant (for example
 // [KeelServiceNameKey]) and a constructor returning a
 // [go.opentelemetry.io/otel/attribute.KeyValue] (for example
-// [KeelServiceName]). Attributes cover keel services, debug state and gotsrpc
-// calls.
+// [KeelServiceName]). Attributes cover keel services and debug state.
 package semconv
