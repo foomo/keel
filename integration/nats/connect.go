@@ -16,8 +16,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Connect establishes a connection to a NATS server with OTel instrumentation
-// and structured logging on every lifecycle event.
+// Connect establishes a connection to the NATS server at rawURL with OTel
+// instrumentation and structured logging on every lifecycle event.
+//
+// The connection reconnects indefinitely every 2s (with jitter) and pings
+// every 20s. These options and the lifecycle handlers are appended after opts
+// and therefore take precedence over them. Disconnects, reconnects and async
+// errors are recorded with the meter of s, and the connection is registered
+// as a closer on s.
 func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, error) {
 	l := s.Logger().Named("nats")
 	m := s.Meter()

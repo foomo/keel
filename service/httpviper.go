@@ -10,12 +10,17 @@ import (
 	"github.com/foomo/keel/config"
 )
 
+// Default name, address and path of the service returned by
+// [NewDefaultHTTPViper].
 var (
 	DefaultHTTPViperName = "viper"
 	DefaultHTTPViperAddr = "localhost:9300"
 	DefaultHTTPViperPath = "/config"
 )
 
+// NewHTTPViper returns an [HTTP] service exposing c on path. GET responds with
+// all settings as JSON; PUT sets a single value from a {"key": ..., "value": ...}
+// JSON body.
 func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +55,8 @@ func NewHTTPViper(l *zap.Logger, c *viper.Viper, name, addr, path string) *HTTP 
 	return NewHTTP(l, name, addr, handler)
 }
 
+// NewDefaultHTTPViper returns [NewHTTPViper] for [config.Config] using
+// [DefaultHTTPViperName], [DefaultHTTPViperAddr] and [DefaultHTTPViperPath].
 func NewDefaultHTTPViper(l *zap.Logger) *HTTP {
 	return NewHTTPViper(
 		l,

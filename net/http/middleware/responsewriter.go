@@ -9,7 +9,9 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 )
 
-// responseWriter is a wrapper that includes that http statusCode and size for logging
+// responseWriter wraps an [http.ResponseWriter] to record the status code and
+// the number of body bytes written, and to optionally set the
+// X-Response-Time header.
 type responseWriter struct {
 	http.ResponseWriter
 	writeResponseTimeHeader bool
@@ -19,6 +21,8 @@ type responseWriter struct {
 	size                    int
 }
 
+// WrapResponseWriter wraps w to record the status code and body size. If w is
+// already wrapped it is returned as is.
 func WrapResponseWriter(w http.ResponseWriter) *responseWriter {
 	if wr, ok := w.(*responseWriter); ok {
 		return wr
@@ -30,14 +34,18 @@ func WrapResponseWriter(w http.ResponseWriter) *responseWriter {
 	}
 }
 
+// SetWriteResponseTimeHeader sets whether WriteHeader adds the
+// X-Response-Time header with the microseconds elapsed since wrapping.
 func (w *responseWriter) SetWriteResponseTimeHeader(write bool) {
 	w.writeResponseTimeHeader = write
 }
 
+// Size returns the number of body bytes written.
 func (w *responseWriter) Size() int {
 	return w.size
 }
 
+// StatusCode returns the written status code, or 200 if none was written.
 func (w *responseWriter) StatusCode() int {
 	if !w.wroteHeader {
 		return http.StatusOK
@@ -46,6 +54,7 @@ func (w *responseWriter) StatusCode() int {
 	return w.statusCode
 }
 
+// Status returns StatusCode as a decimal string.
 func (w *responseWriter) Status() string {
 	return fmt.Sprintf("%d", w.StatusCode())
 }
@@ -64,6 +73,8 @@ func (w *responseWriter) Flush() {
 	}
 }
 
+// WriteHeader records statusCode and forwards it. Only the first call takes
+// effect; later calls are ignored.
 func (w *responseWriter) WriteHeader(statusCode int) {
 	if w.wroteHeader {
 		return
@@ -79,6 +90,8 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
+// Write writes b, writing a 200 status first if no header was written, and
+// adds the written bytes to the size.
 func (w *responseWriter) Write(b []byte) (int, error) {
 	if !w.wroteHeader {
 		w.WriteHeader(http.StatusOK)

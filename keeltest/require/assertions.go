@@ -11,19 +11,20 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-// Assertions provides assertion methods around the
-// TestingT interface.
+// Assertions provides the package's inline assertions bound to a
+// [testing.T].
 type Assertions struct {
 	t *testing.T
 }
 
-// New makes a new Assertions object for the specified TestingT.
+// New returns [Assertions] for t.
 func New(t *testing.T) *Assertions { //nolint:thelper
 	return &Assertions{
 		t: t,
 	}
 }
 
+// InlineEqual is like the package level [InlineEqual].
 func (a *Assertions) InlineEqual(actual any, msgAndArgs ...any) {
 	a.t.Helper()
 
@@ -32,6 +33,7 @@ func (a *Assertions) InlineEqual(actual any, msgAndArgs ...any) {
 	}
 }
 
+// InlineJSONEq is like the package level [InlineJSONEq].
 func (a *Assertions) InlineJSONEq(actual any, msgAndArgs ...any) {
 	a.t.Helper()
 	// marshal value

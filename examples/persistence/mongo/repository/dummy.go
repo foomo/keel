@@ -9,17 +9,19 @@ import (
 	keelmongo "github.com/foomo/keel/persistence/mongo"
 )
 
+// DummyRepository stores store.Dummy entities in a MongoDB collection.
 type DummyRepository struct {
 	collection *keelmongo.Collection
 }
 
-// NewDummyRepository constructor
+// NewDummyRepository returns a DummyRepository backed by collection.
 func NewDummyRepository(collection *keelmongo.Collection) *DummyRepository {
 	return &DummyRepository{
 		collection: collection,
 	}
 }
 
+// Get returns the entity with the given id.
 func (r *DummyRepository) Get(ctx context.Context, id string, opts ...options.Lister[options.FindOneOptions]) (*store.Dummy, error) {
 	var ret store.Dummy
 	if err := r.collection.Get(ctx, id, &ret, opts...); err != nil {
@@ -29,6 +31,7 @@ func (r *DummyRepository) Get(ctx context.Context, id string, opts ...options.Li
 	return &ret, nil
 }
 
+// Insert inserts entity.
 func (r *DummyRepository) Insert(ctx context.Context, entity *store.Dummy) error {
 	if err := r.collection.Insert(ctx, entity); err != nil {
 		return err
@@ -37,6 +40,7 @@ func (r *DummyRepository) Insert(ctx context.Context, entity *store.Dummy) error
 	return nil
 }
 
+// Upsert inserts or updates entity by its ID.
 func (r *DummyRepository) Upsert(ctx context.Context, entity *store.Dummy) error {
 	if err := r.collection.Upsert(ctx, entity.GetID(), entity); err != nil {
 		return err
@@ -45,6 +49,7 @@ func (r *DummyRepository) Upsert(ctx context.Context, entity *store.Dummy) error
 	return nil
 }
 
+// UpsertMany inserts or updates all entities.
 func (r *DummyRepository) UpsertMany(ctx context.Context, entities []*store.Dummy) error {
 	v := make([]keelmongo.Entity, len(entities))
 	for i, entity := range entities {
@@ -58,6 +63,7 @@ func (r *DummyRepository) UpsertMany(ctx context.Context, entities []*store.Dumm
 	return nil
 }
 
+// Delete deletes the entity with the given id.
 func (r *DummyRepository) Delete(ctx context.Context, id string) error {
 	return r.collection.Delete(ctx, id)
 }

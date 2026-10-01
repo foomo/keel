@@ -12,21 +12,27 @@ import (
 )
 
 type (
+	// ServerHeaderOptions configures the [ServerHeader] middleware.
 	ServerHeaderOptions struct {
+		// Header is the name of the response header.
 		Header string
-		Name   string
+		// Name is the header value. When empty, the service name is used.
+		Name string
 	}
+	// ServerHeaderOption configures [ServerHeaderOptions].
 	ServerHeaderOption func(*ServerHeaderOptions)
 )
 
-// GetDefaultServerHeaderOptions returns the default options
+// GetDefaultServerHeaderOptions returns the default options using the Server
+// header and the service name.
 func GetDefaultServerHeaderOptions() ServerHeaderOptions {
 	return ServerHeaderOptions{
 		Header: keelhttp.HeaderServer,
 	}
 }
 
-// ServerHeader middleware
+// ServerHeader returns a middleware that adds a header, Server by default,
+// with the service name or the configured name to every response.
 func ServerHeader(opts ...ServerHeaderOption) keelhttp.Middleware {
 	options := GetDefaultServerHeaderOptions()
 
@@ -39,21 +45,22 @@ func ServerHeader(opts ...ServerHeaderOption) keelhttp.Middleware {
 	return ServerHeaderWithOptions(options)
 }
 
-// ServerHeaderWithName middleware option
+// ServerHeaderWithName sets the header value. Defaults to the service name.
 func ServerHeaderWithName(v string) ServerHeaderOption {
 	return func(o *ServerHeaderOptions) {
 		o.Name = v
 	}
 }
 
-// ServerHeaderWithHeader middleware option
+// ServerHeaderWithHeader sets the response header name. Defaults to Server.
 func ServerHeaderWithHeader(v string) ServerHeaderOption {
 	return func(o *ServerHeaderOptions) {
 		o.Header = v
 	}
 }
 
-// ServerHeaderWithOptions middleware
+// ServerHeaderWithOptions is like [ServerHeader] but takes fully populated
+// options.
 func ServerHeaderWithOptions(opts ServerHeaderOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		if opts.Name != "" {

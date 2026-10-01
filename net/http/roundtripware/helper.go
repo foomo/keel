@@ -12,6 +12,8 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
+// readBodyPretty reads original fully and returns a replacement reader with
+// the same content together with the body, indented if it is JSON or msgpack.
 func readBodyPretty(contentType string, original io.ReadCloser) (io.ReadCloser, string) {
 	var (
 		bs   bytes.Buffer
@@ -68,6 +70,8 @@ func (failureToReadBody) Close() error             { return nil }
 // emptyBody is an instance of empty reader.
 var emptyBody = io.NopCloser(strings.NewReader(""))
 
+// copyRequest clones req for the IsSuccessful callback. With body, the body is
+// drained and duplicated; otherwise the copy's body fails on read with errNoBody.
 func copyRequest(req *http.Request, body bool) (*http.Request, error) {
 	// we don't care about the context, since it is only used for the isSuccessful check
 	out := req.Clone(context.Background())
@@ -97,6 +101,7 @@ func copyRequest(req *http.Request, body bool) (*http.Request, error) {
 	return out, nil
 }
 
+// copyResponse is like copyRequest for responses.
 func copyResponse(resp *http.Response, body bool) (*http.Response, error) {
 	// we don't care about the context, since it is only used for the isSuccessful check
 	out := new(http.Response)
@@ -126,7 +131,8 @@ func copyResponse(resp *http.Response, body bool) (*http.Response, error) {
 	return out, nil
 }
 
-// copied from httputil
+// drainBody reads b into memory and returns two readers with its content.
+// It is copied from net/http/httputil.
 func drainBody(b io.ReadCloser) (io.ReadCloser, io.ReadCloser, error) {
 	var err error
 

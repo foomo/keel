@@ -12,41 +12,41 @@ import (
 	"go.uber.org/zap"
 )
 
-// JobOption func
+// JobOption configures a [Job] in [NewJob].
 type JobOption func(inst *Job)
 
-// JobWithLogger option
+// JobWithLogger sets the job logger. Defaults to [log.Logger].
 func JobWithLogger(l *zap.Logger) JobOption {
 	return func(inst *Job) {
 		inst.l = l
 	}
 }
 
-// JobWithLogFields option
+// JobWithLogFields adds fields to the job logger.
 func JobWithLogFields(fields ...zap.Field) JobOption {
 	return func(inst *Job) {
 		inst.l = inst.l.With(fields...)
 	}
 }
 
-// JobWithName option overrides the default job name (OTEL_SERVICE_NAME, falling
-// back to telemetry.DefaultServiceName).
+// JobWithName overrides the default job name (OTEL_SERVICE_NAME, falling back
+// to [telemetry.DefaultServiceName]).
 func JobWithName(name string) JobOption {
 	return func(inst *Job) {
 		inst.name = name
 	}
 }
 
-// JobWithConfig option
+// JobWithConfig sets the job configuration. Defaults to [config.Config].
 func JobWithConfig(c *viper.Viper) JobOption {
 	return func(inst *Job) {
 		inst.c = c
 	}
 }
 
-// JobWithParallel option runs the job steps concurrently instead of sequentially.
+// JobWithParallel runs the job steps concurrently instead of sequentially.
 // limit caps the number of steps running at once; limit <= 0 means unbounded. The
-// first failing step cancels the rest (fail-fast) and RunE returns the joined error.
+// first failing step cancels the rest (fail-fast) and [Job.RunE] returns the joined error.
 func JobWithParallel(limit int) JobOption {
 	return func(inst *Job) {
 		inst.parallel = true
@@ -54,29 +54,32 @@ func JobWithParallel(limit int) JobOption {
 	}
 }
 
-// JobWithContext option
+// JobWithContext sets the parent of the job context. Defaults to
+// [context.Background].
 func JobWithContext(ctx context.Context) JobOption {
 	return func(inst *Job) {
 		inst.ctx = ctx
 	}
 }
 
-// JobWithShutdownSignals option
+// JobWithShutdownSignals sets the signals that interrupt the job. Defaults to
+// SIGINT and SIGTERM.
 func JobWithShutdownSignals(shutdownSignals ...os.Signal) JobOption {
 	return func(inst *Job) {
 		inst.shutdownSignals = shutdownSignals
 	}
 }
 
-// JobWithGracefulPeriod option sets the budget for flushing telemetry and closing
-// resources after the job completes or is interrupted.
+// JobWithGracefulPeriod sets the budget for flushing telemetry and closing
+// resources after the job completes or is interrupted. Defaults to
+// KEEL_GRACEFUL_PERIOD seconds, or 30 seconds.
 func JobWithGracefulPeriod(gracefulPeriod time.Duration) JobOption {
 	return func(inst *Job) {
 		inst.gracefulPeriod = gracefulPeriod
 	}
 }
 
-// JobWithTimeout option sets an in-process deadline for the whole job run.
+// JobWithTimeout sets an in-process deadline for the whole job run.
 // A zero duration (default) disables the in-process deadline; Kubernetes
 // activeDeadlineSeconds still applies via SIGTERM handling.
 func JobWithTimeout(timeout time.Duration) JobOption {
@@ -85,14 +88,15 @@ func JobWithTimeout(timeout time.Duration) JobOption {
 	}
 }
 
-// JobWithCloser option registers a closer to be called during job finalization.
+// JobWithCloser registers closer to be called during job finalization. See
+// [Job.AddCloser].
 func JobWithCloser(closer any) JobOption {
 	return func(inst *Job) {
 		inst.AddCloser(closer)
 	}
 }
 
-// JobWithTelemetry option wires the OpenTelemetry trace, metric and logger providers
+// JobWithTelemetry wires the OpenTelemetry trace, metric and logger providers
 // from the standard OTEL environment variables:
 //
 //	OTEL_TRACES_EXPORTER   none(default) | console | otlp
@@ -102,7 +106,7 @@ func JobWithCloser(closer any) JobOption {
 //	  (per-signal override: OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_PROTOCOL)
 //
 // A signal set to none leaves its provider unset, so the job falls back to a no-op
-// provider. Call this before JobWithPushgatewayMeter so its nil meter-provider guard
+// provider. Call this before [JobWithPushgatewayMeter] so its nil meter-provider guard
 // still fires when OTEL_METRICS_EXPORTER is none.
 func JobWithTelemetry() JobOption {
 	return func(inst *Job) {
@@ -129,7 +133,8 @@ func JobWithTelemetry() JobOption {
 	}
 }
 
-// JobWithStdOutTracer option with default value.
+// JobWithStdOutTracer sets a trace provider that writes to stdout. enabled is
+// the default for the otel.enabled config key.
 func JobWithStdOutTracer(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -141,7 +146,8 @@ func JobWithStdOutTracer(enabled bool) JobOption {
 	}
 }
 
-// JobWithStdOutMeter option with default value.
+// JobWithStdOutMeter sets a meter provider that writes to stdout. enabled is
+// the default for the otel.enabled config key.
 func JobWithStdOutMeter(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -153,7 +159,8 @@ func JobWithStdOutMeter(enabled bool) JobOption {
 	}
 }
 
-// JobWithOTLPGRPCTracer option with default value.
+// JobWithOTLPGRPCTracer sets an OTLP gRPC trace provider. enabled is the
+// default for the otel.enabled config key.
 func JobWithOTLPGRPCTracer(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -165,7 +172,8 @@ func JobWithOTLPGRPCTracer(enabled bool) JobOption {
 	}
 }
 
-// JobWithOTLPHTTPTracer option with default value.
+// JobWithOTLPHTTPTracer sets an OTLP HTTP trace provider. enabled is the
+// default for the otel.enabled config key.
 func JobWithOTLPHTTPTracer(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -177,7 +185,8 @@ func JobWithOTLPHTTPTracer(enabled bool) JobOption {
 	}
 }
 
-// JobWithOTLPGRPCMeter option with default value. Metrics are pushed via OTLP gRPC
+// JobWithOTLPGRPCMeter sets an OTLP gRPC meter provider. enabled is the default
+// for the otel.enabled config key. Metrics are pushed via OTLP gRPC
 // and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
 func JobWithOTLPGRPCMeter(enabled bool) JobOption {
 	return func(inst *Job) {
@@ -190,7 +199,8 @@ func JobWithOTLPGRPCMeter(enabled bool) JobOption {
 	}
 }
 
-// JobWithOTLPHTTPMeter option with default value. Metrics are pushed via OTLP HTTP
+// JobWithOTLPHTTPMeter sets an OTLP HTTP meter provider. enabled is the default
+// for the otel.enabled config key. Metrics are pushed via OTLP HTTP
 // and flushed on job exit, suiting jobs that finish before a Prometheus scrape.
 func JobWithOTLPHTTPMeter(enabled bool) JobOption {
 	return func(inst *Job) {
@@ -203,7 +213,8 @@ func JobWithOTLPHTTPMeter(enabled bool) JobOption {
 	}
 }
 
-// JobWithOTLPHTTPLogger option with default value
+// JobWithOTLPHTTPLogger sets an OTLP HTTP logger provider. enabled is the
+// default for the otel.enabled config key.
 func JobWithOTLPHTTPLogger(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -215,7 +226,8 @@ func JobWithOTLPHTTPLogger(enabled bool) JobOption {
 	}
 }
 
-// JobWithOTLPGRCPLogger option with default value
+// JobWithOTLPGRCPLogger sets an OTLP gRPC logger provider. enabled is the
+// default for the otel.enabled config key.
 func JobWithOTLPGRCPLogger(enabled bool) JobOption {
 	return func(inst *Job) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -227,10 +239,11 @@ func JobWithOTLPGRCPLogger(enabled bool) JobOption {
 	}
 }
 
-// JobWithPushgatewayMeter option pushes Prometheus metrics to a Pushgateway on job
-// exit. An empty url disables it; the url falls back to the KEEL_PUSHGATEWAY_URL
-// config/env value. It sets up a Prometheus meter provider so OTEL metrics are
-// included in the push.
+// JobWithPushgatewayMeter pushes Prometheus metrics to a Pushgateway on job
+// exit, grouped by the job name. url is the default for the
+// service.pushgateway.url config key (env SERVICE_PUSHGATEWAY_URL); an empty
+// result disables it. It sets up a Prometheus meter provider (unless one is
+// already configured) so OTEL metrics are included in the push.
 func JobWithPushgatewayMeter(url string) JobOption {
 	return func(inst *Job) {
 		url = config.GetString(inst.Config(), "service.pushgateway.url", url)()

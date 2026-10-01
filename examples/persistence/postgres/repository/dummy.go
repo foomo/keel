@@ -6,17 +6,19 @@ import (
 	keelpostgres "github.com/foomo/keel/persistence/postgres"
 )
 
+// TaskRepository stores task descriptions in the tasks table.
 type TaskRepository struct {
 	persistor *keelpostgres.Persistor
 }
 
-// NewTaskRepository constructor
+// NewTaskRepository returns a TaskRepository backed by persistor.
 func NewTaskRepository(persistor *keelpostgres.Persistor) *TaskRepository {
 	return &TaskRepository{
 		persistor: persistor,
 	}
 }
 
+// List returns all task descriptions keyed by ID.
 func (r *TaskRepository) List(ctx context.Context) (map[int32]string, error) {
 	conn, err := r.persistor.Conn(ctx)
 	if err != nil {
@@ -49,6 +51,7 @@ func (r *TaskRepository) List(ctx context.Context) (map[int32]string, error) {
 	return ret, rows.Err()
 }
 
+// Insert adds a task with the given description.
 func (r *TaskRepository) Insert(ctx context.Context, description string) error {
 	conn, err := r.persistor.Conn(ctx)
 	if err != nil {
@@ -61,6 +64,7 @@ func (r *TaskRepository) Insert(ctx context.Context, description string) error {
 	return err
 }
 
+// Drop drops the order_numbers table if it exists.
 func (r *TaskRepository) Drop(ctx context.Context) error {
 	conn, err := r.persistor.Conn(ctx)
 	if err != nil {

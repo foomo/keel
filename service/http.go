@@ -17,7 +17,7 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-// HTTP struct
+// HTTP is a service that serves an [net/http.Server]. Create it with [NewHTTP].
 type HTTP struct {
 	l       *zap.Logger
 	name    string
@@ -29,6 +29,9 @@ type HTTP struct {
 // ~ Constructor
 // ------------------------------------------------------------------------------------------------
 
+// NewHTTP returns an [HTTP] service named name listening on addr and serving
+// handler wrapped in middlewares. See [keelhttp.NewServer]. A nil l defaults to
+// [log.Logger].
 func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...keelhttp.Middleware) *HTTP {
 	if l == nil {
 		l = log.Logger()
@@ -50,10 +53,12 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 // ~ Getter
 // ------------------------------------------------------------------------------------------------
 
+// Name returns the service name.
 func (s *HTTP) Name() string {
 	return s.name
 }
 
+// Server returns the underlying HTTP server.
 func (s *HTTP) Server() *http.Server {
 	return s.server
 }
@@ -62,6 +67,7 @@ func (s *HTTP) Server() *http.Server {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
+// Healthz returns [ErrServiceNotRunning] unless the server is listening.
 func (s *HTTP) Healthz() error {
 	if !s.running.Load() {
 		return ErrServiceNotRunning
@@ -70,10 +76,16 @@ func (s *HTTP) Healthz() error {
 	return nil
 }
 
+// String returns a short description of the handler type and address used in
+// the readme.
 func (s *HTTP) String() string {
 	return fmt.Sprintf("`%T` on `%s`", s.server.Handler, s.server.Addr)
 }
 
+// Start listens on the configured address and serves requests with ctx as the
+// base request context, blocking until the server is shut down. It returns an
+// error if the address cannot be bound or serving fails; a graceful shutdown
+// returns nil.
 func (s *HTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
 
@@ -112,6 +124,7 @@ func (s *HTTP) Start(ctx context.Context) error {
 	return nil
 }
 
+// Close gracefully shuts down the server, bounded by ctx.
 func (s *HTTP) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
 

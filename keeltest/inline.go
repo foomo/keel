@@ -12,6 +12,15 @@ import (
 	"github.com/foomo/keel/log"
 )
 
+// Inline returns the expected value stored as a trailing " // INLINE: "
+// comment on the source line of the caller skip frames up (1 is the caller
+// of Inline), and true.
+//
+// If the line has no such comment, msgAndArgs is formatted with
+// [fmt.Sprintf], appended to the line as an INLINE comment in the source
+// file, the test is marked as failed, and Inline returns "" and false.
+// Subsequent runs then compare against the written value. Missing
+// msgAndArgs or file access errors abort the test with t.Fatal.
 func Inline(t *testing.T, skip int, msgAndArgs ...any) (string, bool) {
 	t.Helper()
 
@@ -57,6 +66,8 @@ func Inline(t *testing.T, skip int, msgAndArgs ...any) (string, bool) {
 	return "", false
 }
 
+// InlineInt is like [Inline] but parses the stored value as an int. It does
+// not write missing values and aborts the test if none is stored.
 func InlineInt(t *testing.T, skip int) (int, bool) {
 	t.Helper()
 
@@ -70,6 +81,8 @@ func InlineInt(t *testing.T, skip int) (int, bool) {
 	}
 }
 
+// InlineFloat64 is like [Inline] but parses the stored value as a float64.
+// It does not write missing values and aborts the test if none is stored.
 func InlineFloat64(t *testing.T, skip int) (float64, bool) {
 	t.Helper()
 
@@ -83,6 +96,9 @@ func InlineFloat64(t *testing.T, skip int) (float64, bool) {
 	}
 }
 
+// InlineJSON is like [Inline] but unmarshals the stored JSON value into
+// target. It does not write missing values and aborts the test if none is
+// stored.
 func InlineJSON(t *testing.T, skip int, target any) {
 	t.Helper()
 

@@ -14,6 +14,8 @@ import (
 )
 
 type (
+	// Stream wraps a NATS connection and its JetStream context for a single
+	// named stream. Create one with [New].
 	Stream struct {
 		l                      *zap.Logger
 		addr                   string
@@ -30,39 +32,49 @@ type (
 		reconnectTimeout       time.Duration
 		reconnectFailedHandler func(error)
 	}
-	Option           func(*Stream)
-	PublisherOption  func(*Publisher)
+	// Option configures a [Stream].
+	Option func(*Stream)
+	// PublisherOption configures a [Publisher].
+	PublisherOption func(*Publisher)
+	// SubscriberOption configures a [Subscriber].
 	SubscriberOption func(*Subscriber)
 )
 
-// WithNamespace option
+// WithNamespace sets the namespace prefixed to the subjects of all
+// publishers and subscribers created by the stream.
 func WithNamespace(v string) Option {
 	return func(o *Stream) {
 		o.namespace = v
 	}
 }
 
-// WithReconnectFailedHandler option
+// WithReconnectFailedHandler sets the function called with the last error
+// when all reconnect attempts failed. Defaults to a function that panics.
 func WithReconnectFailedHandler(v func(error)) Option {
 	return func(o *Stream) {
 		o.reconnectFailedHandler = v
 	}
 }
 
-// WithReconnectTimeout option
+// WithReconnectTimeout sets the delay between reconnect attempts after a
+// disconnect error. Defaults to 15 seconds.
 func WithReconnectTimeout(v time.Duration) Option {
 	return func(o *Stream) {
 		o.reconnectTimeout = v
 	}
 }
 
-// WithReconnectMaxRetries option
+// WithReconnectMaxRetries sets the number of reconnect attempts after a
+// disconnect error. Defaults to 10.
 func WithReconnectMaxRetries(v int) Option {
 	return func(o *Stream) {
 		o.reconnectMaxRetries = v
 	}
 }
 
+// WithConfig sets the stream configuration used to create or update the
+// stream on connect. The config name is overwritten with the stream name.
+// opts are passed to the stream management calls.
 func WithConfig(v *nats.StreamConfig, opts ...nats.JSOpt) Option {
 	return func(o *Stream) {
 		o.config = v
@@ -70,56 +82,69 @@ func WithConfig(v *nats.StreamConfig, opts ...nats.JSOpt) Option {
 	}
 }
 
-// WithJSOptions option
+// WithJSOptions appends options used when creating the JetStream context.
 func WithJSOptions(v ...nats.JSOpt) Option {
 	return func(o *Stream) {
 		o.jsOptions = append(o.jsOptions, v...)
 	}
 }
 
-// WithNatsOptions option
+// WithNatsOptions appends options used when connecting to NATS. They are
+// applied after, and may override, the stream's default handlers.
 func WithNatsOptions(v ...nats.Option) Option {
 	return func(o *Stream) {
 		o.natsOptions = append(o.natsOptions, v...)
 	}
 }
 
+// PublisherWithPubOpts appends default publish options of the publisher.
 func PublisherWithPubOpts(v ...nats.PubOpt) PublisherOption {
 	return func(o *Publisher) {
 		o.pubOpts = append(o.pubOpts, v...)
 	}
 }
 
+// PublisherWithMarshal sets the payload encoder. Defaults to [json.Marshal].
 func PublisherWithMarshal(marshal MarshalFn) PublisherOption {
 	return func(o *Publisher) {
 		o.marshal = marshal
 	}
 }
 
+// PublisherWithHeader sets the header attached to every published message.
 func PublisherWithHeader(v nats.Header) PublisherOption {
 	return func(o *Publisher) {
 		o.header = v
 	}
 }
 
+// SubscriberWithNamespace overrides the stream's namespace for the
+// subscriber's subject.
 func SubscriberWithNamespace(v string) SubscriberOption {
 	return func(o *Subscriber) {
 		o.namespace = v
 	}
 }
 
+// SubscriberWithSubOpts appends default subscribe options of the subscriber.
 func SubscriberWithSubOpts(v ...nats.SubOpt) SubscriberOption {
 	return func(o *Subscriber) {
 		o.opts = append(o.opts, v...)
 	}
 }
 
+// SubscriberWithUnmarshal sets the payload decoder. Defaults to
+// [json.Unmarshal].
 func SubscriberWithUnmarshal(unmarshal UnmarshalFn) SubscriberOption {
 	return func(o *Subscriber) {
 		o.unmarshal = unmarshal
 	}
 }
 
+// New connects to the NATS server at addr and returns a [Stream] named
+// name. If a config is set via [WithConfig], the stream is created or
+// updated. On a disconnect error the stream reconnects according to the
+// reconnect options. It returns an error if the initial connect fails.
 func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	stream := &Stream{
 		l: l.With(
@@ -154,26 +179,34 @@ func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	return stream, nil
 }
 
+// Addr returns the NATS server address.
 func (s *Stream) Addr() string {
 	return s.addr
 }
 
+// JS returns the JetStream context.
 func (s *Stream) JS() nats.JetStreamContext {
 	return s.js
 }
 
+// Conn returns the NATS connection.
 func (s *Stream) Conn() *nats.Conn {
 	return s.conn
 }
 
+// Name returns the stream name.
 func (s *Stream) Name() string {
 	return s.name
 }
 
+// Info returns the stream info obtained when creating or updating the
+// stream, or nil if no config was set.
 func (s *Stream) Info() *nats.StreamInfo {
 	return s.info
 }
 
+// Publisher returns a [Publisher] for subject using the stream's namespace
+// and JSON encoding unless overridden by opts. It is recorded for [Readme].
 func (s *Stream) Publisher(subject string, opts ...PublisherOption) *Publisher {
 	pub := &Publisher{
 		stream:    s,
@@ -204,6 +237,8 @@ func (s *Stream) Publisher(subject string, opts ...PublisherOption) *Publisher {
 	return pub
 }
 
+// Subscriber returns a [Subscriber] for subject using the stream's namespace
+// and JSON decoding unless overridden by opts. It is recorded for [Readme].
 func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscriber {
 	sub := &Subscriber{
 		stream:    s,
@@ -234,10 +269,13 @@ func (s *Stream) Subscriber(subject string, opts ...SubscriberOption) *Subscribe
 	return sub
 }
 
+// Close closes the NATS connection.
 func (s *Stream) Close() {
 	s.conn.Close()
 }
 
+// connect establishes the NATS connection and JetStream context and creates
+// or updates the stream if a config is set.
 func (s *Stream) connect() error {
 	// connect nats
 	conn, err := nats.Connect(s.addr, s.natsOptions...)
@@ -292,6 +330,8 @@ func (s *Stream) connect() error {
 	return nil
 }
 
+// initNatsOptions prepends the default logging, reconnect and timeout
+// options to the user supplied NATS options.
 func (s *Stream) initNatsOptions() {
 	natsOpts := append([]nats.Option{
 		nats.ErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {

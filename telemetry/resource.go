@@ -23,6 +23,9 @@ var envAttributes = map[attribute.Key][]string{
 	"vcs.repository.path":           {"REPO_PATH", "REPOSITORY_PATH", "GIT_REPOSITORY_PATH", "OTEL_VCS_ROOT_PATH"},
 }
 
+// EnvAttributes returns the service namespace and VCS attributes read from
+// well known environment variables. For each attribute the first non-empty
+// variable wins.
 func EnvAttributes() []attribute.KeyValue {
 	var attrs []attribute.KeyValue
 
@@ -38,7 +41,9 @@ func EnvAttributes() []attribute.KeyValue {
 	return attrs
 }
 
-// NewResource creates and returns a default resource for telemetry data, using the provided context.
+// NewResource returns the resource attached to all providers of this
+// package. It combines OTEL_SERVICE_NAME, OTEL_RESOURCE_ATTRIBUTES and
+// [EnvAttributes].
 func NewResource(ctx context.Context) (*resource.Resource, error) {
 	return resource.New(ctx,
 		resource.WithFromEnv(),

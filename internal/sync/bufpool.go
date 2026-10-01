@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// pool holds reusable [bytes.Buffer] values.
 var pool = sync.Pool{
 	New: func() any { return new(bytes.Buffer) },
 }

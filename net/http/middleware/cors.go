@@ -13,18 +13,36 @@ import (
 )
 
 type (
+	// CORSOptions configures the [CORS] middleware.
 	CORSOptions struct {
-		AllowOrigins     []string
-		AllowMethods     []string
-		AllowHeaders     []string
+		// AllowOrigins lists the allowed origins. "*" allows any origin. Entries
+		// may contain the wildcards "*" (any sequence) and "?" (any single
+		// character), e.g. "https://*.example.com".
+		AllowOrigins []string
+		// AllowMethods lists the methods sent in Access-Control-Allow-Methods
+		// on preflight responses.
+		AllowMethods []string
+		// AllowHeaders lists the headers sent in Access-Control-Allow-Headers on
+		// preflight responses. When empty, the request's
+		// Access-Control-Request-Headers value is echoed.
+		AllowHeaders []string
+		// AllowCredentials reports whether Access-Control-Allow-Credentials is
+		// sent. When set together with the "*" origin, the request origin is
+		// echoed instead of "*".
 		AllowCredentials bool
-		ExposeHeaders    []string
-		MaxAge           int
+		// ExposeHeaders lists the headers sent in Access-Control-Expose-Headers
+		// on non-preflight responses.
+		ExposeHeaders []string
+		// MaxAge is the Access-Control-Max-Age in seconds sent on preflight
+		// responses. Zero omits the header.
+		MaxAge int
 	}
+	// CORSOption configures [CORSOptions].
 	CORSOption func(*CORSOptions)
 )
 
-// GetDefaultCORSOptions returns the default options
+// GetDefaultCORSOptions returns the default options, which allow any origin
+// and the methods GET, HEAD, PUT, PATCH, POST and DELETE.
 func GetDefaultCORSOptions() CORSOptions {
 	return CORSOptions{
 		AllowOrigins: []string{"*"},
@@ -32,49 +50,53 @@ func GetDefaultCORSOptions() CORSOptions {
 	}
 }
 
-// CORSWithAllowOrigins middleware option
+// CORSWithAllowOrigins sets [CORSOptions.AllowOrigins].
 func CORSWithAllowOrigins(v ...string) CORSOption {
 	return func(o *CORSOptions) {
 		o.AllowOrigins = v
 	}
 }
 
-// CORSWithAllowMethods middleware option
+// CORSWithAllowMethods sets [CORSOptions.AllowMethods].
 func CORSWithAllowMethods(v ...string) CORSOption {
 	return func(o *CORSOptions) {
 		o.AllowMethods = v
 	}
 }
 
-// CORSWithAllowHeaders middleware option
+// CORSWithAllowHeaders sets [CORSOptions.AllowHeaders].
 func CORSWithAllowHeaders(v ...string) CORSOption {
 	return func(o *CORSOptions) {
 		o.AllowHeaders = v
 	}
 }
 
-// CORSWithAllowCredentials middleware option
+// CORSWithAllowCredentials sets [CORSOptions.AllowCredentials].
 func CORSWithAllowCredentials(v bool) CORSOption {
 	return func(o *CORSOptions) {
 		o.AllowCredentials = v
 	}
 }
 
-// CORSWithExposeHeaders middleware option
+// CORSWithExposeHeaders sets [CORSOptions.ExposeHeaders].
 func CORSWithExposeHeaders(v ...string) CORSOption {
 	return func(o *CORSOptions) {
 		o.ExposeHeaders = v
 	}
 }
 
-// CORSWithMaxAge middleware option
+// CORSWithMaxAge sets [CORSOptions.MaxAge].
 func CORSWithMaxAge(v int) CORSOption {
 	return func(o *CORSOptions) {
 		o.MaxAge = v
 	}
 }
 
-// CORS middleware
+// CORS returns a middleware that handles cross-origin resource sharing.
+// Preflight (OPTIONS) requests are answered with 204 No Content and never
+// reach the next handler, regardless of whether the origin is allowed. Other
+// requests are always passed on and receive the CORS response headers only
+// when their origin is allowed.
 func CORS(opts ...CORSOption) keelhttp.Middleware {
 	options := GetDefaultCORSOptions()
 
@@ -87,7 +109,7 @@ func CORS(opts ...CORSOption) keelhttp.Middleware {
 	return CORSWithOptions(options)
 }
 
-// CORSWithOptions middleware
+// CORSWithOptions is like [CORS] but takes fully populated options.
 func CORSWithOptions(opts CORSOptions) keelhttp.Middleware {
 	allowOriginPatterns := make([]*regexp.Regexp, len(opts.AllowOrigins))
 	for i, origin := range opts.AllowOrigins {
@@ -217,6 +239,7 @@ func CORSWithOptions(opts CORSOptions) keelhttp.Middleware {
 	}
 }
 
+// matchScheme reports whether domain and pattern have the same scheme.
 func matchScheme(domain, pattern string) bool {
 	domScheme, _, domFound := strings.Cut(domain, ":")
 	patScheme, _, patFound := strings.Cut(pattern, ":")
@@ -224,7 +247,10 @@ func matchScheme(domain, pattern string) bool {
 	return domFound && patFound && domScheme == patScheme
 }
 
-// matchSubdomain compares authority with wildcard
+// matchSubdomain reports whether domain matches pattern, comparing the
+// dot-separated authority components right to left. A "*" component in
+// pattern matches the remaining components, e.g. "https://*.example.com"
+// matches "https://api.example.com".
 func matchSubdomain(domain, pattern string) bool {
 	if !matchScheme(domain, pattern) {
 		return false

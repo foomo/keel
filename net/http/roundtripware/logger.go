@@ -12,16 +12,26 @@ import (
 )
 
 type (
+	// LoggerOptions configures the [Logger] RoundTripware.
 	LoggerOptions struct {
-		Message      string
+		// Message is the log message for completed requests.
+		Message string
+		// ErrorMessage is the log message for requests that failed with an
+		// error.
 		ErrorMessage string
-		MinWarnCode  int
+		// MinWarnCode is the status code from which requests are logged at
+		// warn level. Zero disables it.
+		MinWarnCode int
+		// MinErrorCode is the status code from which requests are logged at
+		// error level. Zero disables it.
 		MinErrorCode int
 	}
+	// LoggerOption configures [LoggerOptions].
 	LoggerOption func(*LoggerOptions)
 )
 
-// GetDefaultLoggerOptions returns the default options
+// GetDefaultLoggerOptions returns the default options: warn from 400 and
+// error from 500.
 func GetDefaultLoggerOptions() LoggerOptions {
 	return LoggerOptions{
 		Message:      "sent request",
@@ -31,35 +41,40 @@ func GetDefaultLoggerOptions() LoggerOptions {
 	}
 }
 
-// LoggerWithMessage middleware option
+// LoggerWithMessage sets the log message. Defaults to "sent request".
 func LoggerWithMessage(v string) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.Message = v
 	}
 }
 
-// LoggerWithErrorMessage middleware option
+// LoggerWithErrorMessage sets the log message for failed requests. Defaults
+// to "failed to sent request".
 func LoggerWithErrorMessage(v string) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.ErrorMessage = v
 	}
 }
 
-// LoggerWithMinWarnCode middleware option
+// LoggerWithMinWarnCode sets the status code from which requests are logged
+// at warn level. Defaults to 400.
 func LoggerWithMinWarnCode(v int) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.MinWarnCode = v
 	}
 }
 
-// LoggerWithMinErrorCode middleware option
+// LoggerWithMinErrorCode sets the status code from which requests are logged
+// at error level. Defaults to 500.
 func LoggerWithMinErrorCode(v int) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.MinErrorCode = v
 	}
 }
 
-// Logger returns a RoundTripware which logs all requests
+// Logger returns a RoundTripware that logs every outgoing request with its
+// duration and, on success, status code and response size. The level depends
+// on the error and status code.
 func Logger(opts ...LoggerOption) RoundTripware {
 	o := GetDefaultLoggerOptions()
 

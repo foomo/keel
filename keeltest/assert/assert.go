@@ -11,6 +11,10 @@ import (
 	"github.com/tidwall/pretty"
 )
 
+// InlineEqual compares the %v formatting of actual with the value stored
+// as an INLINE comment on the calling line, see [keeltest.Inline]. A missing
+// value is written and the test is marked as failed. It reports whether
+// the values are equal.
 func InlineEqual(t *testing.T, actual any, msgAndArgs ...any) bool {
 	t.Helper()
 
@@ -22,6 +26,10 @@ func InlineEqual(t *testing.T, actual any, msgAndArgs ...any) bool {
 	}
 }
 
+// InlineJSONEq compares the JSON encoding of actual with the JSON stored
+// as an INLINE comment on the calling line, ignoring formatting, see
+// [keeltest.Inline]. A missing value is written and the test is marked as
+// failed. It reports whether the values are equal.
 func InlineJSONEq(t *testing.T, actual any, msgAndArgs ...any) bool {
 	t.Helper()
 	// marshal value

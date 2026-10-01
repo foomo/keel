@@ -11,6 +11,11 @@ import (
 	"github.com/foomo/keel/log"
 )
 
+// ServiceEnabler is a [Service] that starts and stops a wrapped service at
+// runtime depending on the result of an enabled function. The enabled function
+// is polled once per second; when it flips to true a fresh service is created
+// with the [ServiceFn] and started, when it flips to false the service is
+// closed. Failing to start or close a service dynamically is fatal.
 type ServiceEnabler struct {
 	l               *zap.Logger
 	ctx             context.Context
@@ -24,6 +29,9 @@ type ServiceEnabler struct {
 	syncClosedLock  sync.RWMutex
 }
 
+// NewServiceEnabler returns a [ServiceEnabler] named name that creates its
+// service with serviceFn and reads its state from enabledFn. enabledFn is
+// called once immediately to determine the initial state.
 func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFn, enabledFn func() bool) *ServiceEnabler {
 	return &ServiceEnabler{
 		l:           log.WithServiceName(l, name),
@@ -34,10 +42,14 @@ func NewServiceEnabler(l *zap.Logger, name string, serviceFn ServiceFn, enabledF
 	}
 }
 
+// Name returns the name of the service enabler.
 func (w *ServiceEnabler) Name() string {
 	return w.name
 }
 
+// Start starts watching the enabled function and starts the wrapped service if
+// it is enabled. While the wrapped service is enabled, Start blocks for as long
+// as the wrapped service's Start does and returns its error.
 func (w *ServiceEnabler) Start(ctx context.Context) error {
 	w.ctx = ctx
 	w.watch(w.ctx) //nolint:contextcheck
@@ -53,6 +65,9 @@ func (w *ServiceEnabler) Start(ctx context.Context) error {
 	return nil
 }
 
+// Close stops watching the enabled function and closes the wrapped service if
+// it is enabled. The wrapped service is closed with the context passed to
+// Start rather than ctx.
 func (w *ServiceEnabler) Close(ctx context.Context) error {
 	l := log.WithServiceName(w.l, w.Name())
 	w.setClosed(true)
@@ -129,6 +144,8 @@ func (w *ServiceEnabler) disable(ctx context.Context) error {
 	return nil
 }
 
+// watch polls enabledFn once per second until the enabler is closed and enables
+// or disables the wrapped service whenever its result changes.
 func (w *ServiceEnabler) watch(ctx context.Context) {
 	go func() { //nolint:gosec
 		for {

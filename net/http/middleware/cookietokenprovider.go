@@ -7,15 +7,20 @@ import (
 )
 
 type (
+	// CookieTokenProviderOptions configures [CookieTokenProvider]. It has no
+	// fields and exists for API symmetry with the other token providers.
 	CookieTokenProviderOptions struct{}
-	CookieTokenProviderOption  func(*CookieTokenProviderOptions)
+	// CookieTokenProviderOption configures [CookieTokenProviderOptions].
+	CookieTokenProviderOption func(*CookieTokenProviderOptions)
 )
 
-// GetDefaultCookieTokenOptions returns the default options
+// GetDefaultCookieTokenOptions returns the default options.
 func GetDefaultCookieTokenOptions() CookieTokenProviderOptions {
 	return CookieTokenProviderOptions{}
 }
 
+// CookieTokenProvider returns a [TokenProvider] that reads the token from the
+// cookie named cookieName. A missing cookie yields an empty token and no error.
 func CookieTokenProvider(cookieName string, opts ...CookieTokenProviderOption) TokenProvider {
 	options := GetDefaultCookieTokenOptions()
 

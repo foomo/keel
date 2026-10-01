@@ -12,16 +12,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Key is an RSA key pair identified by ID.
 type Key struct {
-	// ID (required) represents the key identifier e.g. the md5 representation of the public key
+	// ID (required) is the key identifier used as the token's "kid" header,
+	// e.g. a hash of the public key.
 	ID string
-	// Public (required) rsa key
+	// Public (required) is the RSA public key used for verification.
 	Public *rsa.PublicKey
-	// Private (optional) rsa key
+	// Private (optional) is the RSA private key used for signing.
 	Private *rsa.PrivateKey
 }
 
-// NewKey return a new Key
+// NewKey returns a [Key] with the given ID and keys.
 func NewKey(id string, public *rsa.PublicKey, private *rsa.PrivateKey) Key {
 	return Key{
 		ID:      id,
@@ -30,7 +32,11 @@ func NewKey(id string, public *rsa.PublicKey, private *rsa.PrivateKey) Key {
 	}
 }
 
-// NewKeyFromFilenames returns a new Key from the given file names
+// NewKeyFromFilenames loads a [Key] from PEM files. The private key is
+// optional and skipped if privateKeyPemFilename is empty. Literal \n escape
+// sequences in the file contents are converted to newlines before parsing.
+// The key ID is the hex-encoded SHA-256 of the trimmed public key file
+// contents. It returns an error if a file cannot be read or parsed.
 func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Key, error) {
 	var (
 		id      string
@@ -65,7 +71,8 @@ func NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename string) (Ke
 	return NewKey(id, public, private), nil
 }
 
-// NewDeprecatedKeysFromFilenames returns new Keys from the given file names
+// NewDeprecatedKeysFromFilenames loads public-only keys from the given PEM
+// files, for use with [WithDeprecatedKeys]. It returns the first load error.
 func NewDeprecatedKeysFromFilenames(publicKeyPemFilenames []string) ([]Key, error) {
 	deprecatedKeys := make([]Key, 0, len(publicKeyPemFilenames))
 	for _, publicKeyPemFilename := range publicKeyPemFilenames {
@@ -79,7 +86,8 @@ func NewDeprecatedKeysFromFilenames(publicKeyPemFilenames []string) ([]Key, erro
 	return deprecatedKeys, nil
 }
 
-// NewKeysFromFilenames helper
+// NewKeysFromFilenames loads the current key via [NewKeyFromFilenames] and
+// the deprecated keys via [NewDeprecatedKeysFromFilenames].
 func NewKeysFromFilenames(publicKeyPemFilename, privateKeyPemFilename string, deprecatedPublicKeyPemFilenames []string) (Key, []Key, error) {
 	key, err := NewKeyFromFilenames(publicKeyPemFilename, privateKeyPemFilename)
 	if err != nil {

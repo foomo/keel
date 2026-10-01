@@ -14,22 +14,30 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// LogWarn logs msg at warn level, see [Log].
 func LogWarn(ctx context.Context, msg string, kv ...attribute.KeyValue) {
 	Log(ctx, zapcore.WarnLevel, msg, 1, kv...)
 }
 
+// LogError logs msg at error level, see [Log].
 func LogError(ctx context.Context, msg string, kv ...attribute.KeyValue) {
 	Log(ctx, zapcore.ErrorLevel, msg, 1, kv...)
 }
 
+// LogDebug logs msg at debug level, see [Log].
 func LogDebug(ctx context.Context, msg string, kv ...attribute.KeyValue) {
 	Log(ctx, zapcore.DebugLevel, msg, 1, kv...)
 }
 
+// LogInfo logs msg at info level, see [Log].
 func LogInfo(ctx context.Context, msg string, kv ...attribute.KeyValue) {
 	Log(ctx, zapcore.InfoLevel, msg, 1, kv...)
 }
 
+// Log writes msg at level lvl to the global zap logger with kv as fields.
+// It adds the trace and span IDs of a valid span in ctx and the code
+// location of the caller skip frames above the caller of Log. Nothing is
+// done if lvl is not enabled.
 func Log(ctx context.Context, lvl zapcore.Level, msg string, skip int, kv ...attribute.KeyValue) {
 	if !zap.L().Core().Enabled(lvl) {
 		return

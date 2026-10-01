@@ -7,6 +7,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// PyroscopeLabels converts the valid attributes in kv to pyroscope labels,
+// replacing dots in keys with underscores.
 func PyroscopeLabels(kv ...attribute.KeyValue) pyroscope.LabelSet {
 	var labels []string
 

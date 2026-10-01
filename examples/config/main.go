@@ -15,6 +15,7 @@ import (
 )
 
 type (
+	// Nested is the nested part of Config.
 	Nested struct {
 		Int             int    `yaml:"int"`
 		Bool            bool   `yaml:"bool"`
@@ -22,6 +23,7 @@ type (
 		CamelCaseString string `yaml:"camelCaseString"`
 		SnakeCaseString string `yaml:"snake_case_string"` //nolint:tagliatelle
 	}
+	// Config is the struct loaded from the struct configuration key.
 	Config struct {
 		Int    int    `yaml:"int"`
 		Bool   bool   `yaml:"bool"`

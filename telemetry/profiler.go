@@ -13,6 +13,13 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 )
 
+// NewProfiler starts a pyroscope profiler named after the service and tagged
+// with the pod name, service namespace and resource attributes. CPU and
+// memory profiles are always collected; block, mutex and goroutine profiles
+// are enabled with OTEL_PROFILE_BLOCK_ENABLED, OTEL_PROFILE_MUTEX_ENABLED and
+// OTEL_PROFILE_GOROUTINES_ENABLED, with rates from OTEL_PROFILE_BLOCK_RATE and
+// OTEL_PROFILE_MUTEX_FRACTION (default 5). It also wraps the global tracer
+// provider so spans are linked to profiles.
 func NewProfiler(ctx context.Context) (*pyroscope.Profiler, error) {
 	tags := map[string]string{}
 	if v := os.Getenv("HOSTNAME"); v != "" {

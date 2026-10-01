@@ -24,15 +24,21 @@ import (
 )
 
 type (
+	// TelemetryOptions configures the [Telemetry] middleware.
 	TelemetryOptions struct {
-		meter                    metric.Meter
-		bucketBoundaries         []float64
+		meter            metric.Meter
+		bucketBoundaries []float64
+		// PayloadAttributeDisabled reports whether the request payload is
+		// omitted from the span attributes.
 		PayloadAttributeDisabled bool
 	}
+	// TelemetryOption modifies [TelemetryOptions].
 	TelemetryOption func(*TelemetryOptions)
 )
 
-// DefaultTelemetryOptions returns the default options
+// DefaultTelemetryOptions returns the default options: the keel meter,
+// histogram buckets from 5ms to 10s and the payload attribute disabled unless
+// OTEL_GOTSRPC_PAYLOAD_ATTRIBUTE_DISABLED is false.
 func DefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
 		meter:                    telemetry.Meter(),
@@ -41,47 +47,58 @@ func DefaultTelemetryOptions() TelemetryOptions {
 	}
 }
 
-// Deprecated: TelemetryWithExemplarsDisabled middleware option
+// TelemetryWithExemplarsDisabled has no effect.
+//
+// Deprecated: Exemplars are not configurable.
 func TelemetryWithExemplarsDisabled(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 	}
 }
 
-// Deprecated: TelemetryWithObserveExecution middleware option
+// TelemetryWithObserveExecution has no effect.
+//
+// Deprecated: Execution is always observed.
 func TelemetryWithObserveExecution(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 	}
 }
 
-// Deprecated: TelemetryWithObserveMarshalling middleware option
+// TelemetryWithObserveMarshalling has no effect.
+//
+// Deprecated: Marshalling is not observed as a separate metric.
 func TelemetryWithObserveMarshalling(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 	}
 }
 
-// Deprecated: TelemetryWithObserveUnmarshalling middleware option
+// TelemetryWithObserveUnmarshalling has no effect.
+//
+// Deprecated: Unmarshalling is not observed as a separate metric.
 func TelemetryWithObserveUnmarshalling(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 	}
 }
 
-// TelemetryWithBucketBoundries middleware option
+// TelemetryWithBucketBoundries sets the explicit bucket boundaries, in
+// seconds, of the execution duration histogram.
 func TelemetryWithBucketBoundries(v []float64) TelemetryOption {
 	return func(o *TelemetryOptions) {
 		o.bucketBoundaries = v
 	}
 }
 
-// TelemetryWithPayloadAttributeDisabled middleware option
+// TelemetryWithPayloadAttributeDisabled sets whether the request payload is
+// omitted from the span attributes. Defaults to true.
 func TelemetryWithPayloadAttributeDisabled(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 		o.PayloadAttributeDisabled = v
 	}
 }
 
-// Telemetry middleware
+// Telemetry returns a middleware configured by [DefaultTelemetryOptions] and
+// opts; see [TelemetryWithOptions]. Nil options are skipped.
 //
-// Deprecated: use gotsrpc v3 as includes otel
+// Deprecated: Use gotsrpc v3, which includes OpenTelemetry instrumentation.
 func Telemetry(opts ...TelemetryOption) keelhttp.Middleware {
 	options := DefaultTelemetryOptions()
 
@@ -94,9 +111,12 @@ func Telemetry(opts ...TelemetryOption) keelhttp.Middleware {
 	return TelemetryWithOptions(options)
 }
 
-// TelemetryWithOptions middleware
+// TelemetryWithOptions returns a middleware that, after a gotsrpc call has
+// been handled, renames the active span to "<service>/<func>", adds gotsrpc
+// attributes and error details to the span and the request log labeler, and
+// records the execution duration.
 //
-// Deprecated: use gotsrpc v3 as includes otel
+// Deprecated: Use gotsrpc v3, which includes OpenTelemetry instrumentation.
 func TelemetryWithOptions(opts TelemetryOptions) keelhttp.Middleware {
 	m, err := gotsrpcconv.NewExecutionDuration(
 		opts.meter,

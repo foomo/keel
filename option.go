@@ -16,31 +16,33 @@ import (
 	"github.com/foomo/keel/telemetry"
 )
 
-// Option func
+// Option configures a [Server] in [NewServer].
 type Option func(inst *Server)
 
-// WithLogger option
+// WithLogger sets the server logger. Defaults to [log.Logger].
 func WithLogger(l *zap.Logger) Option {
 	return func(inst *Server) {
 		inst.l = l
 	}
 }
 
-// WithLogFields option
+// WithLogFields adds fields to the server logger.
 func WithLogFields(fields ...zap.Field) Option {
 	return func(inst *Server) {
 		inst.l = inst.l.With(fields...)
 	}
 }
 
-// WithConfig option
+// WithConfig sets the server configuration. Defaults to [config.Config].
 func WithConfig(c *viper.Viper) Option {
 	return func(inst *Server) {
 		inst.c = c
 	}
 }
 
-// WithRemoteConfig option
+// WithRemoteConfig adds a remote configuration source using
+// [config.WithRemoteConfig] unless config.remote.enabled is false. Failing to
+// add the source is fatal.
 func WithRemoteConfig(provider, endpoint, path string) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "config.remote.enabled", true)() {
@@ -50,28 +52,34 @@ func WithRemoteConfig(provider, endpoint, path string) Option {
 	}
 }
 
-// WithContext option
+// WithContext sets the parent of the server context. Defaults to
+// [context.Background].
 func WithContext(ctx context.Context) Option {
 	return func(inst *Server) {
 		inst.ctx = ctx
 	}
 }
 
-// WithShutdownSignals option
+// WithShutdownSignals sets the signals that trigger graceful shutdown. Defaults
+// to SIGINT and SIGTERM.
 func WithShutdownSignals(shutdownSignals ...os.Signal) Option {
 	return func(inst *Server) {
 		inst.shutdownSignals = shutdownSignals
 	}
 }
 
-// WithGracefulPeriod option
+// WithGracefulPeriod sets the time budget for closing resources on graceful
+// shutdown. It should match the pod's terminationGracePeriodSeconds. Defaults
+// to KEEL_GRACEFUL_PERIOD seconds, or 30 seconds.
 func WithGracefulPeriod(gracefulPeriod time.Duration) Option {
 	return func(inst *Server) {
 		inst.gracefulPeriod = gracefulPeriod
 	}
 }
 
-// WithHTTPZapService option with default value
+// WithHTTPZapService registers the log level service from
+// [service.NewDefaultHTTPZap] as an init service. enabled is the default for the
+// service.zap.enabled config key.
 func WithHTTPZapService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.zap.enabled", enabled)() {
@@ -82,7 +90,9 @@ func WithHTTPZapService(enabled bool) Option {
 	}
 }
 
-// WithHTTPViperService option with default value
+// WithHTTPViperService registers the configuration service from
+// [service.NewDefaultHTTPViper] as an init service. enabled is the default for
+// the service.viper.enabled config key.
 func WithHTTPViperService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.viper.enabled", enabled)() {
@@ -93,7 +103,7 @@ func WithHTTPViperService(enabled bool) Option {
 	}
 }
 
-// WithTelemetry option wires the OpenTelemetry trace, metric and logger providers
+// WithTelemetry wires the OpenTelemetry trace, metric and logger providers
 // from the standard OTEL environment variables:
 //
 //	OTEL_TRACES_EXPORTER   none(default) | console | otlp
@@ -103,7 +113,7 @@ func WithHTTPViperService(enabled bool) Option {
 //	  (per-signal override: OTEL_EXPORTER_OTLP_{TRACES,METRICS,LOGS}_PROTOCOL)
 //
 // A signal set to none leaves its provider unset, so the server falls back to a
-// no-op provider. Call this before WithPushgatewayMeter so its nil meter-provider
+// no-op provider. Call this before [WithPushgatewayMeter] so its nil meter-provider
 // guard still fires when OTEL_METRICS_EXPORTER is none.
 func WithTelemetry() Option {
 	return func(inst *Server) {
@@ -130,7 +140,8 @@ func WithTelemetry() Option {
 	}
 }
 
-// WithStdOutTracer option with default value
+// WithStdOutTracer sets a trace provider that writes to stdout. enabled is the
+// default for the otel.enabled config key.
 func WithStdOutTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -142,7 +153,8 @@ func WithStdOutTracer(enabled bool) Option {
 	}
 }
 
-// WithStdOutLogger option with default value
+// WithStdOutLogger sets a logger provider that writes to stdout. enabled is the
+// default for the otel.enabled config key.
 func WithStdOutLogger(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -154,7 +166,8 @@ func WithStdOutLogger(enabled bool) Option {
 	}
 }
 
-// WithOTLPHTTPLogger option with default value
+// WithOTLPHTTPLogger sets an OTLP HTTP logger provider. enabled is the default
+// for the otel.enabled config key.
 func WithOTLPHTTPLogger(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -166,7 +179,8 @@ func WithOTLPHTTPLogger(enabled bool) Option {
 	}
 }
 
-// WithOTLPGRCPLogger option with default value
+// WithOTLPGRCPLogger sets an OTLP gRPC logger provider. enabled is the default
+// for the otel.enabled config key.
 func WithOTLPGRCPLogger(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -178,7 +192,8 @@ func WithOTLPGRCPLogger(enabled bool) Option {
 	}
 }
 
-// WithStdOutMeter option with default value
+// WithStdOutMeter sets a meter provider that writes to stdout. enabled is the
+// default for the otel.enabled config key.
 func WithStdOutMeter(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -190,7 +205,8 @@ func WithStdOutMeter(enabled bool) Option {
 	}
 }
 
-// WithOTLPGRPCTracer option with default value
+// WithOTLPGRPCTracer sets an OTLP gRPC trace provider. enabled is the default
+// for the otel.enabled config key.
 func WithOTLPGRPCTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -202,7 +218,8 @@ func WithOTLPGRPCTracer(enabled bool) Option {
 	}
 }
 
-// WithOTLPHTTPTracer option with default value
+// WithOTLPHTTPTracer sets an OTLP HTTP trace provider. enabled is the default
+// for the otel.enabled config key.
 func WithOTLPHTTPTracer(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -214,8 +231,8 @@ func WithOTLPHTTPTracer(enabled bool) Option {
 	}
 }
 
-// WithOTLPGRPCMeter option with default value Metrics are pushed via OTLP gRPC
-// via a periodic reader, suiting setups that export metrics instead of exposing a
+// WithOTLPGRPCMeter sets an OTLP gRPC meter provider. enabled is the default for
+// the otel.enabled config key. Metrics are pushed by a periodic reader, suiting setups that export metrics instead of exposing a
 // Prometheus scrape endpoint.
 func WithOTLPGRPCMeter(enabled bool) Option {
 	return func(inst *Server) {
@@ -228,8 +245,8 @@ func WithOTLPGRPCMeter(enabled bool) Option {
 	}
 }
 
-// WithOTLPHTTPMeter option with default value Metrics are pushed via OTLP HTTP
-// via a periodic reader, suiting setups that export metrics instead of exposing a
+// WithOTLPHTTPMeter sets an OTLP HTTP meter provider. enabled is the default for
+// the otel.enabled config key. Metrics are pushed by a periodic reader, suiting setups that export metrics instead of exposing a
 // Prometheus scrape endpoint.
 func WithOTLPHTTPMeter(enabled bool) Option {
 	return func(inst *Server) {
@@ -242,7 +259,8 @@ func WithOTLPHTTPMeter(enabled bool) Option {
 	}
 }
 
-// WithPrometheusMeter option with default value
+// WithPrometheusMeter sets a Prometheus meter provider. enabled is the default
+// for the otel.enabled config key.
 func WithPrometheusMeter(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -254,10 +272,10 @@ func WithPrometheusMeter(enabled bool) Option {
 	}
 }
 
-// WithPushgatewayMeter option pushes Prometheus metrics to a Pushgateway on an
-// interval and once more on graceful shutdown. An empty url disables it; the url
-// falls back to the service.pushgateway.url config/env value. The push interval
-// falls back to service.pushgateway.interval (default 15s). It sets up a Prometheus
+// WithPushgatewayMeter registers an init service that pushes Prometheus metrics
+// to a Pushgateway on an interval and once more on graceful shutdown. url is the
+// default for the service.pushgateway.url config key; an empty result disables
+// it. The push interval is read from service.pushgateway.interval (default 15s). It sets up a Prometheus
 // meter provider (unless one is already configured) so OTEL metrics are included in
 // the push.
 func WithPushgatewayMeter(url string) Option {
@@ -308,7 +326,9 @@ func WithPushgatewayMeter(url string) Option {
 	}
 }
 
-// WithPyroscopeService option with default value
+// WithPyroscopeService registers an init service running the Pyroscope profiler
+// from [telemetry.NewProfiler]. enabled is the default for the otel.enabled
+// config key.
 func WithPyroscopeService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "otel.enabled", enabled)() {
@@ -330,7 +350,9 @@ func WithPyroscopeService(enabled bool) Option {
 	}
 }
 
-// WithHTTPPrometheusService option with default value
+// WithHTTPPrometheusService registers the metrics service from
+// [service.NewDefaultHTTPPrometheus] as an init service. enabled is the default
+// for the service.prometheus.enabled config key.
 func WithHTTPPrometheusService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.prometheus.enabled", enabled)() {
@@ -341,7 +363,9 @@ func WithHTTPPrometheusService(enabled bool) Option {
 	}
 }
 
-// WithHTTPPProfService option with default value
+// WithHTTPPProfService registers the pprof service from
+// [service.NewDefaultHTTPPProf] as an init service. enabled is the default for
+// the service.pprof.enabled config key.
 func WithHTTPPProfService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.pprof.enabled", enabled)() {
@@ -352,7 +376,9 @@ func WithHTTPPProfService(enabled bool) Option {
 	}
 }
 
-// WithHTTPHealthzService option with default value
+// WithHTTPHealthzService registers the health probe service from
+// [service.NewDefaultHTTPProbes] as an init service. enabled is the default for
+// the service.healthz.enabled config key.
 func WithHTTPHealthzService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.healthz.enabled", enabled)() {
@@ -363,9 +389,11 @@ func WithHTTPHealthzService(enabled bool) Option {
 	}
 }
 
-// WithHTTPReadmeService option with default value
+// WithHTTPReadmeService registers the readme service from
+// [service.NewDefaultHTTPReadme] as an init service. enabled is the default for
+// the service.readme.enabled config key.
 //
-// Deprecated: will be removed in future releases
+// Deprecated: Readme support will be removed in a future release.
 func WithHTTPReadmeService(enabled bool) Option {
 	return func(inst *Server) {
 		if config.GetBool(inst.Config(), "service.readme.enabled", enabled)() {
@@ -376,7 +404,8 @@ func WithHTTPReadmeService(enabled bool) Option {
 	}
 }
 
-// WithInitService option with a default value
+// WithInitService registers service as an init service, started in [NewServer].
+// Nil and already registered services are ignored.
 func WithInitService(service Service) Option {
 	return func(inst *Server) {
 		if service == nil || slices.Contains(inst.initServices, service) {

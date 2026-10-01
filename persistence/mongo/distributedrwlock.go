@@ -9,7 +9,9 @@ import (
 	mongolock "github.com/foomo/mongo-lock"
 )
 
-// DistributedRWLock acquires shared and exclusive locks on one configured resource.
+// DistributedRWLock implements [keelpersistence.DistributedRWLock] on a
+// MongoDB collection, acquiring shared and exclusive locks on one configured
+// resource.
 type DistributedRWLock struct {
 	client       *mongolock.Client
 	resourceName string
@@ -19,8 +21,10 @@ type DistributedRWLock struct {
 	drainTimeout time.Duration
 }
 
-// NewDistributedRWLock builds the lock on the configured collection of persistor and ensures its
-// indexes exist.
+// NewDistributedRWLock builds the lock on the configured collection of
+// persistor. It returns an error if cfg lacks CollectionName or ResourceName.
+// The lock's indexes are not created; call
+// [DistributedRWLock.CreateIndexes] to ensure they exist.
 func NewDistributedRWLock(persistor *Persistor, cfg DistributedRWLockConfig) (*DistributedRWLock, error) {
 	cfg, err := cfg.normalized()
 	if err != nil {
@@ -42,6 +46,7 @@ func NewDistributedRWLock(persistor *Persistor, cfg DistributedRWLockConfig) (*D
 	}, nil
 }
 
+// CreateIndexes creates the indexes required by the lock collection.
 func (l *DistributedRWLock) CreateIndexes(ctx context.Context) error {
 	return l.client.CreateIndexes(ctx)
 }
@@ -62,9 +67,10 @@ func (l *DistributedRWLock) AcquireShared(ctx context.Context, lockID string) (b
 	}
 }
 
-// AcquireExclusive takes the exclusive lock. It retries for up to DrainTimeout to
-// let in-flight shared locks drain, then returns (false, nil) if still blocked so
-// the caller skips this round.
+// AcquireExclusive takes the exclusive lock. It retries every DrainWait for up
+// to DrainTimeout to let in-flight shared locks drain, then returns
+// (false, nil) if still blocked so the caller skips this round. It returns
+// ctx.Err() if ctx is done while waiting.
 func (l *DistributedRWLock) AcquireExclusive(ctx context.Context, lockID string) (bool, error) {
 	deadline := time.Now().Add(l.drainTimeout)
 

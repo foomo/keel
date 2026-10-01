@@ -6,18 +6,26 @@ import (
 )
 
 const (
-	// Deprecated: use semconv messaging attributes instead.
+	// NetHostIPKey is the log field key "net_host_ip".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	NetHostIPKey = "net_host_ip"
-	// Deprecated: use semconv messaging attributes instead.
+	// NetHostPortKey is the log field key "net_host_port".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	NetHostPortKey = "net_host_port"
 )
 
-// Deprecated: use semconv messaging attributes instead.
+// FNetHostIP returns the semconv.HostIP attribute as a field.
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FNetHostIP(ip string) zap.Field {
 	return Attribute(semconv.HostIP(ip))
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FNetHostPort returns a field with the given value under [NetHostPortKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FNetHostPort(port string) zap.Field {
 	return zap.String(NetHostPortKey, port)
 }

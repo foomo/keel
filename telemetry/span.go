@@ -13,32 +13,36 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Deprecated: use StartSpan instead.
+// Start starts a span like [StartSpan]; spanName is ignored.
+//
+// Deprecated: Use [StartSpan] instead.
 func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return StartSpanWithSkip(ctx, 1, opts...)
 }
 
-// StartSpan starts a new span with the given name and options.
+// StartSpan starts a span named after the calling package, annotated with
+// the caller's function, file and line, from the global [Tracer].
 func StartSpan(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return StartSpanWithSkip(ctx, 1, opts...)
 }
 
-// StartDebugSpan starts a new span with the given name and options and adds the debug attr.
+// StartDebugSpan is like [StartSpan] but marks the span as a debug span.
 func StartDebugSpan(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return StartSpanWithSkip(ctx, 1, append(opts, trace.WithAttributes(keelsemconv.DebugEnabled(true)))...)
 }
 
-// SpanFromContext returns the span from the context.
+// SpanFromContext returns the current span of ctx, or a non-recording span
+// if there is none.
 func SpanFromContext(ctx context.Context) trace.Span {
 	return trace.SpanFromContext(ctx)
 }
 
-// AddSpanEvent adds an event to the span.
+// AddSpanEvent adds an event to sp.
 func AddSpanEvent(sp trace.Span, name string, opts ...trace.EventOption) {
 	sp.AddEvent(name, opts...)
 }
 
-// AddSpanLink adds a link to the span.
+// AddSpanLink adds a link from sp to parent with attrs.
 func AddSpanLink(sp, parent trace.Span, attrs ...attribute.KeyValue) {
 	sp.AddLink(trace.Link{
 		SpanContext: parent.SpanContext(),
@@ -46,37 +50,39 @@ func AddSpanLink(sp, parent trace.Span, attrs ...attribute.KeyValue) {
 	})
 }
 
-// SetSpanAttributes sets attributes on the span.
+// SetSpanAttributes sets attrs on sp.
 func SetSpanAttributes(sp trace.Span, attrs ...attribute.KeyValue) {
 	sp.SetAttributes(attrs...)
 }
 
-// SetSpanName sets the name of the span.
+// SetSpanName sets the name of sp.
 func SetSpanName(sp trace.Span, name string) {
 	sp.SetName(name)
 }
 
-// IsSpanRecording returns true if the span is recording.
+// IsSpanRecording reports whether sp is recording.
 func IsSpanRecording(sp trace.Span) bool {
 	return sp.IsRecording()
 }
 
-// SetSpanDebug sets the span debug attribute.
+// SetSpanDebug marks sp as a debug span.
 func SetSpanDebug(sp trace.Span) {
 	sp.SetAttributes(keelsemconv.DebugEnabled(true))
 }
 
-// SetSpanStatusOK sets the status of the span to ok.
+// SetSpanStatusOK sets the status of sp to ok.
 func SetSpanStatusOK(sp trace.Span) {
 	sp.SetStatus(codes.Ok, "")
 }
 
-// SetSpanStatusError sets the status of the span to error.
+// SetSpanStatusError sets the status of sp to error with description.
 func SetSpanStatusError(sp trace.Span, description string) {
 	sp.SetStatus(codes.Error, description)
 }
 
-// Deprecated: use EndSpan instead.
+// End ends sp like [EndSpan].
+//
+// Deprecated: Use [EndSpan] instead.
 func End(sp trace.Span, err error) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
@@ -86,7 +92,8 @@ func End(sp trace.Span, err error) {
 	sp.End()
 }
 
-// EndSpan ends the span.
+// EndSpan ends sp. A non-nil err is recorded with a stack trace and sets the
+// span status to error with the root cause message.
 func EndSpan(sp trace.Span, err error, opts ...trace.SpanEndOption) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
@@ -96,7 +103,9 @@ func EndSpan(sp trace.Span, err error, opts ...trace.SpanEndOption) {
 	sp.End(opts...)
 }
 
-// DeferEndSpan is a helper, so you can do `defer ctx.DeferEndSpan(&err)` instead of `defer func(){ ctx.EndSpan(err) }()`
+// DeferEndSpan ends sp with the error err points to, so it can be used as
+// defer DeferEndSpan(sp, &err). A nil err pointer ends the span without
+// error.
 func DeferEndSpan(sp trace.Span, err *error, opts ...trace.SpanEndOption) {
 	if err == nil {
 		EndSpan(sp, nil, opts...)
@@ -107,8 +116,9 @@ func DeferEndSpan(sp trace.Span, err *error, opts ...trace.SpanEndOption) {
 	EndSpan(sp, *err, opts...)
 }
 
-// StartSpanWithSkip starts a span with skip.
-// It's only supposed to be used internally or by other telemetry packages
+// StartSpanWithSkip is like [StartSpan] but uses the caller skip frames above
+// the caller of StartSpanWithSkip for the span name and code attributes. It
+// is intended for telemetry helper packages.
 func StartSpanWithSkip(ctx context.Context, skip int, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	name := "runtime.go"
 

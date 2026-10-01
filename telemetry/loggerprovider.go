@@ -25,18 +25,19 @@ func LoggerProvider() log.LoggerProvider {
 	return global.GetLoggerProvider()
 }
 
-// NewNoopLoggerProvider returns a no-op log.LoggerProvider.
+// NewNoopLoggerProvider returns a no-op [log.LoggerProvider].
 func NewNoopLoggerProvider() log.LoggerProvider {
 	return noop.NewLoggerProvider()
 }
 
-// NewZapBridgeCore returns a zapcore.Core that emits entries as OTEL log
+// NewZapBridgeCore returns a [zapcore.Core] that emits entries as OTEL log
 // records through lp, for teeing into an existing logger.
 func NewZapBridgeCore(lp log.LoggerProvider) zapcore.Core {
 	return otelzapbridge.NewCore(instrumentationName, otelzapbridge.WithLoggerProvider(lp))
 }
 
-// NewZapLoggerProvider creates a new log.LoggerProvider using a Zap logger for structured logging with OpenTelemetry.
+// NewZapLoggerProvider returns a logger provider that writes OTEL log
+// records to logger and installs it as the global logger provider.
 func NewZapLoggerProvider(ctx context.Context, logger *zap.Logger) (log.LoggerProvider, error) {
 	exp, err := otelzap.New(logger)
 	if err != nil {
@@ -46,7 +47,10 @@ func NewZapLoggerProvider(ctx context.Context, logger *zap.Logger) (log.LoggerPr
 	return newLoggerProvider(ctx, sdklog.NewSimpleProcessor(exp))
 }
 
-// NewStdOutLoggerProvider creates a logger provider that exports logs to standard output with configurable options.
+// NewStdOutLoggerProvider returns a logger provider that exports logs to
+// stdout and installs it as the global logger provider. Output formatting is
+// controlled by OTEL_EXPORTER_STDOUT_PRETTY_PRINT and
+// OTEL_EXPORTER_STDOUT_TIMESTAMPS, both defaulting to true.
 func NewStdOutLoggerProvider(ctx context.Context) (log.LoggerProvider, error) {
 	var opts []stdoutlog.Option
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
@@ -65,7 +69,9 @@ func NewStdOutLoggerProvider(ctx context.Context) (log.LoggerProvider, error) {
 	return newLoggerProvider(ctx, sdklog.NewSimpleProcessor(exp))
 }
 
-// NewOTLPHTTPLoggerProvider creates a new OTLP HTTP LoggerProvider with a batch processor and default resource.
+// NewOTLPHTTPLoggerProvider returns a logger provider that batches and
+// exports logs over OTLP HTTP and installs it as the global logger provider.
+// The exporter is configured from the OTEL_EXPORTER_OTLP_* environment.
 func NewOTLPHTTPLoggerProvider(ctx context.Context) (log.LoggerProvider, error) {
 	exp, err := otlploghttp.New(ctx)
 	if err != nil {
@@ -75,7 +81,9 @@ func NewOTLPHTTPLoggerProvider(ctx context.Context) (log.LoggerProvider, error) 
 	return newLoggerProvider(ctx, sdklog.NewBatchProcessor(exp))
 }
 
-// NewOTLPGRPCLoggerProvider creates a new OTLP gRPC-based logger provider using the provided context.
+// NewOTLPGRPCLoggerProvider returns a logger provider that batches and
+// exports logs over OTLP gRPC and installs it as the global logger provider.
+// The exporter is configured from the OTEL_EXPORTER_OTLP_* environment.
 func NewOTLPGRPCLoggerProvider(ctx context.Context) (log.LoggerProvider, error) {
 	exp, err := otlploggrpc.New(ctx)
 	if err != nil {
@@ -85,11 +93,16 @@ func NewOTLPGRPCLoggerProvider(ctx context.Context) (log.LoggerProvider, error) 
 	return newLoggerProvider(ctx, sdklog.NewBatchProcessor(exp))
 }
 
-// Deprecated: use NewOTLPGRPCLoggerProvider (this was a misspelling).
+// NewOTLPGRCPLoggerProvider is a misspelled alias of
+// [NewOTLPGRPCLoggerProvider].
+//
+// Deprecated: Use [NewOTLPGRPCLoggerProvider] instead.
 func NewOTLPGRCPLoggerProvider(ctx context.Context) (log.LoggerProvider, error) {
 	return NewOTLPGRPCLoggerProvider(ctx)
 }
 
+// newLoggerProvider creates an SDK logger provider with the default resource
+// and processor p and installs it as the global logger provider.
 func newLoggerProvider(ctx context.Context, p sdklog.Processor) (log.LoggerProvider, error) {
 	resource, err := NewResource(ctx)
 	if err != nil {

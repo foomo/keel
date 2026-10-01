@@ -14,13 +14,16 @@ import (
 	"github.com/foomo/keel/log"
 )
 
-// ServiceHTTP struct
+// ServiceHTTP is a [Service] serving an [http.Handler] on an
+// [httptest.Server] bound to a random local port.
 type ServiceHTTP struct {
 	server *httptest.Server
 	name   string
 	l      *zap.Logger
 }
 
+// NewServiceHTTP returns a [ServiceHTTP] named name serving handler wrapped
+// in middlewares. A nil l defaults to the global keel logger.
 func NewServiceHTTP(l *zap.Logger, name string, handler http.Handler, middlewares ...keelhttp.Middleware) *ServiceHTTP {
 	if l == nil {
 		l = log.Logger()
@@ -38,18 +41,24 @@ func NewServiceHTTP(l *zap.Logger, name string, handler http.Handler, middleware
 	}
 }
 
+// Name returns the service name.
 func (s *ServiceHTTP) Name() string {
 	return s.name
 }
 
+// Logger returns the service logger.
 func (s *ServiceHTTP) Logger() *zap.Logger {
 	return s.l
 }
 
+// URL returns the base URL of the server. It is empty until
+// [ServiceHTTP.Start] is called.
 func (s *ServiceHTTP) URL() string {
 	return s.server.URL
 }
 
+// Start starts the server with ctx as the base context of all requests. It
+// always returns nil.
 func (s *ServiceHTTP) Start(ctx context.Context) error {
 	var fields []zap.Field
 
@@ -69,6 +78,8 @@ func (s *ServiceHTTP) Start(ctx context.Context) error {
 	return nil
 }
 
+// Close shuts down the server and blocks until all outstanding requests
+// completed. It always returns nil.
 func (s *ServiceHTTP) Close(_ context.Context) error {
 	s.l.Info("stopping http test service")
 	s.server.Close()

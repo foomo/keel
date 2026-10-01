@@ -11,12 +11,18 @@ import (
 	"github.com/foomo/keel/log"
 )
 
+// Default name, address and path of the service returned by
+// [NewDefaultHTTPZap].
 var (
 	DefaultHTTPZapName = "zap"
 	DefaultHTTPZapAddr = "localhost:9100"
 	DefaultHTTPZapPath = "/log"
 )
 
+// NewHTTPZap returns an [HTTP] service controlling the global logger on path.
+// GET responds with the level, disableCaller and disableStacktrace settings as
+// JSON; PUT updates any of them from a JSON body of the same shape and responds
+// with the resulting settings.
 func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +114,8 @@ func NewHTTPZap(l *zap.Logger, name, addr, path string) *HTTP {
 	return NewHTTP(l, name, addr, handler)
 }
 
+// NewDefaultHTTPZap returns [NewHTTPZap] using [DefaultHTTPZapName],
+// [DefaultHTTPZapAddr] and [DefaultHTTPZapPath].
 func NewDefaultHTTPZap(l *zap.Logger) *HTTP {
 	return NewHTTPZap(
 		l,

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/metric/noop"
 )
 
+// recOptPool pools record option slices to avoid allocations per record.
 var (
 	// addOptPool = &sync.Pool{New: func() any { return &[]metric.AddOption{} }}
 	recOptPool = &sync.Pool{New: func() any { return &[]metric.RecordOption{} }}
@@ -21,12 +22,16 @@ type ExecutionDuration struct {
 	metric.Float64Histogram
 }
 
+// newExecutionDurationOpts are the histogram options appended to every
+// [NewExecutionDuration] call.
 var newExecutionDurationOpts = []metric.Float64HistogramOption{
 	metric.WithDescription("Duration of GOTSRPC execution."),
 	metric.WithUnit("s"),
 }
 
-// NewExecutionDuration returns a new ExecutionDuration instrument.
+// NewExecutionDuration returns a new ExecutionDuration instrument created
+// with m and opt. If m is nil, a no-op instrument is returned. On error, the
+// returned instrument is a no-op.
 func NewExecutionDuration(
 	m metric.Meter,
 	opt ...metric.Float64HistogramOption,
@@ -63,16 +68,19 @@ func (ExecutionDuration) Name() string {
 	return "gotsrpc.execution.duration"
 }
 
-// Unit returns the semantic convention unit of the instrument
+// Unit returns the semantic convention unit of the instrument.
 func (ExecutionDuration) Unit() string {
 	return "s"
 }
 
-// Description returns the semantic convention description of the instrument
+// Description returns the semantic convention description of the instrument.
 func (ExecutionDuration) Description() string {
 	return "Duration of GOTSRPC execution."
 }
 
+// Record records val, in seconds, labeled with the gotsrpc package pkg,
+// service svs, function fnc and attrs. If attrs is empty, val is recorded
+// without any attributes, including pkg, svs and fnc.
 func (m ExecutionDuration) Record(
 	ctx context.Context,
 	val float64,
@@ -126,6 +134,8 @@ func (m ExecutionDuration) RecordSet(ctx context.Context, val float64, set attri
 	m.Float64Histogram.Record(ctx, val, *o...)
 }
 
+// AttrError returns an optional attribute for the "gotsrpc.error" semantic
+// convention, reporting whether the call failed.
 func (ExecutionDuration) AttrError(val bool) attribute.KeyValue {
 	return attribute.Bool("gotsrpc.error", val)
 }

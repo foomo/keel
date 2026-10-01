@@ -1,5 +1,7 @@
 package http
 
+// Canonical names of HTTP request and response headers, including common
+// de-facto, Cloudflare, CORS, security and W3C trace context headers.
 const (
 	HeaderAccept              = "Accept"
 	HeaderAcceptEncoding      = "Accept-Encoding"
@@ -68,7 +70,7 @@ const (
 	HeaderXCSRFToken                      = "X-CSRF-Token"
 	HeaderReferrerPolicy                  = "Referrer-Policy"
 
-	// Telementry
+	// Telemetry
 
 	HeaderTraceParent = "Traceparent"
 	HeaderTraceState  = "Tracestate"

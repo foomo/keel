@@ -65,6 +65,9 @@ func closeAll(ctx context.Context, l *zap.Logger, closers []any) {
 	}
 }
 
+// IsCloser reports whether v implements any of the closer interfaces declared
+// in [github.com/foomo/keel/interfaces] (Closer, Shutdowner, Stopper or
+// Unsubscriber in any of their error or context variants).
 func IsCloser(v any) bool {
 	switch v.(type) {
 	case interfaces.Closer,

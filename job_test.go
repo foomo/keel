@@ -14,16 +14,6 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-// recordCloser implements interfaces.ErrorCloserWithContext and records calls.
-type recordCloser struct {
-	closed atomic.Bool
-}
-
-func (c *recordCloser) Close(_ context.Context) error {
-	c.closed.Store(true)
-	return nil
-}
-
 func TestJob_StepsRunInOrder(t *testing.T) {
 	t.Parallel()
 
@@ -93,17 +83,39 @@ func TestJob_ContextCancelInterrupts(t *testing.T) {
 		keel.JobWithContext(ctx),
 	)
 	j.AddStep("blocking", func(stepCtx context.Context, _ *zap.Logger) error {
+		cancel()
 		<-stepCtx.Done()
+
 		return stepCtx.Err()
 	})
 
-	go func() {
-		time.Sleep(50 * time.Millisecond)
-		cancel()
-	}()
-
 	err := j.RunE()
 	require.ErrorIs(t, err, context.Canceled)
+}
+
+// TestJob_FinalizeAfterContextCancel asserts finalization is detached from the
+// cancelled job context, so closers can still flush within the graceful period.
+func TestJob_FinalizeAfterContextCancel(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	calls := make(chan closerCall, 1)
+
+	j := keel.NewJob(
+		keel.JobWithLogger(zaptest.NewLogger(t)),
+		keel.JobWithContext(ctx),
+		keel.JobWithCloser(&testCloser{name: "closer", calls: calls}),
+	)
+	j.AddStep("cancel", func(_ context.Context, _ *zap.Logger) error {
+		cancel()
+		return nil
+	})
+
+	_ = j.RunE()
+
+	call := receive(t, calls, "closer was not called")
+	require.NoError(t, call.err, "closer must not receive a cancelled context")
+	require.True(t, call.hasDeadline, "closer context must be bounded by the graceful period")
 }
 
 func TestJob_FinalizeRunsClosersAndPushersOnError(t *testing.T) {

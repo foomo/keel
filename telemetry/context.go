@@ -14,11 +14,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Context wraps a [context.Context] and provides span, log and profile
+// helpers bound to it. It implements [context.Context]. Create one with
+// [Ctx]; the zero value is not usable.
 type Context struct {
 	ctx context.Context
 }
 
-// Ctx returns a new Context from the given context.Context.
+// Ctx returns a [Context] wrapping ctx.
 func Ctx(ctx context.Context) Context {
 	return Context{ctx}
 }
@@ -27,22 +30,22 @@ func Ctx(ctx context.Context) Context {
 // ~ Log methods
 // ------------------------------------------------------------------------------------------------
 
-// LogDebug logs a message at `debug` level.
+// LogDebug logs msg at debug level, see [Log].
 func (c Context) LogDebug(msg string, kv ...attribute.KeyValue) {
 	Log(c.ctx, zapcore.DebugLevel, msg, 1, kv...)
 }
 
-// LogInfo logs a message at `info` level.
+// LogInfo logs msg at info level, see [Log].
 func (c Context) LogInfo(msg string, kv ...attribute.KeyValue) {
 	Log(c.ctx, zapcore.InfoLevel, msg, 1, kv...)
 }
 
-// LogWarn logs a message at `warn` level.
+// LogWarn logs msg at warn level, see [Log].
 func (c Context) LogWarn(msg string, kv ...attribute.KeyValue) {
 	Log(c.ctx, zapcore.WarnLevel, msg, 1, kv...)
 }
 
-// LogError logs a message at `error` level.
+// LogError logs msg at error level, see [Log].
 func (c Context) LogError(msg string, kv ...attribute.KeyValue) {
 	Log(c.ctx, zapcore.ErrorLevel, msg, 1, kv...)
 }
@@ -51,7 +54,7 @@ func (c Context) LogError(msg string, kv ...attribute.KeyValue) {
 // ~ Context methods
 // ------------------------------------------------------------------------------------------------
 
-// Context returns the underlying context.Context.
+// Context returns the wrapped [context.Context].
 func (c Context) Context() context.Context {
 	return c.ctx
 }
@@ -82,7 +85,7 @@ func (c Context) WithDeadline(deadline time.Time) (Context, context.CancelFunc) 
 }
 
 // WithTimeout returns a copy of the context with a timeout.
-// It is equivalent to ContextWith(time.Now().Add(timeout)).
+// It is equivalent to WithDeadline(time.Now().Add(timeout)).
 func (c Context) WithTimeout(timeout time.Duration) (Context, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(c.ctx, timeout)
 	return Ctx(ctx), cancel
@@ -128,48 +131,52 @@ func (c Context) Err() error {
 // ~ Trace methods
 // ------------------------------------------------------------------------------------------------
 
-// Span returns the span from the context.
+// Span returns the current span of the context.
 func (c Context) Span() trace.Span {
 	return SpanFromContext(c.ctx)
 }
 
-// SetSpanDebug sets the span debug attribute.
+// SetSpanDebug marks the current span as a debug span.
 func (c Context) SetSpanDebug() {
 	SetSpanDebug(c.Span())
 }
 
-// EndSpan ends the span.
+// EndSpan ends the current span, see [EndSpan].
 func (c Context) EndSpan(err error, opts ...trace.SpanEndOption) {
 	EndSpan(c.Span(), err, opts...)
 }
 
-// DeferEndSpan is a helper, so you can do `defer ctx.DeferEndSpan(&err)` instead of `defer func(){ ctx.EndSpan(err) }()`
+// DeferEndSpan ends the current span with the error err points to, so it
+// can be used as defer ctx.DeferEndSpan(&err). See [DeferEndSpan].
 func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
 	DeferEndSpan(c.Span(), err, opts...)
 }
 
-// SetSpanStatusOK sets the status of the span to ok.
+// SetSpanStatusOK sets the status of the current span to ok.
 func (c Context) SetSpanStatusOK() {
 	c.Span().SetStatus(codes.Ok, "")
 }
 
-// SetSpanStatusError sets the status of the span to error.
+// SetSpanStatusError sets the status of the current span to error with the
+// given description.
 func (c Context) SetSpanStatusError(description string) {
 	c.Span().SetStatus(codes.Error, description)
 	SetSpanStatusError(c.Span(), description)
 }
 
-// SetSpanName sets the name of the span.
+// SetSpanName sets the name of the current span.
 func (c Context) SetSpanName(name string) {
 	SetSpanName(c.Span(), name)
 }
 
-// SetSpanAttributes sets the attributes of the span.
+// SetSpanAttributes sets attributes on the current span.
 func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) {
 	SetSpanAttributes(c.Span(), kv...)
 }
 
-// RecordError records an error on the span and logs it.
+// RecordError records a non-nil err with kv and a stack trace on the
+// current span and sets the span status to error with the root cause
+// message. It does not log the error.
 func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	if err != nil {
 		sp := c.Span()
@@ -181,7 +188,8 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	}
 }
 
-// RecordSpanError records an error on the span.
+// RecordSpanError records a non-nil err with kv and a stack trace on the
+// current span without changing the span status.
 func (c Context) RecordSpanError(err error, kv ...attribute.KeyValue) {
 	if err != nil {
 		sp := c.Span()
@@ -191,12 +199,12 @@ func (c Context) RecordSpanError(err error, kv ...attribute.KeyValue) {
 	}
 }
 
-// AddSpanEvent adds an event to the span.
+// AddSpanEvent adds an event with attributes kv to the current span.
 func (c Context) AddSpanEvent(name string, kv ...attribute.KeyValue) {
 	c.Span().AddEvent(name, trace.WithAttributes(kv...))
 }
 
-// AddSpanLink adds a link to the span.
+// AddSpanLink adds a link from the current span to parent.
 func (c Context) AddSpanLink(parent trace.Span, attrs ...attribute.KeyValue) {
 	sp := c.Span()
 	sp.AddLink(trace.Link{
@@ -205,19 +213,22 @@ func (c Context) AddSpanLink(parent trace.Span, attrs ...attribute.KeyValue) {
 	})
 }
 
-// StartSpan starts a span.
+// StartSpan starts a child span named after the calling package and returns
+// a Context holding it, see [StartSpan].
 func (c Context) StartSpan(opts ...trace.SpanStartOption) Context {
 	ctx, _ := StartSpanWithSkip(c.ctx, 1, opts...)
 	return Ctx(ctx)
 }
 
-// StartSpanWithNewRoot sets the name of the span.
+// StartSpanWithNewRoot starts a span in a new trace, linked to the span of
+// the context, and returns a Context holding it.
 func (c Context) StartSpanWithNewRoot(opts ...trace.SpanStartOption) Context {
 	ctx, _ := StartSpanWithSkip(c.ctx, 1, append(opts, trace.WithNewRoot(), trace.WithLinks(trace.LinkFromContext(c.ctx)))...)
 	return Ctx(ctx)
 }
 
-// StartSpanWithProfile starts a span and profiles the handler.
+// StartSpanWithProfile starts a span with attributes kv, runs handler within
+// a profile named name (see [Context.StartProfile]) and ends the span.
 func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
 	ctx, span := StartSpanWithSkip(c.ctx, 1, trace.WithAttributes(kv...))
 	defer span.End()
@@ -225,7 +236,8 @@ func (c Context) StartSpanWithProfile(name string, handler func(ctx Context), kv
 	Ctx(ctx).StartProfile(name, handler, kv...)
 }
 
-// StartProfile starts a profile for the handler.
+// StartProfile runs handler with pyroscope labels for the profile name and
+// kv applied and sets the profile name attribute on the current span.
 func (c Context) StartProfile(name string, handler func(ctx Context), kv ...attribute.KeyValue) {
 	attr := foomosemconv.ProfileName(name)
 	c.Span().SetAttributes(attr)
@@ -234,7 +246,8 @@ func (c Context) StartProfile(name string, handler func(ctx Context), kv ...attr
 	})
 }
 
-// SetProfileAttributes sets the labels for the profile.
+// SetProfileAttributes adds kv as pprof labels to the context and the
+// current goroutine and returns the labeled Context.
 func (c Context) SetProfileAttributes(kv ...attribute.KeyValue) Context {
 	ctx := pprof.WithLabels(c.ctx, PyroscopeLabels(kv...))
 	pprof.SetGoroutineLabels(ctx)

@@ -14,16 +14,26 @@ import (
 )
 
 type (
+	// LoggerOptions configures the [Logger] middleware.
 	LoggerOptions struct {
-		Message       string
-		MinWarnCode   int
-		MinErrorCode  int
+		// Message is the log message.
+		Message string
+		// MinWarnCode is the status code from which requests are logged at
+		// warn level. Zero disables it.
+		MinWarnCode int
+		// MinErrorCode is the status code from which requests are logged at
+		// error level. Zero disables it.
+		MinErrorCode int
+		// InjectLabeler reports whether a log labeler is injected into the
+		// request so downstream handlers can add fields to the log entry.
 		InjectLabeler bool
 	}
+	// LoggerOption configures [LoggerOptions].
 	LoggerOption func(*LoggerOptions)
 )
 
-// GetDefaultLoggerOptions returns the default options
+// GetDefaultLoggerOptions returns the default options: message "handled http
+// request", warn from 400, error from 500 and labeler injection enabled.
 func GetDefaultLoggerOptions() LoggerOptions {
 	return LoggerOptions{
 		Message:       "handled http request",
@@ -33,7 +43,9 @@ func GetDefaultLoggerOptions() LoggerOptions {
 	}
 }
 
-// Logger middleware
+// Logger returns a middleware that logs one entry per request once the
+// handler returns. The entry carries request fields, duration, status code,
+// response size and any labeler fields; its level depends on the status code.
 func Logger(opts ...LoggerOption) keelhttp.Middleware {
 	options := GetDefaultLoggerOptions()
 
@@ -46,35 +58,37 @@ func Logger(opts ...LoggerOption) keelhttp.Middleware {
 	return LoggerWithOptions(options)
 }
 
-// LoggerWithMessage middleware option
+// LoggerWithMessage sets the log message.
 func LoggerWithMessage(v string) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.Message = v
 	}
 }
 
-// LoggerWithMinWarnCode middleware option
+// LoggerWithMinWarnCode sets the status code from which requests are logged
+// at warn level. Defaults to 400.
 func LoggerWithMinWarnCode(v int) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.MinWarnCode = v
 	}
 }
 
-// LoggerWithMinErrorCode middleware option
+// LoggerWithMinErrorCode sets the status code from which requests are logged
+// at error level. Defaults to 500.
 func LoggerWithMinErrorCode(v int) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.MinErrorCode = v
 	}
 }
 
-// LoggerWithInjectLabeler middleware option
+// LoggerWithInjectLabeler sets [LoggerOptions.InjectLabeler]. Defaults to true.
 func LoggerWithInjectLabeler(v bool) LoggerOption {
 	return func(o *LoggerOptions) {
 		o.InjectLabeler = v
 	}
 }
 
-// LoggerWithOptions middleware
+// LoggerWithOptions is like [Logger] but takes fully populated options.
 func LoggerWithOptions(opts LoggerOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

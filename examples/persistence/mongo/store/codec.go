@@ -9,12 +9,16 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
+// TDateTime is the reflect type of DateTime.
 var (
 	TDateTime = reflect.TypeFor[DateTime]()
 )
 
+// DateTimeCodec encodes DateTime values as BSON datetimes and decodes them from
+// BSON datetimes or strings.
 type DateTimeCodec struct{}
 
+// EncodeValue writes val as a BSON datetime.
 func (d *DateTimeCodec) EncodeValue(_ bson.EncodeContext, vw bson.ValueWriter, val reflect.Value) error {
 	if !val.IsValid() || val.Type() != TDateTime {
 		return bson.ValueEncoderError{Name: "DateTimeEncodeValue", Types: []reflect.Type{TDateTime}, Received: val}
@@ -33,6 +37,7 @@ func (d *DateTimeCodec) EncodeValue(_ bson.EncodeContext, vw bson.ValueWriter, v
 	return vw.WriteDateTime(tt.UnixMilli())
 }
 
+// DecodeValue reads a BSON datetime or string into val.
 func (d *DateTimeCodec) DecodeValue(_ bson.DecodeContext, vr bson.ValueReader, val reflect.Value) error {
 	if !val.CanSet() || val.Type() != TDateTime {
 		return bson.ValueDecoderError{Name: "DecimalDecodeValue", Types: []reflect.Type{TDateTime}, Received: val}

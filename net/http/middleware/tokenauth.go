@@ -13,28 +13,34 @@ import (
 )
 
 type (
+	// TokenAuthOptions configures the [TokenAuth] middleware.
 	TokenAuthOptions struct {
-		// TokenProvider function to retrieve the token
+		// TokenProvider extracts the token from the request.
 		TokenProvider TokenProvider
 	}
+	// TokenAuthOption configures [TokenAuthOptions].
 	TokenAuthOption func(*TokenAuthOptions)
 )
 
-// GetDefaultTokenAuthOptions returns the default options
+// GetDefaultTokenAuthOptions returns the default options using a
+// [HeaderTokenProvider].
 func GetDefaultTokenAuthOptions() TokenAuthOptions {
 	return TokenAuthOptions{
 		TokenProvider: HeaderTokenProvider(),
 	}
 }
 
-// TokenAuthWithTokenProvider middleware option
+// TokenAuthWithTokenProvider sets [TokenAuthOptions.TokenProvider]. Defaults
+// to [HeaderTokenProvider].
 func TokenAuthWithTokenProvider(v TokenProvider) TokenAuthOption {
 	return func(o *TokenAuthOptions) {
 		o.TokenProvider = v
 	}
 }
 
-// TokenAuth middleware
+// TokenAuth returns a middleware that requires the request token to equal
+// token, compared in constant time. Missing or mismatching tokens and
+// provider errors are answered with 401 Unauthorized.
 func TokenAuth(token string, opts ...TokenAuthOption) keelhttp.Middleware {
 	options := GetDefaultTokenAuthOptions()
 
@@ -47,7 +53,7 @@ func TokenAuth(token string, opts ...TokenAuthOption) keelhttp.Middleware {
 	return TokenAuthWithOptions(token, options)
 }
 
-// TokenAuthWithOptions middleware
+// TokenAuthWithOptions is like [TokenAuth] but takes fully populated options.
 func TokenAuthWithOptions(token string, opts TokenAuthOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

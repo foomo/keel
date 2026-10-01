@@ -7,20 +7,27 @@ import (
 	"go.uber.org/zap"
 )
 
+// logger adapts a [zap.Logger] to the Temporal SDK logger interface.
 type logger struct {
 	l *zap.Logger
 }
 
+// NewLogger returns a Temporal SDK logger that writes to l. Key-value pairs
+// are converted to zap fields with lower-cased keys, and zap fields are passed
+// through unchanged.
 func NewLogger(l *zap.Logger) *logger {
 	return &logger{
 		l: l.WithOptions(zap.AddCallerSkip(3)),
 	}
 }
 
+// Debug logs msg at debug level.
 func (t *logger) Debug(msg string, keyvals ...any) {
 	t.l.Debug(msg, t.fields(keyvals...)...)
 }
 
+// Info logs msg at info level, or at error level if any element of keyvals
+// equals "Error".
 func (t *logger) Info(msg string, keyvals ...any) {
 	// TODO check with temporal why errors are being logged as info!
 	for _, keyval := range keyvals {
@@ -33,18 +40,23 @@ func (t *logger) Info(msg string, keyvals ...any) {
 	t.l.Info(msg, t.fields(keyvals...)...)
 }
 
+// Warn logs msg at warn level.
 func (t *logger) Warn(msg string, keyvals ...any) {
 	t.l.Warn(msg, t.fields(keyvals...)...)
 }
 
+// Error logs msg at error level.
 func (t *logger) Error(msg string, keyvals ...any) {
 	t.l.Error(msg, t.fields(keyvals...)...)
 }
 
+// With returns a logger that adds keyvals to every entry.
 func (t *logger) With(keyvals ...any) *logger {
 	return NewLogger(t.l.With(t.fields(keyvals...)...))
 }
 
+// fields converts Temporal key-value pairs into zap fields. A trailing key
+// without a value is logged under the "undefined" key.
 func (t *logger) fields(keyvals ...any) []zap.Field {
 	var fields []zap.Field
 

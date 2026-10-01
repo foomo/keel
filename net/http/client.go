@@ -13,30 +13,45 @@ import (
 	"go.uber.org/zap"
 )
 
+// HTTPClientOption configures an [http.Client] created by [NewInternalHTTPClient],
+// [NewExternalHTTPClient] or [NewHTTPClient]. Options are applied in order.
+//
+// Transport options (such as [HTTPClientWithMaxConnsPerHost]) modify the
+// client's [*http.Transport] and panic if the transport has already been
+// replaced by a wrapping option such as [HTTPClientWithTelemetry] or
+// [HTTPClientWithRoundTripware], or by a non-[*http.Transport] set through
+// [HTTPClientWithTransport]. Apply wrapping options last.
 type HTTPClientOption func(*http.Client)
 
 // ------------------------------------------------------------------
 // Client options
 // ------------------------------------------------------------------
 
+// HTTPClientWithTimeout sets the client's overall request timeout
+// ([http.Client.Timeout]).
 func HTTPClientWithTimeout(o time.Duration) HTTPClientOption {
 	return func(v *http.Client) {
 		v.Timeout = o
 	}
 }
 
+// HTTPClientWithJar sets the client's cookie jar.
 func HTTPClientWithJar(o http.CookieJar) HTTPClientOption {
 	return func(v *http.Client) {
 		v.Jar = o
 	}
 }
 
+// HTTPClientWithTransport replaces the client's transport. Transport options
+// applied afterwards panic unless o is an [*http.Transport].
 func HTTPClientWithTransport(o http.RoundTripper) HTTPClientOption {
 	return func(v *http.Client) {
 		v.Transport = o
 	}
 }
 
+// HTTPClientWithCheckRedirect sets the client's redirect policy
+// ([http.Client.CheckRedirect]).
 func HTTPClientWithCheckRedirect(o func(req *http.Request, via []*http.Request) error) HTTPClientOption {
 	return func(v *http.Client) {
 		v.CheckRedirect = o
@@ -44,7 +59,9 @@ func HTTPClientWithCheckRedirect(o func(req *http.Request, via []*http.Request) 
 }
 
 // HTTPClientWithoutCrossHostRedirects stops the client following a redirect to a
-// different host, and caps redirect depth at max.
+// different host, and caps redirect depth at v. When either limit is hit the
+// last response is returned with its body unclosed, as for
+// [http.ErrUseLastResponse].
 func HTTPClientWithoutCrossHostRedirects(v int) HTTPClientOption {
 	return HTTPClientWithCheckRedirect(func(req *http.Request, via []*http.Request) error {
 		if len(via) >= v || req.URL.Host != via[0].URL.Host {
@@ -59,48 +76,62 @@ func HTTPClientWithoutCrossHostRedirects(v int) HTTPClientOption {
 // Transport options
 // ------------------------------------------------------------------
 
+// HTTPClientWithProxy sets the transport's proxy selection function.
 func HTTPClientWithProxy(o func(request *http.Request) (*url.URL, error)) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithProxy", func(t *http.Transport) {
 		t.Proxy = o
 	})
 }
 
+// HTTPClientWithDialContext sets the transport's dial function for
+// unencrypted TCP connections.
 func HTTPClientWithDialContext(o func(ctx context.Context, network, addr string) (net.Conn, error)) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithDialContext", func(t *http.Transport) {
 		t.DialContext = o
 	})
 }
 
+// HTTPClientWithDialTLSContext sets the transport's dial function for TLS
+// connections to non-proxied HTTPS requests.
 func HTTPClientWithDialTLSContext(o func(ctx context.Context, network, addr string) (net.Conn, error)) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithDialTLSContext", func(t *http.Transport) {
 		t.DialTLSContext = o
 	})
 }
 
+// HTTPClientWithTLSClientConfig sets the transport's TLS configuration.
 func HTTPClientWithTLSClientConfig(o *tls.Config) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithTLSClientConfig", func(t *http.Transport) {
 		t.TLSClientConfig = o
 	})
 }
 
+// HTTPClientWithTLSHandshakeTimeout sets the transport's TLS handshake
+// timeout.
 func HTTPClientWithTLSHandshakeTimeout(o time.Duration) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithTLSHandshakeTimeout", func(t *http.Transport) {
 		t.TLSHandshakeTimeout = o
 	})
 }
 
+// HTTPClientWithDisableKeepAlives sets whether the transport disables HTTP
+// keep-alives and uses each connection for a single request only.
 func HTTPClientWithDisableKeepAlives(o bool) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithDisableKeepAlives", func(t *http.Transport) {
 		t.DisableKeepAlives = o
 	})
 }
 
+// HTTPClientWithDisableCompression sets whether the transport refrains from
+// requesting gzip-compressed responses.
 func HTTPClientWithDisableCompression(o bool) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithDisableCompression", func(t *http.Transport) {
 		t.DisableCompression = o
 	})
 }
 
+// HTTPClientWithMaxIdleConns caps pooled idle connections across all hosts.
+// Zero means no limit.
 func HTTPClientWithMaxIdleConns(o int) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithMaxIdleConns", func(t *http.Transport) {
 		t.MaxIdleConns = o
@@ -149,24 +180,32 @@ func HTTPClientWithResponseHeaderTimeout(o time.Duration) HTTPClientOption {
 	})
 }
 
+// HTTPClientWithExpectContinueTimeout sets how long the transport waits for
+// a server's first response headers after sending "Expect: 100-continue".
 func HTTPClientWithExpectContinueTimeout(o time.Duration) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithExpectContinueTimeout", func(t *http.Transport) {
 		t.ExpectContinueTimeout = o
 	})
 }
 
+// HTTPClientWithTLSNextProto sets the transport's TLS ALPN protocol upgrade
+// handlers ([http.Transport.TLSNextProto]).
 func HTTPClientWithTLSNextProto(o map[string]func(authority string, c *tls.Conn) http.RoundTripper) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithTLSNextProto", func(t *http.Transport) {
 		t.TLSNextProto = o
 	})
 }
 
+// HTTPClientWithProxyConnectHeader sets the headers sent to proxies in
+// CONNECT requests.
 func HTTPClientWithProxyConnectHeader(o http.Header) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithProxyConnectHeader", func(t *http.Transport) {
 		t.ProxyConnectHeader = o
 	})
 }
 
+// HTTPClientWithGetProxyConnectHeader sets the function returning headers
+// sent to a proxy in CONNECT requests.
 func HTTPClientWithGetProxyConnectHeader(o func(ctx context.Context, proxyURL *url.URL, target string) (http.Header, error)) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithGetProxyConnectHeader", func(t *http.Transport) {
 		t.GetProxyConnectHeader = o
@@ -181,12 +220,16 @@ func HTTPClientWithMaxResponseHeaderBytes(o int64) HTTPClientOption {
 	})
 }
 
+// HTTPClientWithWriteBufferSize sets the size of the transport's write
+// buffer in bytes.
 func HTTPClientWithWriteBufferSize(o int) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithWriteBufferSize", func(t *http.Transport) {
 		t.WriteBufferSize = o
 	})
 }
 
+// HTTPClientWithReadBufferSize sets the size of the transport's read buffer
+// in bytes.
 func HTTPClientWithReadBufferSize(o int) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithReadBufferSize", func(t *http.Transport) {
 		t.ReadBufferSize = o
@@ -195,8 +238,11 @@ func HTTPClientWithReadBufferSize(o int) HTTPClientOption {
 
 // HTTPClientWithForceAttemptHTTP2 enables HTTP/2 negotiation.
 //
-// Deprecated: use HTTPClientWithProtocols or HTTPClientWithHTTP1Only. Transport
-// consults Protocols first, so this field is ignored when Protocols is set.
+// The transport consults Protocols first, so this setting is ignored when
+// Protocols is set, which is the case for [NewInternalHTTPClient] and
+// [NewExternalHTTPClient].
+//
+// Deprecated: Use [HTTPClientWithProtocols] instead.
 func HTTPClientWithForceAttemptHTTP2(o bool) HTTPClientOption {
 	return httpTransportOption("HTTPClientWithForceAttemptHTTP2", func(t *http.Transport) {
 		t.ForceAttemptHTTP2 = o
@@ -214,7 +260,8 @@ func HTTPClientWithProtocols(o *http.Protocols) HTTPClientOption {
 // Wrapping options — apply these last
 // ------------------------------------------------------------------
 
-// HTTPClientWithRoundTripware wraps the transport. Apply after all
+// HTTPClientWithRoundTripware wraps the transport with the given
+// [roundtripware.RoundTripware], using l for logging. Apply after all
 // transport-tuning options.
 func HTTPClientWithRoundTripware(l *zap.Logger, roundTripware ...roundtripware.RoundTripware) HTTPClientOption {
 	return func(v *http.Client) {
@@ -237,16 +284,15 @@ func HTTPClientWithTelemetry(opts ...otelhttp.Option) HTTPClientOption {
 // Dialer and transport
 // ------------------------------------------------------------------
 
-// ------------------------------------------------------------------
-// Dialer and transport
-// ------------------------------------------------------------------
-
-// DefaultHTTPTransportDialer returns the original dialer, unchanged.
+// DefaultHTTPTransportDialer returns the legacy dialer used by
+// [DefaultHTTPTransport].
 //
-// Deprecated: use NewHTTPTransportDialer. A 45s dial timeout is far too slack for
-// in-cluster traffic, where a slow dial means the endpoint is gone rather than
-// far away, and the loose keep-alive takes minutes to notice a pod that
-// disappeared without a FIN.
+// It uses a 45s dial timeout and keep-alive period. A 45s dial timeout is far
+// too slack for in-cluster traffic, where a slow dial means the endpoint is
+// gone rather than far away, and the loose keep-alive takes minutes to notice a
+// pod that disappeared without a FIN.
+//
+// Deprecated: Use [NewHTTPTransportDialer] instead.
 func DefaultHTTPTransportDialer() *net.Dialer {
 	return &net.Dialer{
 		Timeout:   45 * time.Second,
@@ -254,10 +300,11 @@ func DefaultHTTPTransportDialer() *net.Dialer {
 	}
 }
 
-// NewHTTPTransportDialer returns the dialer used by NewHTTPTransport.
+// NewHTTPTransportDialer returns the dialer used by [NewHTTPTransport].
 //
-// internal selects tuning for pod-to-pod calls; false targets the public
-// internet.
+// internal selects tuning for pod-to-pod calls (2s dial timeout); false targets
+// the public internet (5s dial timeout). Both enable aggressive TCP keep-alive
+// probing (15s idle, 5s interval, 3 probes).
 func NewHTTPTransportDialer(internal bool) *net.Dialer {
 	return &net.Dialer{
 		// In-cluster the peer is one network hop away, so a slow dial means the
@@ -279,12 +326,13 @@ func NewHTTPTransportDialer(internal bool) *net.Dialer {
 	}
 }
 
-// DefaultHTTPTransport returns the original transport, unchanged.
+// DefaultHTTPTransport returns the legacy transport used by [NewHTTPClient].
 //
-// Deprecated: use NewHTTPTransport. This transport disables connection pooling and
-// leaves MaxIdleConnsPerHost (defaulting to 2), MaxConnsPerHost,
-// IdleConnTimeout and ResponseHeaderTimeout unset. It is kept only so existing
-// callers see no behaviour change.
+// This transport disables connection pooling and leaves MaxIdleConnsPerHost
+// (defaulting to 2), MaxConnsPerHost, IdleConnTimeout and
+// ResponseHeaderTimeout unset.
+//
+// Deprecated: Use [NewHTTPTransport] instead.
 func DefaultHTTPTransport() *http.Transport {
 	return &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
@@ -295,7 +343,8 @@ func DefaultHTTPTransport() *http.Transport {
 	}
 }
 
-// NewHTTPTransport returns a tuned transport.
+// NewHTTPTransport returns a tuned transport. Each call returns a distinct
+// [*http.Transport] and therefore a distinct connection pool.
 //
 // internal selects tuning for another Deployment in the same cluster, reached
 // through a ClusterIP Service with no sidecar or gateway in the path; false
@@ -369,7 +418,9 @@ func NewHTTPTransport(internal bool) *http.Transport {
 // ------------------------------------------------------------------
 
 // NewInternalHTTPClient returns a client tuned for pod-to-pod calls through a
-// ClusterIP Service with no mesh or gateway in the path.
+// ClusterIP Service with no mesh or gateway in the path, using
+// [NewHTTPTransport] with internal set to true and a 10s timeout. Options are
+// applied afterwards, so [HTTPClientWithTimeout] overrides the timeout.
 //
 // Create one client per logical upstream at process start and reuse it for the
 // lifetime of the process: the Transport is the connection pool, so a client
@@ -378,18 +429,16 @@ func NewInternalHTTPClient(opts ...HTTPClientOption) *http.Client {
 	return newHTTPClient(true, opts...)
 }
 
-// NewExternalHTTPClient returns a client tuned for third-party HTTPS APIs.
-// The same reuse rule applies as for NewInternalHTTPClient.
+// NewExternalHTTPClient returns a client tuned for third-party HTTPS APIs,
+// using [NewHTTPTransport] with internal set to false and a 30s timeout.
+// The same reuse rule applies as for [NewInternalHTTPClient].
 func NewExternalHTTPClient(opts ...HTTPClientOption) *http.Client {
 	return newHTTPClient(false, opts...)
 }
 
-// NewHTTPClient returns the original client, unchanged: the legacy transport
-// from DefaultHTTPTransport and a two minute timeout.
-//
-// Deprecated: use NewInternalHTTPClient or NewExternalHTTPClient. This
-// constructor is frozen so that existing callers see no behaviour change, which
-// means it keeps the following problems:
+// NewHTTPClient returns a client using the legacy transport from
+// [DefaultHTTPTransport] and a two minute timeout. Compared to the tuned
+// constructors it differs as follows:
 //
 //	setting                 legacy        NewExternalHTTPClient
 //	DisableKeepAlives       true          false
@@ -406,9 +455,11 @@ func NewExternalHTTPClient(opts ...HTTPClientOption) *http.Client {
 // intermittent dial failures that look like a network fault.
 //
 // Migrating is not purely mechanical. Callers relying on the two minute timeout
-// for slow endpoints must also raise ResponseHeaderTimeout, which the new
+// for slow endpoints must also raise ResponseHeaderTimeout, which the tuned
 // defaults bound at 10s — otherwise a request that takes 45s to produce its
 // first byte fails even with a generous overall timeout.
+//
+// Deprecated: Use [NewInternalHTTPClient] or [NewExternalHTTPClient] instead.
 func NewHTTPClient(opts ...HTTPClientOption) *http.Client {
 	inst := &http.Client{
 		Transport: DefaultHTTPTransport(),
@@ -446,9 +497,8 @@ func newHTTPClient(internal bool, opts ...HTTPClientOption) *http.Client {
 // Wrapping options such as HTTPClientWithTelemetry and
 // HTTPClientWithRoundTripware replace Transport with a decorator, after which
 // the underlying transport can no longer be reached by a type assertion. The
-// original implementation silently skipped the setting in that case; panicking
-// at construction time beats discovering an ignored connection-pool setting in
-// production.
+// returned option panics in that case rather than silently ignoring the
+// setting, so a misordered option fails at construction time.
 func httpTransportOption(name string, f func(*http.Transport)) HTTPClientOption {
 	return func(v *http.Client) {
 		t, ok := v.Transport.(*http.Transport)
@@ -460,6 +510,7 @@ func httpTransportOption(name string, f func(*http.Transport)) HTTPClientOption 
 	}
 }
 
+// pick returns a if cond is true and b otherwise.
 func pick[T any](cond bool, a, b T) T {
 	if cond {
 		return a

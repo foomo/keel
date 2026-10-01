@@ -10,14 +10,19 @@ import (
 )
 
 type (
+	// PoweredByHeaderOptions configures the [PoweredByHeader] middleware.
 	PoweredByHeaderOptions struct {
-		Header  string
+		// Header is the name of the response header.
+		Header string
+		// Message is not used; the header value is the service name.
 		Message string
 	}
+	// PoweredByHeaderOption configures [PoweredByHeaderOptions].
 	PoweredByHeaderOption func(*PoweredByHeaderOptions)
 )
 
-// GetDefaultPoweredByHeaderOptions returns the default options
+// GetDefaultPoweredByHeaderOptions returns the default options using the
+// X-Powered-By header.
 func GetDefaultPoweredByHeaderOptions() PoweredByHeaderOptions {
 	return PoweredByHeaderOptions{
 		Header:  keelhttp.HeaderXPoweredBy,
@@ -25,7 +30,8 @@ func GetDefaultPoweredByHeaderOptions() PoweredByHeaderOptions {
 	}
 }
 
-// PoweredByHeader middleware
+// PoweredByHeader returns a middleware that adds a header, X-Powered-By by
+// default, with the service name to every response.
 func PoweredByHeader(opts ...PoweredByHeaderOption) keelhttp.Middleware {
 	options := GetDefaultPoweredByHeaderOptions()
 
@@ -38,21 +44,23 @@ func PoweredByHeader(opts ...PoweredByHeaderOption) keelhttp.Middleware {
 	return PoweredByHeaderWithOptions(options)
 }
 
-// PoweredByHeaderWithHeader middleware option
+// PoweredByHeaderWithHeader sets the response header name. Defaults to
+// X-Powered-By.
 func PoweredByHeaderWithHeader(v string) PoweredByHeaderOption {
 	return func(o *PoweredByHeaderOptions) {
 		o.Header = v
 	}
 }
 
-// PoweredByHeaderWithMessage middleware option
+// PoweredByHeaderWithMessage sets [PoweredByHeaderOptions.Message].
 func PoweredByHeaderWithMessage(v string) PoweredByHeaderOption {
 	return func(o *PoweredByHeaderOptions) {
 		o.Message = v
 	}
 }
 
-// PoweredByHeaderWithOptions middleware
+// PoweredByHeaderWithOptions is like [PoweredByHeader] but takes fully
+// populated options.
 func PoweredByHeaderWithOptions(opts PoweredByHeaderOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

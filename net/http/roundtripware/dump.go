@@ -8,7 +8,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// Dump returns a RoundTripper which prints out the request & response object
+// Dump returns a RoundTripware that prints the request and response bodies to
+// stdout, pretty-printing JSON and msgpack. Bodies are only printed when a
+// Content-Type header is set.
 func Dump() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
@@ -21,7 +23,7 @@ func Dump() RoundTripware {
 	}
 }
 
-// DumpRequest returns a RoundTripper which prints out the request object
+// DumpRequest is like [Dump] but prints only the request body.
 func DumpRequest() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {
@@ -37,7 +39,7 @@ func DumpRequest() RoundTripware {
 	}
 }
 
-// DumpResponse returns a RoundTripper which prints out the response object
+// DumpResponse is like [Dump] but prints only the response body.
 func DumpResponse() RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {

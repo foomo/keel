@@ -12,20 +12,38 @@ import (
 	"go.uber.org/zap"
 )
 
+// Default name, address and path of the service returned by
+// [NewDefaultHTTPProbes].
 var (
 	DefaultHTTPHealthzName = "healthz"
 	DefaultHTTPHealthzAddr = ":9400"
 	DefaultHTTPHealthzPath = "/healthz"
 )
 
+// Errors reported by the health probe handlers.
 var (
+	// ErrUnhandledHealthzProbe is reported for a probe of an unsupported type.
 	ErrUnhandledHealthzProbe = errors.New("unhandled healthz probe")
-	ErrProbeFailed           = errors.New("probe failed")
-	ErrLivenessProbeFailed   = errors.New("liveness probe failed")
-	ErrReadinessProbeFailed  = errors.New("readiness probe failed")
-	ErrStartupProbeFailed    = errors.New("startup probe failed")
+	// ErrProbeFailed is reported when a boolean probe fails on the aggregate path.
+	ErrProbeFailed = errors.New("probe failed")
+	// ErrLivenessProbeFailed is reported when a boolean liveness probe fails.
+	ErrLivenessProbeFailed = errors.New("liveness probe failed")
+	// ErrReadinessProbeFailed is reported when a boolean readiness probe fails.
+	ErrReadinessProbeFailed = errors.New("readiness probe failed")
+	// ErrStartupProbeFailed is reported when a boolean startup probe fails.
+	ErrStartupProbeFailed = errors.New("startup probe failed")
 )
 
+// NewHealthz returns an [HTTP] service serving health checks for probes:
+//
+//   - path runs all probes except [healthz.TypeStartup] ones
+//   - path/liveness runs [healthz.TypeAlways] and [healthz.TypeLiveness] probes
+//   - path/readiness runs [healthz.TypeAlways] and [healthz.TypeReadiness] probes
+//   - path/startup runs [healthz.TypeAlways] and [healthz.TypeStartup] probes
+//
+// Each endpoint responds 200 OK when all probes pass and 503 Service Unavailable
+// at the first failing probe. probes is read on every request, so probes added
+// to the map later are included.
 func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type][]any) *HTTP {
 	handler := http.NewServeMux()
 
@@ -151,6 +169,8 @@ func NewHealthz(l *zap.Logger, name, addr, path string, probes map[healthz.Type]
 	return NewHTTP(l, name, addr, handler)
 }
 
+// NewDefaultHTTPProbes returns [NewHealthz] using [DefaultHTTPHealthzName],
+// [DefaultHTTPHealthzAddr] and [DefaultHTTPHealthzPath].
 func NewDefaultHTTPProbes(l *zap.Logger, probes map[healthz.Type][]any) *HTTP {
 	return NewHealthz(
 		l,
