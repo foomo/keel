@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// Attributes converts the valid attributes in attrs to zap fields using
+// [Attribute].
 func Attributes(attrs ...attribute.KeyValue) []zap.Field {
 	ret := make([]zap.Field, 0, len(attrs))
 	for _, attr := range attrs {
@@ -18,6 +20,9 @@ func Attributes(attrs ...attribute.KeyValue) []zap.Field {
 	return ret
 }
 
+// Attribute converts attr to a zap field of the matching type, with its key
+// transformed by [AttributeKey]. A string slice with a single element is
+// logged as a plain string. An invalid attr yields a skipped field.
 func Attribute(attr attribute.KeyValue) zap.Field {
 	if !attr.Valid() {
 		return zap.Skip()
@@ -49,6 +54,7 @@ func Attribute(attr attribute.KeyValue) zap.Field {
 	}
 }
 
+// AttributeKey returns key with every "." replaced by "_".
 func AttributeKey(key attribute.Key) string {
 	return strings.ReplaceAll(string(key), ".", "_")
 }

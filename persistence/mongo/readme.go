@@ -6,6 +6,9 @@ import (
 	"github.com/foomo/keel/markdown"
 )
 
+// Readme returns a Markdown section listing every database, collection and
+// named index registered through [NewCollection]. It returns an empty string
+// if none are registered. It is safe for concurrent use.
 func Readme() string {
 	var rows [][]string
 

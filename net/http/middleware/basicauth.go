@@ -16,27 +16,35 @@ import (
 )
 
 type (
+	// BasicAuthOptions configures the [BasicAuth] middleware.
 	BasicAuthOptions struct {
+		// Realm is the realm sent in the WWW-Authenticate challenge.
 		Realm string
 	}
+	// BasicAuthOption configures [BasicAuthOptions].
 	BasicAuthOption func(*BasicAuthOptions)
 )
 
-// GetDefaultBasicAuthOptions returns the default options
+// GetDefaultBasicAuthOptions returns the default options with the realm "Restricted".
 func GetDefaultBasicAuthOptions() BasicAuthOptions {
 	return BasicAuthOptions{
 		Realm: "Restricted",
 	}
 }
 
-// BasicAuthWithRealm middleware option
+// BasicAuthWithRealm sets the realm sent in the WWW-Authenticate challenge.
+// Defaults to "Restricted".
 func BasicAuthWithRealm(v string) BasicAuthOption {
 	return func(o *BasicAuthOptions) {
 		o.Realm = v
 	}
 }
 
-// BasicAuth middleware
+// BasicAuth returns a middleware that requires HTTP basic authentication.
+// The username is compared in constant time and the password is verified
+// against passwordHash, which must be a bcrypt hash. Missing or invalid
+// credentials are answered with 401 Unauthorized and a WWW-Authenticate
+// challenge.
 func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) keelhttp.Middleware {
 	options := GetDefaultBasicAuthOptions()
 
@@ -49,7 +57,7 @@ func BasicAuth(username string, passwordHash []byte, opts ...BasicAuthOption) ke
 	return BasicAuthWithOptions(username, passwordHash, options)
 }
 
-// BasicAuthWithOptions middleware
+// BasicAuthWithOptions is like [BasicAuth] but takes fully populated options.
 func BasicAuthWithOptions(username string, passwordHash []byte, opts BasicAuthOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

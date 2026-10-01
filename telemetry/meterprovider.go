@@ -18,17 +18,21 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
-// MeterProvider returns the default metric.MeterProvider instance for creating meters.
+// MeterProvider returns the global [metric.MeterProvider].
 func MeterProvider() metric.MeterProvider {
 	return otel.GetMeterProvider()
 }
 
-// NewNoopMeterProvider returns a no-op metric.MeterProvider.
+// NewNoopMeterProvider returns a no-op [metric.MeterProvider].
 func NewNoopMeterProvider() metric.MeterProvider {
 	return noop.NewMeterProvider()
 }
 
-// NewStdOutMeterProvider creates a new MeterProvider that exports metrics to standard output with configurable options.
+// NewStdOutMeterProvider returns a meter provider that periodically exports
+// metrics to stdout and installs it as the global meter provider. Output
+// formatting is controlled by OTEL_EXPORTER_STDOUT_PRETTY_PRINT and
+// OTEL_EXPORTER_STDOUT_TIMESTAMPS, both defaulting to true; opts are passed
+// to the exporter.
 func NewStdOutMeterProvider(ctx context.Context, opts ...stdoutmetric.Option) (metric.MeterProvider, error) {
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
 		enc := json.NewEncoder(os.Stdout)
@@ -54,6 +58,7 @@ func NewStdOutMeterProvider(ctx context.Context, opts ...stdoutmetric.Option) (m
 // over OTLP gRPC via a periodic reader. It configures the exporter from environment
 // variables (e.g. endpoint, insecure transport) unless overridden by the given options.
 // Push-based export suits short-lived workloads (e.g. Jobs) that exit before a scrape.
+// The provider is installed as the global meter provider.
 func NewOTLPGRPCMeterProvider(ctx context.Context, opts ...otlpmetricgrpc.Option) (metric.MeterProvider, error) {
 	exporter, err := otlpmetricgrpc.New(ctx, opts...)
 	if err != nil {
@@ -67,6 +72,7 @@ func NewOTLPGRPCMeterProvider(ctx context.Context, opts ...otlpmetricgrpc.Option
 // over OTLP HTTP via a periodic reader. It configures the exporter from environment
 // variables (e.g. endpoint, insecure transport) unless overridden by the given options.
 // Push-based export suits short-lived workloads (e.g. Jobs) that exit before a scrape.
+// The provider is installed as the global meter provider.
 func NewOTLPHTTPMeterProvider(ctx context.Context, opts ...otlpmetrichttp.Option) (metric.MeterProvider, error) {
 	exporter, err := otlpmetrichttp.New(ctx, opts...)
 	if err != nil {
@@ -76,7 +82,9 @@ func NewOTLPHTTPMeterProvider(ctx context.Context, opts ...otlpmetrichttp.Option
 	return newMeterProvider(ctx, sdkmetric.NewPeriodicReader(exporter))
 }
 
-// NewPrometheusMeterProvider initializes and returns a Prometheus-based metric.MeterProvider with default configuration.
+// NewPrometheusMeterProvider returns a meter provider backed by the OTEL
+// Prometheus exporter, which registers into prometheus.DefaultRegisterer, and
+// installs it as the global meter provider.
 func NewPrometheusMeterProvider(ctx context.Context) (metric.MeterProvider, error) {
 	exporter, err := prometheus.New()
 	if err != nil {
@@ -86,6 +94,10 @@ func NewPrometheusMeterProvider(ctx context.Context) (metric.MeterProvider, erro
 	return newMeterProvider(ctx, exporter)
 }
 
+// newMeterProvider creates an SDK meter provider with the default resource
+// and reader r and installs it as the global meter provider. It starts host
+// and runtime instrumentation if OTEL_METRICS_HOST_ENABLED or
+// OTEL_METRICS_RUNTIME_ENABLED are set.
 func newMeterProvider(ctx context.Context, r sdkmetric.Reader) (metric.MeterProvider, error) {
 	if env.GetBool("OTEL_METRICS_HOST_ENABLED", false) {
 		if err := otelhost.Start(); err != nil {

@@ -11,27 +11,33 @@ import (
 )
 
 type (
+	// RecoverOptions configures the [Recover] RoundTripware.
 	RecoverOptions struct {
+		// DisablePrintStack reports whether the stack trace is omitted from
+		// the log entry.
 		DisablePrintStack bool
 	}
+	// RecoverOption configures [RecoverOptions].
 	RecoverOption func(options *RecoverOptions)
 )
 
-// GetDefaultRecoverOptions returns the default options
+// GetDefaultRecoverOptions returns the default options, which include the
+// stack trace.
 func GetDefaultRecoverOptions() RecoverOptions {
 	return RecoverOptions{
 		DisablePrintStack: false,
 	}
 }
 
-// RecoverWithDisablePrintStack roundTripware option
+// RecoverWithDisablePrintStack sets [RecoverOptions.DisablePrintStack].
 func RecoverWithDisablePrintStack(v bool) RecoverOption {
 	return func(o *RecoverOptions) {
 		o.DisablePrintStack = v
 	}
 }
 
-// Recover returns a RoundTripper which catches any panics
+// Recover returns a RoundTripware that recovers and logs panics from the next
+// handler. A recovered request returns a nil response and a nil error.
 func Recover(opts ...RecoverOption) RoundTripware {
 	options := GetDefaultRecoverOptions()
 
@@ -44,7 +50,7 @@ func Recover(opts ...RecoverOption) RoundTripware {
 	return RecoverWithOptions(options)
 }
 
-// RecoverWithOptions returns a RoundTripper which catches any panics
+// RecoverWithOptions is like [Recover] but takes fully populated options.
 func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 	return func(l *zap.Logger, next Handler) Handler {
 		return func(r *http.Request) (*http.Response, error) {

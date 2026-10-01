@@ -16,14 +16,19 @@ import (
 )
 
 type (
+	// GZipOptions configures the [GZip] RoundTripware.
 	GZipOptions struct {
+		// CompressionLevel is the gzip compression level.
 		CompressionLevel int
-		MinSize          int
+		// MinSize is the minimum request Content-Length in bytes to compress.
+		MinSize int
 	}
+	// GZipOption configures [GZipOptions].
 	GZipOption func(*GZipOptions)
 )
 
-// DefaultGZipOptions returns the default options
+// DefaultGZipOptions holds the defaults used by [GZip]: the default
+// compression level and a minimum size of 1024 bytes.
 var DefaultGZipOptions = GZipOptions{
 	CompressionLevel: gzip.DefaultCompression,
 	MinSize:          1024,
@@ -36,14 +41,16 @@ func GZipWithLevel(v int) GZipOption {
 	}
 }
 
-// GZipWithMinSize allows setting a minimum response body length to apply gzip compression (default: 1400 bytes).
+// GZipWithMinSize allows setting a minimum request body length to apply gzip compression (default: 1024 bytes).
 func GZipWithMinSize(v int) GZipOption {
 	return func(o *GZipOptions) {
 		o.MinSize = v
 	}
 }
 
-// GZip returns a RoundTripware which logs all requests
+// GZip returns a RoundTripware that gzip-compresses request bodies whose
+// Content-Length is at least MinSize and that are not already gzip encoded,
+// and transparently decompresses gzip responses.
 func GZip(opts ...GZipOption) RoundTripware {
 	o := DefaultGZipOptions
 

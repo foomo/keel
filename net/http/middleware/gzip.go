@@ -18,16 +18,22 @@ import (
 )
 
 type (
+	// GZipOptions configures the [GZip] middleware.
 	GZipOptions struct {
+		// CompressionLevel is the gzip level used to compress responses.
 		CompressionLevel int
-		MinSize          int
+		// MinSize is the minimum response body size in bytes to compress.
+		MinSize int
 		// MaxDecompressedSize caps the number of decompressed request body bytes
 		// accepted (guards against decompression bombs). Zero means unlimited.
 		MaxDecompressedSize int64
 	}
+	// GZipOption configures [GZipOptions].
 	GZipOption func(*GZipOptions)
 )
 
+// DefaultGZipOptions holds the defaults used by [GZip]: the default
+// compression level, a minimum size of 1024 bytes and no decompression limit.
 var DefaultGZipOptions = GZipOptions{
 	CompressionLevel: gzip.DefaultCompression,
 	MinSize:          1024,
@@ -55,7 +61,10 @@ func GZipWithMaxDecompressedSize(v int64) GZipOption {
 	}
 }
 
-// GZip middleware
+// GZip returns a middleware that compresses responses for clients accepting
+// gzip and decompresses request bodies sent with Content-Encoding: gzip. The
+// Content-Encoding and Content-Length request headers are removed for
+// decompressed bodies. Malformed gzip bodies are answered with 400 Bad Request.
 func GZip(opts ...GZipOption) keelhttp.Middleware {
 	options := DefaultGZipOptions
 
@@ -68,7 +77,8 @@ func GZip(opts ...GZipOption) keelhttp.Middleware {
 	return GZipWithOptions(options)
 }
 
-// GZipWithOptions middleware
+// GZipWithOptions is like [GZip] but takes fully populated options. The
+// returned middleware panics when applied if the options are invalid.
 func GZipWithOptions(opts GZipOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		pool := sync.Pool{

@@ -8,12 +8,17 @@ import (
 	"go.uber.org/zap"
 )
 
+// Default name, address and path of the service returned by
+// [NewDefaultHTTPPProf].
 var (
 	DefaultHTTPPProfName = "pprof"
 	DefaultHTTPPProfAddr = "localhost:6060"
 	DefaultHTTPPProfPath = "/debug/pprof"
 )
 
+// NewHTTPPProf returns an [HTTP] service exposing the [net/http/pprof]
+// handlers below path. The CPU profile endpoint is served by Pyroscope's
+// pprof handler.
 func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path+"/", pprof.Index)
@@ -25,6 +30,8 @@ func NewHTTPPProf(l *zap.Logger, name, addr, path string) *HTTP {
 	return NewHTTP(l, name, addr, handler)
 }
 
+// NewDefaultHTTPPProf returns [NewHTTPPProf] using [DefaultHTTPPProfName],
+// [DefaultHTTPPProfAddr] and [DefaultHTTPPProfPath].
 func NewDefaultHTTPPProf(l *zap.Logger) *HTTP {
 	return NewHTTPPProf(
 		l,

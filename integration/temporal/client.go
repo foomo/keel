@@ -20,40 +20,59 @@ import (
 )
 
 type (
+	// ClientOptions configures [NewClient].
 	ClientOptions struct {
-		Logger            *zap.Logger
-		Namespace         string
+		// Logger receives the Temporal client logs.
+		Logger *zap.Logger
+		// Namespace is the namespace the client connects to.
+		Namespace string
+		// RegisterNamespace, when set, is registered if missing and updated
+		// otherwise, and its namespace replaces Namespace.
 		RegisterNamespace *workflowservice.RegisterNamespaceRequest
-		OtelEnabled       bool
+		// OtelEnabled reports whether tracing and metrics are enabled.
+		OtelEnabled bool
+		// ConnectionOptions are passed to the Temporal client unchanged.
 		ConnectionOptions client.ConnectionOptions
 	}
+	// ClientOption modifies [ClientOptions].
 	ClientOption func(o *ClientOptions)
 )
 
+// ClientWithOtelEnabled sets whether the client is instrumented with
+// OpenTelemetry tracing and metrics.
 func ClientWithOtelEnabled(v bool) ClientOption {
 	return func(o *ClientOptions) {
 		o.OtelEnabled = v
 	}
 }
 
+// ClientWithNamespace sets the namespace the client connects to. Defaults to
+// "default".
 func ClientWithNamespace(v string) ClientOption {
 	return func(o *ClientOptions) {
 		o.Namespace = v
 	}
 }
 
+// ClientWithRegisterNamespace sets a namespace that [NewClient] registers or
+// updates before connecting to it.
 func ClientWithRegisterNamespace(v *workflowservice.RegisterNamespaceRequest) ClientOption {
 	return func(o *ClientOptions) {
 		o.RegisterNamespace = v
 	}
 }
 
+// ClientWithConnectionOptions sets the gRPC connection options of the client.
 func ClientWithConnectionOptions(v client.ConnectionOptions) ClientOption {
 	return func(o *ClientOptions) {
 		o.ConnectionOptions = v
 	}
 }
 
+// DefaultClientOptions returns the default [ClientOptions]: the keel logger,
+// the "default" namespace and OpenTelemetry enabled according to the
+// OTEL_TEMPORAL_ENABLED environment variable, falling back to OTEL_ENABLED
+// and then false.
 func DefaultClientOptions() ClientOptions {
 	return ClientOptions{
 		Logger:            log.Logger(),
@@ -64,6 +83,14 @@ func DefaultClientOptions() ClientOptions {
 	}
 }
 
+// NewClient dials the Temporal server at endpoint (host:port) and returns a
+// client configured by [DefaultClientOptions] and opts.
+//
+// If a namespace to register is set, it is registered when it does not exist
+// and otherwise updated with the requested settings; an error is returned if
+// the namespace is not in the registered state. If OpenTelemetry is enabled,
+// a tracing interceptor and a metrics handler using the keel telemetry
+// providers are installed.
 func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (client.Client, error) {
 	o := DefaultClientOptions()
 

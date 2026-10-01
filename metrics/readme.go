@@ -5,7 +5,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Deprecated: will be removed in upcoming releases
+// Readme returns a markdown table of all metrics gathered from the default
+// Prometheus gatherer, or an empty string if there are none.
+//
+// Deprecated: Readme has no replacement.
 func Readme() string {
 	md := markdown.Markdown{}
 

@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	// DurationKey - generic duration attribute
+	// DurationKey is the log field key for a duration in milliseconds.
 	DurationKey = "duration"
-	// DurationSecKey - duration in seconds
+	// DurationSecKey is the log field key for a duration in seconds.
 	DurationSecKey = "duration_sec"
-	// DurationMinKey - duration in minutes
+	// DurationMinKey is the log field key for a duration in minutes.
 	DurationMinKey = "duration_min"
-	// DurationHourKey - duration in hours
+	// DurationHourKey is the log field key for a duration in hours.
 	DurationHourKey = "duration_hour"
 )
 
@@ -37,7 +37,9 @@ func FDurationHour(duration time.Duration) zap.Field {
 	return zap.Float64(DurationHourKey, duration.Hours())
 }
 
-// FDurationFn returns a function that returns a zap.Field with a given time.Duration converted to milliseconds under the key "duration".
+// FDurationFn starts a timer and returns a function that creates a zap.Field
+// with the time elapsed since the call to FDurationFn in milliseconds under the
+// key "duration".
 func FDurationFn() func() zap.Field {
 	start := time.Now()
 

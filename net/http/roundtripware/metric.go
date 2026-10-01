@@ -10,7 +10,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// Deprecated: use keelhttp.WithTelemetry instead.
+// Metric returns a RoundTripware that records the request duration in
+// seconds in a Float64Histogram named name. Failed requests are not recorded.
+// It panics if the histogram cannot be created.
+//
+// Deprecated: Use keelhttp.WithTelemetry instead.
 func Metric(meter metric.Meter, name, description string) RoundTripware {
 	histogram, err := meter.Float64Histogram(
 		name,

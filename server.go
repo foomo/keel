@@ -37,6 +37,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Names and default addresses of the HTTP services registered by
+// [Server.AddInternalHTTPService] and [Server.AddPublicHTTPService].
 const (
 	ServiceNameInternalHTTP = "internal"
 	ServiceAddrInternalHTTP = ":8080"
@@ -44,7 +46,9 @@ const (
 	ServiceAddrPublicHTTP   = ":8000"
 )
 
-// Server struct
+// Server runs a set of [Service] values until a shutdown signal is received and
+// then shuts them down gracefully. Create it with [NewServer]; the zero value is
+// not usable. Registration methods are safe for concurrent use.
 type Server struct {
 	services        []Service
 	initServices    []Service
@@ -72,6 +76,11 @@ type Server struct {
 	c                *viper.Viper
 }
 
+// NewServer creates a [Server] configured by opts and immediately starts its
+// init services. It sets the global OpenTelemetry logger, error handler and
+// text map propagator, falls back to no-op trace, meter and logger providers
+// when none are configured, and registers the server itself as an always
+// probe and a readiness probe that fails once shutdown has started.
 func NewServer(opts ...Option) *Server {
 	inst := &Server{
 		gracefulPeriod:  time.Duration(env.GetInt("KEEL_GRACEFUL_PERIOD", 30)) * time.Second,
@@ -165,42 +174,44 @@ func NewServer(opts ...Option) *Server {
 	return inst
 }
 
-// Logger returns server logger
+// Logger returns the server logger.
 func (s *Server) Logger() *zap.Logger {
 	return s.l
 }
 
-// Meter returns the implementation meter
+// Meter returns the global OpenTelemetry meter from [telemetry.Meter].
 func (s *Server) Meter() metric.Meter {
 	return telemetry.Meter()
 }
 
-// Tracer returns the implementation tracer
+// Tracer returns the global OpenTelemetry tracer from [telemetry.Tracer].
 func (s *Server) Tracer() trace.Tracer {
 	return telemetry.Tracer()
 }
 
-// Config returns server config
+// Config returns the server configuration.
 func (s *Server) Config() *viper.Viper {
 	return s.c
 }
 
-// Context returns server context
+// Context returns the server context. It is canceled when [Server.Run] returns.
 func (s *Server) Context() context.Context {
 	return s.ctx
 }
 
-// ShutdownContext returns server's shutdown cancel context
+// ShutdownContext returns a context that is canceled when graceful shutdown is
+// triggered by a shutdown signal, [Server.ShutdownCancel] or a failing service.
 func (s *Server) ShutdownContext() context.Context {
 	return s.gracefulCtx
 }
 
-// ShutdownCancel returns server's shutdown cancel function
+// ShutdownCancel returns a function that triggers graceful shutdown.
 func (s *Server) ShutdownCancel() context.CancelFunc {
 	return s.gracefulCancel
 }
 
-// AddService add a single service
+// AddService registers v to be started by [Server.Run], as an always probe and
+// as a closer. Adding the same service twice is a no-op.
 func (s *Server) AddService(v Service) {
 	if !slices.Contains(s.services, v) {
 		s.services = append(s.services, v)
@@ -209,31 +220,42 @@ func (s *Server) AddService(v Service) {
 	}
 }
 
+// AddHTTPService registers a [service.HTTP] named name serving handler wrapped
+// in middleware. The listen address is read from the config key
+// service.http.<name>.addr and defaults to addr.
 func (s *Server) AddHTTPService(name, addr string, handler http.Handler, middleware ...keelhttp.Middleware) {
 	addrFn := config.GetString(s.Config(), "service.http."+name+".addr", addr)
 	s.AddService(service.NewHTTP(s.l, name, addrFn(), handler, middleware...))
 }
 
+// AddInternalHTTPService registers an HTTP service named
+// [ServiceNameInternalHTTP] listening on [ServiceAddrInternalHTTP] by default.
+// See [Server.AddHTTPService].
 func (s *Server) AddInternalHTTPService(handler http.Handler, middleware ...keelhttp.Middleware) {
 	s.AddHTTPService(ServiceNameInternalHTTP, ServiceAddrInternalHTTP, handler, middleware...)
 }
 
+// AddPublicHTTPService registers an HTTP service named [ServiceNamePublicHTTP]
+// listening on [ServiceAddrPublicHTTP] by default. See [Server.AddHTTPService].
 func (s *Server) AddPublicHTTPService(handler http.Handler, middleware ...keelhttp.Middleware) {
 	s.AddHTTPService(ServiceNamePublicHTTP, ServiceAddrPublicHTTP, handler, middleware...)
 }
 
+// AddGoRoutine registers a [service.GoRoutine] named name running handler.
 func (s *Server) AddGoRoutine(name string, handler service.GoRoutineFn, opts ...service.GoRoutineOption) {
 	s.AddService(service.NewGoRoutine(s.l, name, handler, opts...))
 }
 
-// AddServices adds multiple service
+// AddServices calls [Server.AddService] for each of services.
 func (s *Server) AddServices(services ...Service) {
 	for _, value := range services {
 		s.AddService(value)
 	}
 }
 
-// AddCloser adds a closer to be called on shutdown
+// AddCloser registers closer to be called on graceful shutdown. Closers are
+// called in registration order. A warning is logged if closer does not satisfy
+// [IsCloser]; adding the same closer twice is a no-op.
 func (s *Server) AddCloser(closer any) {
 	if !IsCloser(closer) {
 		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
@@ -246,30 +268,31 @@ func (s *Server) AddCloser(closer any) {
 	s.addClosers(closer)
 }
 
-// AddClosers adds the given closers to be called on shutdown
+// AddClosers calls [Server.AddCloser] for each of closers.
 func (s *Server) AddClosers(closers ...any) {
 	for _, closer := range closers {
 		s.AddCloser(closer)
 	}
 }
 
-// AddReadmer adds a readmer to be added to the exposed readme
+// AddReadmer adds readmer to the readme exposed by the readme service.
 //
-// Deprecated: will be removed in future releases
+// Deprecated: Readme support will be removed in a future release.
 func (s *Server) AddReadmer(readmer interfaces.Readmer) {
 	s.addReadmers(readmer)
 }
 
-// AddReadmers adds readmers to be added to the exposed readme
+// AddReadmers adds readmers to the readme exposed by the readme service.
 //
-// Deprecated: will be removed in future releases
+// Deprecated: Readme support will be removed in a future release.
 func (s *Server) AddReadmers(readmers ...interfaces.Readmer) {
 	for _, readmer := range readmers {
 		s.AddReadmer(readmer)
 	}
 }
 
-// AddHealthzer adds a probe to be called on healthz checks
+// AddHealthzer registers probe for health checks of type typ. Values that do not
+// satisfy [IsHealthz] are ignored.
 func (s *Server) AddHealthzer(typ healthz.Type, probe any) {
 	if IsHealthz(probe) {
 		s.addProbes(typ, probe)
@@ -278,34 +301,34 @@ func (s *Server) AddHealthzer(typ healthz.Type, probe any) {
 	}
 }
 
-// AddHealthzers adds the given probes to be called on healthz checks
+// AddHealthzers calls [Server.AddHealthzer] for each of probes.
 func (s *Server) AddHealthzers(typ healthz.Type, probes ...any) {
 	for _, probe := range probes {
 		s.AddHealthzer(typ, probe)
 	}
 }
 
-// AddAlwaysHealthzers adds the probes to be called on any healthz checks
+// AddAlwaysHealthzers registers probes that are checked by every probe type.
 func (s *Server) AddAlwaysHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeAlways, probes...)
 }
 
-// AddStartupHealthzers adds the startup probes to be called on healthz checks
+// AddStartupHealthzers registers probes for the startup check.
 func (s *Server) AddStartupHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeStartup, probes...)
 }
 
-// AddLivenessHealthzers adds the liveness probes to be called on healthz checks
+// AddLivenessHealthzers registers probes for the liveness check.
 func (s *Server) AddLivenessHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeLiveness, probes...)
 }
 
-// AddReadinessHealthzers adds the readiness probes to be called on healthz checks
+// AddReadinessHealthzers registers probes for the readiness check.
 func (s *Server) AddReadinessHealthzers(probes ...any) {
 	s.AddHealthzers(healthz.TypeReadiness, probes...)
 }
 
-// Healthz returns true if the server is running
+// Healthz returns [ErrServerNotRunning] unless [Server.Run] is in progress.
 func (s *Server) Healthz() error {
 	if !s.running.Load() {
 		return ErrServerNotRunning
@@ -314,7 +337,8 @@ func (s *Server) Healthz() error {
 	return nil
 }
 
-// Readme returns the self-documenting string
+// Readme returns a markdown description of the registered services, health
+// probes and closers.
 func (s *Server) Readme() string {
 	md := &markdown.Markdown{}
 
@@ -325,7 +349,9 @@ func (s *Server) Readme() string {
 	return md.String()
 }
 
-// Run runs the server
+// Run starts the registered services and blocks until the server has shut down,
+// either gracefully after a shutdown signal or because a service failed. The
+// outcome is logged; Run does not exit the process.
 func (s *Server) Run() {
 	s.l.With(log.Attributes(telemetry.EnvAttributes()...)...).Info("starting keel server")
 	defer s.cancel()
@@ -397,7 +423,9 @@ func (s *Server) addProbes(typ healthz.Type, v ...any) {
 // ~ Private methods
 // ------------------------------------------------------------------------------------------------
 
-// startService starts the given services
+// startService starts each of services in the server's error group with the
+// server context. A service returning [net/http.ErrServerClosed] is treated as
+// stopped; any other error fails the group and triggers shutdown.
 func (s *Server) startService(services ...Service) {
 	done := make(chan struct{}, 1)
 

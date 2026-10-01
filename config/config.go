@@ -9,7 +9,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// config holds the global configuration
+// Package-level registry state. config is the global [viper.Viper] instance
+// used whenever a nil instance is passed; requiredKeys, defaults and types
+// record every key registered through the getter constructors.
 var (
 	config       *viper.Viper
 	requiredKeys []string
@@ -17,7 +19,8 @@ var (
 	types        = map[string]string{}
 )
 
-// Init sets up the configuration
+// init creates the global viper instance with automatic environment lookup,
+// YAML config type and "." to "_" env key replacement.
 func init() {
 	config = viper.New()
 	config.AutomaticEnv()
@@ -25,11 +28,13 @@ func init() {
 	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 }
 
-// Config return the config instance
+// Config returns the global [viper.Viper] instance.
 func Config() *viper.Viper {
 	return config
 }
 
+// GetBool registers key with fallback as its default on c and returns a
+// getter that reads the current bool value on each call.
 func GetBool(c *viper.Viper, key string, fallback bool) func() bool {
 	setDefault(c, key, "bool", fallback)
 
@@ -38,6 +43,8 @@ func GetBool(c *viper.Viper, key string, fallback bool) func() bool {
 	}
 }
 
+// MustGetBool registers key as required on c and returns a getter that reads
+// the current bool value on each call. It panics if key is not set.
 func MustGetBool(c *viper.Viper, key string) func() bool {
 	must(c, key, "bool")
 
@@ -46,6 +53,8 @@ func MustGetBool(c *viper.Viper, key string) func() bool {
 	}
 }
 
+// GetInt registers key with fallback as its default on c and returns a
+// getter that reads the current int value on each call.
 func GetInt(c *viper.Viper, key string, fallback int) func() int {
 	setDefault(c, key, "int", fallback)
 
@@ -54,6 +63,8 @@ func GetInt(c *viper.Viper, key string, fallback int) func() int {
 	}
 }
 
+// MustGetInt registers key as required on c and returns a getter that reads
+// the current int value on each call. It panics if key is not set.
 func MustGetInt(c *viper.Viper, key string) func() int {
 	must(c, key, "int")
 
@@ -62,6 +73,8 @@ func MustGetInt(c *viper.Viper, key string) func() int {
 	}
 }
 
+// GetInt32 registers key with fallback as its default on c and returns a
+// getter that reads the current int32 value on each call.
 func GetInt32(c *viper.Viper, key string, fallback int32) func() int32 {
 	setDefault(c, key, "int32", fallback)
 
@@ -70,6 +83,8 @@ func GetInt32(c *viper.Viper, key string, fallback int32) func() int32 {
 	}
 }
 
+// MustGetInt32 registers key as required on c and returns a getter that reads
+// the current int32 value on each call. It panics if key is not set.
 func MustGetInt32(c *viper.Viper, key string) func() int32 {
 	must(c, key, "int32")
 
@@ -78,6 +93,8 @@ func MustGetInt32(c *viper.Viper, key string) func() int32 {
 	}
 }
 
+// GetInt64 registers key with fallback as its default on c and returns a
+// getter that reads the current int64 value on each call.
 func GetInt64(c *viper.Viper, key string, fallback int64) func() int64 {
 	setDefault(c, key, "int64", fallback)
 
@@ -86,6 +103,8 @@ func GetInt64(c *viper.Viper, key string, fallback int64) func() int64 {
 	}
 }
 
+// MustGetInt64 registers key as required on c and returns a getter that reads
+// the current int64 value on each call. It panics if key is not set.
 func MustGetInt64(c *viper.Viper, key string) func() int64 {
 	must(c, key, "int64")
 
@@ -94,6 +113,8 @@ func MustGetInt64(c *viper.Viper, key string) func() int64 {
 	}
 }
 
+// GetUint registers key with fallback as its default on c and returns a
+// getter that reads the current uint value on each call.
 func GetUint(c *viper.Viper, key string, fallback uint) func() uint {
 	setDefault(c, key, "uint", fallback)
 
@@ -102,6 +123,8 @@ func GetUint(c *viper.Viper, key string, fallback uint) func() uint {
 	}
 }
 
+// MustGetUint registers key as required on c and returns a getter that reads
+// the current uint value on each call. It panics if key is not set.
 func MustGetUint(c *viper.Viper, key string) func() uint {
 	must(c, key, "uint")
 
@@ -110,6 +133,8 @@ func MustGetUint(c *viper.Viper, key string) func() uint {
 	}
 }
 
+// GetUint32 registers key with fallback as its default on c and returns a
+// getter that reads the current uint32 value on each call.
 func GetUint32(c *viper.Viper, key string, fallback uint32) func() uint32 {
 	setDefault(c, key, "uint32", fallback)
 
@@ -118,6 +143,8 @@ func GetUint32(c *viper.Viper, key string, fallback uint32) func() uint32 {
 	}
 }
 
+// MustGetUint32 registers key as required on c and returns a getter that reads
+// the current uint32 value on each call. It panics if key is not set.
 func MustGetUint32(c *viper.Viper, key string) func() uint32 {
 	must(c, key, "uint32")
 
@@ -126,6 +153,8 @@ func MustGetUint32(c *viper.Viper, key string) func() uint32 {
 	}
 }
 
+// GetUint64 registers key with fallback as its default on c and returns a
+// getter that reads the current uint64 value on each call.
 func GetUint64(c *viper.Viper, key string, fallback uint64) func() uint64 {
 	setDefault(c, key, "uint64", fallback)
 
@@ -134,6 +163,8 @@ func GetUint64(c *viper.Viper, key string, fallback uint64) func() uint64 {
 	}
 }
 
+// MustGetUint64 registers key as required on c and returns a getter that reads
+// the current uint64 value on each call. It panics if key is not set.
 func MustGetUint64(c *viper.Viper, key string) func() uint64 {
 	must(c, key, "uint64")
 
@@ -142,6 +173,8 @@ func MustGetUint64(c *viper.Viper, key string) func() uint64 {
 	}
 }
 
+// GetFloat64 registers key with fallback as its default on c and returns a
+// getter that reads the current float64 value on each call.
 func GetFloat64(c *viper.Viper, key string, fallback float64) func() float64 {
 	setDefault(c, key, "float64", fallback)
 
@@ -150,6 +183,8 @@ func GetFloat64(c *viper.Viper, key string, fallback float64) func() float64 {
 	}
 }
 
+// MustGetFloat64 registers key as required on c and returns a getter that reads
+// the current float64 value on each call. It panics if key is not set.
 func MustGetFloat64(c *viper.Viper, key string) func() float64 {
 	must(c, key, "float64")
 
@@ -158,6 +193,8 @@ func MustGetFloat64(c *viper.Viper, key string) func() float64 {
 	}
 }
 
+// GetString registers key with fallback as its default on c and returns a
+// getter that reads the current string value on each call.
 func GetString(c *viper.Viper, key, fallback string) func() string {
 	setDefault(c, key, "string", fallback)
 
@@ -166,6 +203,8 @@ func GetString(c *viper.Viper, key, fallback string) func() string {
 	}
 }
 
+// MustGetString registers key as required on c and returns a getter that reads
+// the current string value on each call. It panics if key is not set.
 func MustGetString(c *viper.Viper, key string) func() string {
 	must(c, key, "string")
 
@@ -174,6 +213,8 @@ func MustGetString(c *viper.Viper, key string) func() string {
 	}
 }
 
+// GetTime registers key with fallback as its default on c and returns a
+// getter that reads the current [time.Time] value on each call.
 func GetTime(c *viper.Viper, key string, fallback time.Time) func() time.Time {
 	setDefault(c, key, "time.Time", fallback)
 
@@ -182,6 +223,8 @@ func GetTime(c *viper.Viper, key string, fallback time.Time) func() time.Time {
 	}
 }
 
+// MustGetTime registers key as required on c and returns a getter that reads
+// the current [time.Time] value on each call. It panics if key is not set.
 func MustGetTime(c *viper.Viper, key string) func() time.Time {
 	must(c, key, "time.Time")
 
@@ -190,6 +233,8 @@ func MustGetTime(c *viper.Viper, key string) func() time.Time {
 	}
 }
 
+// GetDuration registers key with fallback as its default on c and returns a
+// getter that reads the current [time.Duration] value on each call.
 func GetDuration(c *viper.Viper, key string, fallback time.Duration) func() time.Duration {
 	setDefault(c, key, "time.Duration", fallback)
 
@@ -198,6 +243,8 @@ func GetDuration(c *viper.Viper, key string, fallback time.Duration) func() time
 	}
 }
 
+// MustGetDuration registers key as required on c and returns a getter that reads
+// the current [time.Duration] value on each call. It panics if key is not set.
 func MustGetDuration(c *viper.Viper, key string) func() time.Duration {
 	must(c, key, "time.Duration")
 
@@ -206,6 +253,8 @@ func MustGetDuration(c *viper.Viper, key string) func() time.Duration {
 	}
 }
 
+// GetIntSlice registers key with fallback as its default on c and returns a
+// getter that reads the current []int value on each call.
 func GetIntSlice(c *viper.Viper, key string, fallback []int) func() []int {
 	setDefault(c, key, "[]int", fallback)
 
@@ -214,6 +263,8 @@ func GetIntSlice(c *viper.Viper, key string, fallback []int) func() []int {
 	}
 }
 
+// MustGetIntSlice registers key as required on c and returns a getter that reads
+// the current []int value on each call. It panics if key is not set.
 func MustGetIntSlice(c *viper.Viper, key string) func() []int {
 	must(c, key, "[]int")
 
@@ -222,6 +273,8 @@ func MustGetIntSlice(c *viper.Viper, key string) func() []int {
 	}
 }
 
+// GetStringSlice registers key with fallback as its default on c and returns a
+// getter that reads the current []string value on each call.
 func GetStringSlice(c *viper.Viper, key string, fallback []string) func() []string {
 	setDefault(c, key, "[]string", fallback)
 
@@ -230,6 +283,8 @@ func GetStringSlice(c *viper.Viper, key string, fallback []string) func() []stri
 	}
 }
 
+// MustGetStringSlice registers key as required on c and returns a getter that reads
+// the current []string value on each call. It panics if key is not set.
 func MustGetStringSlice(c *viper.Viper, key string) func() []string {
 	must(c, key, "[]string")
 
@@ -238,6 +293,8 @@ func MustGetStringSlice(c *viper.Viper, key string) func() []string {
 	}
 }
 
+// GetStringMap registers key with fallback as its default on c and returns a
+// getter that reads the current map[string]any value on each call.
 func GetStringMap(c *viper.Viper, key string, fallback map[string]any) func() map[string]any {
 	setDefault(c, key, "map[string]interface{}", fallback)
 
@@ -246,6 +303,8 @@ func GetStringMap(c *viper.Viper, key string, fallback map[string]any) func() ma
 	}
 }
 
+// MustGetStringMap registers key as required on c and returns a getter that reads
+// the current map[string]any value on each call. It panics if key is not set.
 func MustGetStringMap(c *viper.Viper, key string) func() map[string]any {
 	must(c, key, "map[string]interface{}")
 
@@ -254,6 +313,8 @@ func MustGetStringMap(c *viper.Viper, key string) func() map[string]any {
 	}
 }
 
+// GetStringMapString registers key with fallback as its default on c and returns a
+// getter that reads the current map[string]string value on each call.
 func GetStringMapString(c *viper.Viper, key string, fallback map[string]string) func() map[string]string {
 	setDefault(c, key, "map[string]string", fallback)
 
@@ -262,6 +323,8 @@ func GetStringMapString(c *viper.Viper, key string, fallback map[string]string) 
 	}
 }
 
+// MustGetStringMapString registers key as required on c and returns a getter that reads
+// the current map[string]string value on each call. It panics if key is not set.
 func MustGetStringMapString(c *viper.Viper, key string) func() map[string]string {
 	must(c, key, "map[string]string")
 
@@ -270,6 +333,8 @@ func MustGetStringMapString(c *viper.Viper, key string) func() map[string]string
 	}
 }
 
+// GetStringMapStringSlice registers key with fallback as its default on c and returns a
+// getter that reads the current map[string][]string value on each call.
 func GetStringMapStringSlice(c *viper.Viper, key string, fallback map[string][]string) func() map[string][]string {
 	setDefault(c, key, "map[string][]string", fallback)
 
@@ -278,6 +343,8 @@ func GetStringMapStringSlice(c *viper.Viper, key string, fallback map[string][]s
 	}
 }
 
+// MustGetStringMapStringSlice registers key as required on c and returns a getter that reads
+// the current map[string][]string value on each call. It panics if key is not set.
 func MustGetStringMapStringSlice(c *viper.Viper, key string) func() map[string][]string {
 	must(c, key, "map[string][]string")
 
@@ -286,6 +353,10 @@ func MustGetStringMapStringSlice(c *viper.Viper, key string) func() map[string][
 	}
 }
 
+// GetStruct decodes fallback (using "yaml" struct tags) into defaults below
+// key, merges them into c and returns a function that decodes the current
+// value at key into v. A nil c selects the global instance. It returns an
+// error if fallback cannot be decoded or merged.
 func GetStruct(c *viper.Viper, key string, fallback any) (func(v any) error, error) {
 	c = ensure(c)
 
@@ -323,18 +394,22 @@ func GetStruct(c *viper.Viper, key string, fallback any) (func(v any) error, err
 	}, nil
 }
 
+// RequiredKeys returns all keys registered as required.
 func RequiredKeys() []string {
 	return requiredKeys
 }
 
+// Defaults returns the registered default values by key.
 func Defaults() map[string]any {
 	return defaults
 }
 
+// Types returns the registered type names by key.
 func Types() map[string]string {
 	return types
 }
 
+// TypeOf returns the registered type name of key, or "" if key is unknown.
 func TypeOf(key string) string {
 	if v, ok := types[key]; ok {
 		return v
@@ -343,6 +418,7 @@ func TypeOf(key string) string {
 	return ""
 }
 
+// ensure returns c, or the global instance if c is nil.
 func ensure(c *viper.Viper) *viper.Viper {
 	if c == nil {
 		c = config
@@ -351,6 +427,7 @@ func ensure(c *viper.Viper) *viper.Viper {
 	return c
 }
 
+// must records key as required with type typeof and panics if it is not set.
 func must(c *viper.Viper, key, typeof string) {
 	c = ensure(c)
 	types[key] = typeof
@@ -361,6 +438,7 @@ func must(c *viper.Viper, key, typeof string) {
 	}
 }
 
+// decode converts input into output using mapstructure with "yaml" tags.
 func decode(input, output any) error {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName: "yaml",
@@ -373,6 +451,7 @@ func decode(input, output any) error {
 	return decoder.Decode(input)
 }
 
+// setDefault sets fallback as the default for key and records its type.
 func setDefault(c *viper.Viper, key, typeof string, fallback any) {
 	c = ensure(c)
 	c.SetDefault(key, fallback)

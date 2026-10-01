@@ -8,7 +8,9 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 )
 
-// GetRequestHost returns the request's host
+// GetRequestHost returns the request's host, preferring the X-Forwarded-Host
+// header, then [http.Request.Host] for non-absolute request URLs, and the URL
+// host otherwise. The result may include a port.
 func GetRequestHost(r *http.Request) string {
 	if value := r.Header.Get(keelhttp.HeaderXForwardedHost); value != "" {
 		return value
@@ -19,6 +21,10 @@ func GetRequestHost(r *http.Request) string {
 	}
 }
 
+// GetRemoteAddr returns the client IP address of r. It prefers the
+// X-Real-IP, True-Client-Ip and the first X-Forwarded-For entry, in that order,
+// and falls back to the host part of [http.Request.RemoteAddr]. These headers
+// are client-controlled unless set by a trusted proxy.
 func GetRemoteAddr(r *http.Request) string {
 	if value := r.Header.Get(keelhttp.HeaderXRealIP); value != "" {
 		return value
@@ -37,7 +43,8 @@ func GetRemoteAddr(r *http.Request) string {
 	}
 }
 
-// GetRequestDomain returns the request's domain
+// GetRequestDomain returns the host returned by [GetRequestHost] with any
+// port removed.
 func GetRequestDomain(r *http.Request) string {
 	domain := GetRequestHost(r)
 	// right trim port

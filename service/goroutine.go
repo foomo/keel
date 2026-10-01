@@ -12,8 +12,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// GoRoutine struct
 type (
+	// GoRoutine is a service that runs a [GoRoutineFn] in one or more
+	// goroutines until it returns or the service is closed. Create it with
+	// [NewGoRoutine].
 	GoRoutine struct {
 		running    atomic.Bool
 		handler    GoRoutineFn
@@ -24,10 +26,16 @@ type (
 		wg         errgroup.Group
 		l          *zap.Logger
 	}
+	// GoRoutineOption configures a [GoRoutine] in [NewGoRoutine].
 	GoRoutineOption func(*GoRoutine)
-	GoRoutineFn     func(ctx context.Context, l *zap.Logger) error
+	// GoRoutineFn is the function run by a [GoRoutine]. ctx is canceled with
+	// cause [ErrServiceShutdown] when the service is closed; l is enriched with
+	// the service name and goroutine instance.
+	GoRoutineFn func(ctx context.Context, l *zap.Logger) error
 )
 
+// NewGoRoutine returns a [GoRoutine] named name that runs handler. A nil l
+// defaults to [log.Logger]. By default handler runs in a single goroutine.
 func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn, opts ...GoRoutineOption) *GoRoutine {
 	if l == nil {
 		l = log.Logger()
@@ -56,6 +64,8 @@ func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn, opts ...GoRou
 // ~ Options
 // ------------------------------------------------------------------------------------------------
 
+// GoRoutineWithParallel sets the number of goroutines running the handler
+// concurrently. Defaults to 1.
 func GoRoutineWithParallel(v int) GoRoutineOption {
 	return func(o *GoRoutine) {
 		o.parallel = v
@@ -66,10 +76,12 @@ func GoRoutineWithParallel(v int) GoRoutineOption {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
+// Name returns the service name.
 func (s *GoRoutine) Name() string {
 	return s.name
 }
 
+// Healthz returns [ErrServiceNotRunning] unless [GoRoutine.Start] is in progress.
 func (s *GoRoutine) Healthz() error {
 	if !s.running.Load() {
 		return ErrServiceNotRunning
@@ -78,10 +90,13 @@ func (s *GoRoutine) Healthz() error {
 	return nil
 }
 
+// String returns a short description used in the readme.
 func (s *GoRoutine) String() string {
 	return fmt.Sprintf("parallel: `%d`", s.parallel)
 }
 
+// Start runs the handler in the configured number of goroutines and blocks
+// until all of them have returned. It returns the first non-nil handler error.
 func (s *GoRoutine) Start(ctx context.Context) error {
 	s.l.Info("starting keel service")
 
@@ -107,6 +122,9 @@ func (s *GoRoutine) Start(ctx context.Context) error {
 	return s.wg.Wait()
 }
 
+// Close cancels the handler context with cause [ErrServiceShutdown] and waits
+// for all goroutines to return, returning the first non-nil handler error. ctx
+// is not used. Close must not be called before [GoRoutine.Start].
 func (s *GoRoutine) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
 	s.cancelLock.Lock()

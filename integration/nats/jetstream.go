@@ -11,8 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// NewJetStream creates a JetStream context with production-sensible async
-// publish defaults and an instrumented async-error handler.
+// NewJetStream creates a JetStream context on nc with production-sensible
+// async publish defaults and an instrumented async-error handler.
+//
+// Defaults are a 5s default timeout, at most 256 pending async publishes and
+// a 10s async publish timeout; they are applied before opts, so opts may
+// override them. Async publish errors are logged and recorded with the meter
+// of s.
 func NewJetStream(s keel.Runtime, nc *nats.Conn, opts ...jetstream.JetStreamOpt) (jetstream.JetStream, error) {
 	l := s.Logger().Named("jetstream")
 	m := s.Meter()

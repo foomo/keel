@@ -11,28 +11,35 @@ import (
 )
 
 type (
+	// SessionIDOptions configures the [SessionID] RoundTripware.
 	SessionIDOptions struct {
+		// Header is the name of the request header to set.
 		Header string
 	}
-	SessionIDOption    func(*SessionIDOptions)
+	// SessionIDOption configures [SessionIDOptions].
+	SessionIDOption func(*SessionIDOptions)
+	// SessionIDGenerator returns a new session ID. It is not used by this
+	// package.
 	SessionIDGenerator func() string
 )
 
-// GetDefaultSessionIDOptions returns the default options
+// GetDefaultSessionIDOptions returns the default options using the
+// X-Session-ID header.
 func GetDefaultSessionIDOptions() SessionIDOptions {
 	return SessionIDOptions{
 		Header: "X-Session-ID",
 	}
 }
 
-// SessionIDWithHeader middleware option
+// SessionIDWithHeader sets the request header name. Defaults to X-Session-ID.
 func SessionIDWithHeader(v string) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.Header = v
 	}
 }
 
-// SessionID returns a RoundTripper which prints out the request & response object
+// SessionID returns a RoundTripware that sets the session ID stored in the
+// request context as request header, unless the header is already present.
 func SessionID(opts ...SessionIDOption) RoundTripware {
 	o := GetDefaultSessionIDOptions()
 

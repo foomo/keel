@@ -12,15 +12,23 @@ import (
 )
 
 type (
+	// ResponseTimeOptions configures the [ResponseTime] middleware.
 	ResponseTimeOptions struct {
-		SetHeader          bool
-		MaxDuration        time.Duration
+		// SetHeader reports whether the X-Response-Time header, the time in
+		// microseconds until the response header is written, is set.
+		SetHeader bool
+		// MaxDuration is the duration above which a warning is logged. Zero
+		// disables the warning.
+		MaxDuration time.Duration
+		// MaxDurationMessage is the message of that warning.
 		MaxDurationMessage string
 	}
+	// ResponseTimeOption configures [ResponseTimeOptions].
 	ResponseTimeOption func(*ResponseTimeOptions)
 )
 
-// GetDefaultResponseTimeOptions returns the default options
+// GetDefaultResponseTimeOptions returns the default options, which set the
+// header and log no warnings.
 func GetDefaultResponseTimeOptions() ResponseTimeOptions {
 	return ResponseTimeOptions{
 		SetHeader:          true,
@@ -28,28 +36,33 @@ func GetDefaultResponseTimeOptions() ResponseTimeOptions {
 	}
 }
 
-// ResponseTimeWithMaxDurationMessage middleware option
+// ResponseTimeWithMaxDurationMessage sets the warning message. Defaults to
+// "max response time exceeded".
 func ResponseTimeWithMaxDurationMessage(v string) ResponseTimeOption {
 	return func(o *ResponseTimeOptions) {
 		o.MaxDurationMessage = v
 	}
 }
 
-// ResponseTimeWithMaxDuration middleware option
+// ResponseTimeWithMaxDuration sets the duration above which a warning is
+// logged. Defaults to 0, which disables the warning.
 func ResponseTimeWithMaxDuration(v time.Duration) ResponseTimeOption {
 	return func(o *ResponseTimeOptions) {
 		o.MaxDuration = v
 	}
 }
 
-// ResponseTimeWithSetHeader middleware option
+// ResponseTimeWithSetHeader sets [ResponseTimeOptions.SetHeader]. Defaults to
+// true.
 func ResponseTimeWithSetHeader(v bool) ResponseTimeOption {
 	return func(o *ResponseTimeOptions) {
 		o.SetHeader = v
 	}
 }
 
-// ResponseTime middleware
+// ResponseTime returns a middleware that measures the handler duration, sets
+// the X-Response-Time header and logs a warning when the duration exceeds
+// the configured maximum.
 func ResponseTime(opts ...ResponseTimeOption) keelhttp.Middleware {
 	options := GetDefaultResponseTimeOptions()
 
@@ -62,7 +75,8 @@ func ResponseTime(opts ...ResponseTimeOption) keelhttp.Middleware {
 	return ResponseTimeWithOptions(options)
 }
 
-// ResponseTimeWithOptions middleware
+// ResponseTimeWithOptions is like [ResponseTime] but takes fully populated
+// options.
 func ResponseTimeWithOptions(opts ResponseTimeOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

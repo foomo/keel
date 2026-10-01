@@ -8,19 +8,23 @@ import (
 	"sync"
 )
 
+// Registries of accessed keys, recorded on first access and safe for
+// concurrent use: the type name and default per key, and the set of required
+// keys.
 var (
 	types        = sync.Map{}
 	defaults     = sync.Map{}
 	requiredKeys = sync.Map{}
 )
 
-// Exists return true if env var is defined
+// Exists reports whether the environment variable key is set, even if empty.
 func Exists(key string) bool {
 	_, ok := os.LookupEnv(key)
 	return ok
 }
 
-// MustExists panics if not exists
+// MustExists panics if the environment variable key is not set and
+// otherwise records key as required.
 func MustExists(key string) {
 	if !Exists(key) {
 		panic(fmt.Sprintf("required environment variable `%s` does not exist", key))
@@ -31,7 +35,8 @@ func MustExists(key string) {
 	}
 }
 
-// Get env var or fallback
+// Get returns the value of the environment variable key, or fallback if it
+// is not set. The first fallback seen for key is recorded as its default.
 func Get(key, fallback string) string {
 	if _, ok := defaults.Load(key); !ok {
 		defaults.Store(key, fallback)
@@ -48,13 +53,15 @@ func Get(key, fallback string) string {
 	return fallback
 }
 
-// MustGet env var or panic
+// MustGet returns the value of the environment variable key and panics if
+// it is not set.
 func MustGet(key string) string {
 	MustExists(key)
 	return Get(key, "")
 }
 
-// GetInt env var or fallback as int
+// GetInt returns the environment variable key parsed as int, or fallback if
+// it is not set or cannot be parsed.
 func GetInt(key string, fallback int) int {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "int")
@@ -67,13 +74,15 @@ func GetInt(key string, fallback int) int {
 	return fallback
 }
 
-// MustGetInt env var as int or panic
+// MustGetInt returns the environment variable key parsed as int and panics
+// if it is not set. An unparsable value yields 0.
 func MustGetInt(key string) int {
 	MustExists(key)
 	return GetInt(key, 0)
 }
 
-// GetInt64 env var or fallback as int64
+// GetInt64 returns the environment variable key parsed as base-10 int64, or
+// fallback if it is not set or cannot be parsed.
 func GetInt64(key string, fallback int64) int64 {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "int64")
@@ -86,13 +95,15 @@ func GetInt64(key string, fallback int64) int64 {
 	return fallback
 }
 
-// MustGetInt64 env var as int64 or panic
+// MustGetInt64 returns the environment variable key parsed as int64 and
+// panics if it is not set. An unparsable value yields 0.
 func MustGetInt64(key string) int64 {
 	MustExists(key)
 	return GetInt64(key, 0)
 }
 
-// GetFloat64 env var or fallback as float64
+// GetFloat64 returns the environment variable key parsed as float64, or
+// fallback if it is not set or cannot be parsed.
 func GetFloat64(key string, fallback float64) float64 {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "float64")
@@ -105,13 +116,15 @@ func GetFloat64(key string, fallback float64) float64 {
 	return fallback
 }
 
-// MustGetFloat64 env var as float64 or panic
+// MustGetFloat64 returns the environment variable key parsed as float64 and
+// panics if it is not set. An unparsable value yields 0.
 func MustGetFloat64(key string) float64 {
 	MustExists(key)
 	return GetFloat64(key, 0)
 }
 
-// GetBool env var or fallback as bool
+// GetBool returns the environment variable key parsed with
+// [strconv.ParseBool], or fallback if it is not set or cannot be parsed.
 func GetBool(key string, fallback bool) bool {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "bool")
@@ -124,13 +137,15 @@ func GetBool(key string, fallback bool) bool {
 	return fallback
 }
 
-// MustGetBool env var as bool or panic
+// MustGetBool returns the environment variable key parsed as bool and panics
+// if it is not set. An unparsable value yields false.
 func MustGetBool(key string) bool {
 	MustExists(key)
 	return GetBool(key, false)
 }
 
-// GetStringSlice env var or fallback as []string
+// GetStringSlice returns the environment variable key split on ",", or
+// fallback if it is unset or empty. Elements are not trimmed.
 func GetStringSlice(key string, fallback []string) []string {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "[]string")
@@ -143,13 +158,15 @@ func GetStringSlice(key string, fallback []string) []string {
 	return fallback
 }
 
-// MustGetStringSlice env var as bool or panic
+// MustGetStringSlice returns the environment variable key split on "," and
+// panics if it is not set.
 func MustGetStringSlice(key string) []string {
 	MustExists(key)
 	return GetStringSlice(key, nil)
 }
 
-// GetIntSlice env var or fallback as []string
+// GetIntSlice returns the environment variable key split on "," and parsed
+// as ints, or fallback if it is unset, empty or any element cannot be parsed.
 func GetIntSlice(key string, fallback []int) []int {
 	if _, ok := types.Load(key); !ok {
 		types.Store(key, "[]int")
@@ -172,12 +189,14 @@ func GetIntSlice(key string, fallback []int) []int {
 	return fallback
 }
 
-// MustGetGetIntSlice env var as bool or panic
+// MustGetGetIntSlice returns the environment variable key as []int (see
+// [GetIntSlice]) and panics if it is not set.
 func MustGetGetIntSlice(key string) []int {
 	MustExists(key)
 	return GetIntSlice(key, nil)
 }
 
+// RequiredKeys returns all keys recorded as required, in unspecified order.
 func RequiredKeys() []string {
 	var ret []string
 
@@ -192,6 +211,7 @@ func RequiredKeys() []string {
 	return ret
 }
 
+// Defaults returns the recorded default values by key.
 func Defaults() map[string]any {
 	ret := map[string]any{}
 
@@ -206,6 +226,7 @@ func Defaults() map[string]any {
 	return ret
 }
 
+// Types returns the recorded type names by key.
 func Types() map[string]string {
 	ret := map[string]string{}
 
@@ -222,6 +243,7 @@ func Types() map[string]string {
 	return ret
 }
 
+// TypeOf returns the recorded type name of key, or "" if key is unknown.
 func TypeOf(key string) string {
 	if v, ok := types.Load(key); ok {
 		if s, ok := v.(string); ok {

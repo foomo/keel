@@ -7,19 +7,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LoadConfigFromFile reads an Config from the YAML file at path.
+// LoadConfigFromFile reads a [Config] from the YAML file at path.
 //
 // Expected file shape:
 //
 //	defaultPolicy: allow      # or "deny"
 //	rules:
 //	  - path: "/api/foo/*"
-//	    allow: [admin]
-//	    deny:  [visitor]
+//	    allowRoles: [admin]
+//	    denyRoles:  [visitor]
 //
 // LoadConfigFromFile only decodes the YAML; semantic errors (empty
 // paths, duplicate paths, an unknown DefaultPolicy) surface from
-// NewMatcher. Keeping load and validation separate lets callers
+// [NewMatcher]. Keeping load and validation separate lets callers
 // inspect the raw decoded shape before committing to a matcher.
 func LoadConfigFromFile(path string) (Config, error) {
 	var cfg Config
@@ -52,6 +52,7 @@ func rbacAllowed(r Rule, roles []string) bool {
 	return rbacIntersects(r.AllowRoles, roles)
 }
 
+// rbacIntersects reports whether a and b share at least one element.
 func rbacIntersects(a, b []string) bool {
 	if len(a) == 0 || len(b) == 0 {
 		return false

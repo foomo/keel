@@ -12,28 +12,36 @@ import (
 )
 
 type (
+	// TrackingIDOptions configures the [TrackingID] RoundTripware.
 	TrackingIDOptions struct {
+		// Header is the name of the request header to set.
 		Header string
 	}
-	TrackingIDOption    func(*TrackingIDOptions)
+	// TrackingIDOption configures [TrackingIDOptions].
+	TrackingIDOption func(*TrackingIDOptions)
+	// TrackingIDGenerator returns a new tracking ID. It is not used by this
+	// package.
 	TrackingIDGenerator func() string
 )
 
-// GetDefaultTrackingIDOptions returns the default options
+// GetDefaultTrackingIDOptions returns the default options using the
+// X-Tracking-ID header.
 func GetDefaultTrackingIDOptions() TrackingIDOptions {
 	return TrackingIDOptions{
 		Header: "X-Tracking-ID",
 	}
 }
 
-// TrackingIDWithHeader middleware option
+// TrackingIDWithHeader sets the request header name. Defaults to
+// X-Tracking-ID.
 func TrackingIDWithHeader(v string) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.Header = v
 	}
 }
 
-// TrackingID returns a RoundTripper which prints out the request & response object
+// TrackingID returns a RoundTripware that sets the tracking ID stored in the
+// request context as request header, unless the header is already present.
 func TrackingID(opts ...TrackingIDOption) RoundTripware {
 	o := GetDefaultTrackingIDOptions()
 

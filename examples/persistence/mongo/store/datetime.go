@@ -4,23 +4,23 @@ import (
 	"time"
 )
 
-// DateTimeLayout in the ISO8601 format with millisecond precision
+// DateTimeLayout is the ISO 8601 layout with millisecond precision.
 const DateTimeLayout = "2006-01-02T15:04:05.000Z0700"
 
-// DateTime type
+// DateTime is a time formatted with DateTimeLayout.
 type DateTime string
 
-// NewDateTime constructor
+// NewDateTime returns t formatted as DateTime.
 func NewDateTime(t time.Time) DateTime {
 	return DateTime(t.Format(DateTimeLayout))
 }
 
-// Time returns the date time as Time
+// Time parses the date time into a time.Time.
 func (d DateTime) Time() (time.Time, error) {
 	return time.Parse(DateTimeLayout, string(d))
 }
 
-// MustTime returns the date time as Time and panics on failure
+// MustTime is like Time but panics on failure.
 func (d DateTime) MustTime() time.Time {
 	t, err := d.Time()
 	if err != nil {
@@ -30,7 +30,7 @@ func (d DateTime) MustTime() time.Time {
 	return t
 }
 
-// String returns the string representation
+// String returns the string representation.
 func (d DateTime) String() string {
 	return string(d)
 }

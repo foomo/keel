@@ -9,8 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// Runtime is the shared accessor surface of Server and Job. Integrations should
-// accept a Runtime instead of a concrete *Server so the same instrumented helper
+// Runtime is the shared accessor surface of [Server] and [Job]. Integrations should
+// accept a Runtime instead of a concrete *[Server] so the same instrumented helper
 // works under a long-lived Server or a short-lived Job.
 type Runtime interface {
 	// Logger returns the structured logger.

@@ -10,10 +10,12 @@ import (
 	"github.com/foomo/keel/service"
 )
 
+// CustomError is an error type wrapping another error.
 type CustomError struct {
 	error
 }
 
+// Example errors logged by the demo handler.
 var (
 	ErrCustom   = &CustomError{error: errors.New("custom error")}
 	ErrStandard = errors.New("string error")

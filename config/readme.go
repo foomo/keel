@@ -6,7 +6,10 @@ import (
 	"github.com/foomo/keel/markdown"
 )
 
-// Deprecated: will be removed in future releases
+// Readme returns a markdown table of all registered config keys and remote
+// providers.
+//
+// Deprecated: Readme will be removed in a future release.
 func Readme() string {
 	var (
 		configRows [][]string

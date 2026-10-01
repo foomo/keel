@@ -17,34 +17,45 @@ import (
 )
 
 type (
+	// SessionIDOptions configures the [SessionID] middleware.
 	SessionIDOptions struct {
-		// Header to look up the session id
+		// Header is the request header the session ID is read from and, with
+		// SetHeader, written to.
 		Header string
-		// Cookie how to set the cookie
+		// Cookie is the cookie the session ID is read from and, with SetCookie,
+		// written to.
 		Cookie cookie.Cookie
-		// Generator for the session ids
+		// Generator creates a session ID when SetCookie is enabled and the
+		// request carries none.
 		Generator SessionIDGenerator
-		// SetCookie if true it will create a cookie if not exists
+		// SetCookie reports whether a session ID is generated and set as cookie
+		// when the request carries neither header nor cookie.
 		SetCookie bool
-		// SetHeader if true it will set add a request header
+		// SetHeader reports whether the session ID is set as request header.
 		SetHeader bool
-		// SetContext if true it will set the context key
+		// SetContext reports whether the session ID is stored in the request
+		// context.
 		SetContext bool
 	}
-	SessionIDOption    func(*SessionIDOptions)
+	// SessionIDOption configures [SessionIDOptions].
+	SessionIDOption func(*SessionIDOptions)
+	// SessionIDGenerator returns a new session ID.
 	SessionIDGenerator func() string
 )
 
 const (
+	// DefaultSessionIDCookieName is the default name of the session ID cookie.
 	DefaultSessionIDCookieName = "keel-session"
 )
 
-// DefaultSessionIDGenerator function
+// DefaultSessionIDGenerator returns a random UUID string.
 func DefaultSessionIDGenerator() string {
 	return uuid.New().String()
 }
 
-// GetDefaultSessionIDOptions returns the default options
+// GetDefaultSessionIDOptions returns the default options: the X-Session-ID header, a
+// cookie named "keel-session", UUID generation, SetHeader and SetContext enabled
+// and SetCookie disabled.
 func GetDefaultSessionIDOptions() SessionIDOptions {
 	return SessionIDOptions{
 		Header:     keelhttp.HeaderXSessionID,
@@ -56,48 +67,53 @@ func GetDefaultSessionIDOptions() SessionIDOptions {
 	}
 }
 
+// SessionIDWithHeader sets [SessionIDOptions.Header]. Defaults to X-Session-ID.
 func SessionIDWithHeader(v string) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.Header = v
 	}
 }
 
-// SessionIDWithSetCookie middleware option
+// SessionIDWithSetCookie sets [SessionIDOptions.SetCookie]. Defaults to false.
 func SessionIDWithSetCookie(v bool) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.SetCookie = v
 	}
 }
 
-// SessionIDWithSetHeader middleware option
+// SessionIDWithSetHeader sets [SessionIDOptions.SetHeader]. Defaults to true.
 func SessionIDWithSetHeader(v bool) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.SetHeader = v
 	}
 }
 
-// SessionIDWithSetContext middleware option
+// SessionIDWithSetContext sets [SessionIDOptions.SetContext]. Defaults to true.
 func SessionIDWithSetContext(v bool) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.SetContext = v
 	}
 }
 
-// SessionIDWithCookie middleware option
+// SessionIDWithCookie sets [SessionIDOptions.Cookie].
 func SessionIDWithCookie(v cookie.Cookie) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.Cookie = v
 	}
 }
 
-// SessionIDWithGenerator middleware option
+// SessionIDWithGenerator sets [SessionIDOptions.Generator]. Defaults to
+// [DefaultSessionIDGenerator].
 func SessionIDWithGenerator(v SessionIDGenerator) SessionIDOption {
 	return func(o *SessionIDOptions) {
 		o.Generator = v
 	}
 }
 
-// SessionID middleware
+// SessionID returns a middleware that resolves the session ID from the request
+// header or, failing that, the cookie. With SetCookie, a missing cookie is
+// generated and set on both response and request. Cookie errors are answered
+// with 500 Internal Server Error.
 func SessionID(opts ...SessionIDOption) keelhttp.Middleware {
 	options := GetDefaultSessionIDOptions()
 
@@ -110,7 +126,7 @@ func SessionID(opts ...SessionIDOption) keelhttp.Middleware {
 	return SessionIDWithOptions(options)
 }
 
-// SessionIDWithOptions middleware
+// SessionIDWithOptions is like [SessionID] but takes fully populated options.
 func SessionIDWithOptions(opts SessionIDOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +172,7 @@ func SessionIDWithOptions(opts SessionIDOptions) keelhttp.Middleware {
 	}
 }
 
-// SessionIDFromContext helper
+// SessionIDFromContext returns the session ID stored in ctx, or "" if there is none.
 func SessionIDFromContext(ctx context.Context) string {
 	if value, ok := keelhttpcontext.GetSessionID(ctx); ok {
 		return value

@@ -16,7 +16,9 @@ type Supported interface {
 		map[string]any | map[string]string | map[string][]string
 }
 
-// Get registers a config key with a fallback default and returns a getter closure.
+// Get registers key with fallback as its default on c and returns a getter
+// that reads the current value on each call. A nil c selects the global
+// instance.
 func Get[T Supported](c *viper.Viper, key string, fallback T) func() T {
 	setDefault(c, key, fmt.Sprintf("%T", fallback), fallback)
 
@@ -25,8 +27,9 @@ func Get[T Supported](c *viper.Viper, key string, fallback T) func() T {
 	}
 }
 
-// MustGet registers a required config key and returns a getter closure.
-// Panics if the key is not set.
+// MustGet registers key as required on c and returns a getter that reads the
+// current value on each call. A nil c selects the global instance. It panics
+// if key is not set.
 func MustGet[T Supported](c *viper.Viper, key string) func() T {
 	var zero T
 	must(c, key, fmt.Sprintf("%T", zero))
@@ -36,7 +39,9 @@ func MustGet[T Supported](c *viper.Viper, key string) func() T {
 	}
 }
 
-// Watch polls the getter and calls the callback when the value changes.
+// Watch starts a goroutine that polls fn every second until ctx is done and
+// calls callback from that goroutine whenever the value changes. It returns
+// immediately.
 func Watch[T comparable](ctx context.Context, fn func() T, callback func(T)) {
 	current := fn()
 
@@ -48,7 +53,9 @@ func Watch[T comparable](ctx context.Context, fn func() T, callback func(T)) {
 	})
 }
 
-// WatchChan polls the getter and sends on ch when the value changes.
+// WatchChan starts a goroutine that polls fn every second until ctx is done
+// and sends the value on ch whenever it changes. Sends block, so ch must be
+// drained. It returns immediately.
 func WatchChan[T comparable](ctx context.Context, fn func() T, ch chan T) {
 	current := fn()
 
@@ -60,6 +67,8 @@ func WatchChan[T comparable](ctx context.Context, fn func() T, ch chan T) {
 	})
 }
 
+// getTyped reads key from c using the viper getter matching T.
+//
 //nolint:forcetypeassert
 func getTyped[T Supported](c *viper.Viper, key string) T {
 	c = ensure(c)

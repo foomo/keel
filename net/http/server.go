@@ -8,7 +8,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// NewServer creates and configures an HTTP server for in-cluster traffic.
+// NewServer creates and configures an HTTP server for in-cluster traffic
+// listening on addr. handler is wrapped with middlewares using [Compose], and
+// net/http errors are logged through l at error level.
+//
+// The server speaks HTTP/1.1 only and sets conservative timeouts:
+// ReadHeaderTimeout 5s, ReadTimeout 30s, WriteTimeout 60s, IdleTimeout 620s
+// and MaxHeaderBytes 1 MiB. Streaming or large-upload handlers must clear the
+// read or write deadline via [http.NewResponseController].
 func NewServer(l *zap.Logger, name, addr string, handler http.Handler, middlewares ...Middleware) *http.Server {
 	// net/http's own errors belong at error level
 	errLog, err := zap.NewStdLogAt(l.Named("http.server"), zapcore.ErrorLevel)

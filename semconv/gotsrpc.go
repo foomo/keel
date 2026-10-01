@@ -4,6 +4,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// Attribute keys for gotsrpc calls.
 const (
 	GoTSRPCFuncKey          = attribute.Key("gotsrpc.func")
 	GoTSRPCServiceKey       = attribute.Key("gotsrpc.service")

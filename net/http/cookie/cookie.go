@@ -8,7 +8,10 @@ import (
 )
 
 type (
+	// Cookie describes a named HTTP cookie and the attributes used when it is
+	// written by [Cookie.Set]. Create one with [New].
 	Cookie struct {
+		// Name the name of the cookie
 		Name string
 		// Path the path of the created cookie
 		Path string
@@ -18,7 +21,7 @@ type (
 		MaxAge int
 		// Expires the expires flag of the created cookie
 		Expires time.Duration
-		// Secure the secure flag of the created cookie
+		// SameSite the same site flag of the created cookie
 		SameSite http.SameSite
 		// HTTPOnly the http only of the created cookie
 		HTTPOnly bool
@@ -27,66 +30,76 @@ type (
 		// DomainProvider function to retrieve the domain flag of the created cookie
 		DomainProvider DomainProvider
 	}
+	// Option configures a [Cookie] in [New] or overrides its attributes in
+	// [Cookie.Set].
 	Option func(options *Cookie)
 )
 
-// WithSecure middleware option
+// WithSecure sets the Secure attribute. Defaults to true.
 func WithSecure(v bool) Option {
 	return func(o *Cookie) {
 		o.Secure = v
 	}
 }
 
-// WithHTTPOnly middleware option
+// WithHTTPOnly sets the HttpOnly attribute. Defaults to true.
 func WithHTTPOnly(v bool) Option {
 	return func(o *Cookie) {
 		o.HTTPOnly = v
 	}
 }
 
-// WithMaxAge middleware option
+// WithMaxAge sets the Max-Age attribute in seconds; see [http.Cookie.MaxAge]
+// for the meaning of zero and negative values. Defaults to 0.
 func WithMaxAge(v int) Option {
 	return func(o *Cookie) {
 		o.MaxAge = v
 	}
 }
 
-// WithExpires middleware option
+// WithExpires sets the lifetime used to compute the Expires attribute
+// relative to the [TimeProvider]. Non-positive values omit Expires, which is
+// the default.
 func WithExpires(v time.Duration) Option {
 	return func(o *Cookie) {
 		o.Expires = v
 	}
 }
 
-// WithPath middleware option
+// WithPath sets the Path attribute. Defaults to "/".
 func WithPath(v string) Option {
 	return func(o *Cookie) {
 		o.Path = v
 	}
 }
 
-// WithSameSite middleware option
+// WithSameSite sets the SameSite attribute. Defaults to
+// [http.SameSiteDefaultMode].
 func WithSameSite(v http.SameSite) Option {
 	return func(o *Cookie) {
 		o.SameSite = v
 	}
 }
 
-// WithTimeProvider middleware option
+// WithTimeProvider sets the clock used to compute the Expires attribute.
+// Defaults to [NewTimeProvider] without options.
 func WithTimeProvider(v TimeProvider) Option {
 	return func(o *Cookie) {
 		o.TimeProvider = v
 	}
 }
 
-// WithDomainProvider middleware option
+// WithDomainProvider sets the function resolving the Domain attribute from the
+// request. Defaults to [NewDomainProvider] without options.
 func WithDomainProvider(v DomainProvider) Option {
 	return func(o *Cookie) {
 		o.DomainProvider = v
 	}
 }
 
-// New return a new provider
+// New returns a [Cookie] with the given name, configured by opts. Without
+// options the cookie uses path "/", is Secure and HttpOnly, and uses
+// [http.SameSiteDefaultMode]. Nil options are ignored.
 func New(name string, opts ...Option) Cookie {
 	inst := Cookie{
 		Name:     name,
@@ -113,6 +126,9 @@ func New(name string, opts ...Option) Cookie {
 	return inst
 }
 
+// Delete expires the cookie on the client by writing it with an empty value
+// and a negative Max-Age. It does nothing if r does not carry the cookie and
+// returns any error from the domain provider.
 func (c Cookie) Delete(w http.ResponseWriter, r *http.Request) error {
 	if _, err := r.Cookie(c.Name); errors.Is(err, http.ErrNoCookie) {
 		return nil
@@ -125,10 +141,15 @@ func (c Cookie) Delete(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// Get returns the cookie from r, or [http.ErrNoCookie] if it is not present.
 func (c Cookie) Get(r *http.Request) (*http.Cookie, error) {
 	return r.Cookie(c.Name)
 }
 
+// Set writes the cookie with the given value to w and returns it. opts
+// override the cookie's attributes for this call only; the name and domain
+// provider of c are always used. It returns an error if the domain provider
+// rejects the request's domain.
 func (c Cookie) Set(w http.ResponseWriter, r *http.Request, value string, opts ...Option) (*http.Cookie, error) {
 	domain, err := c.DomainProvider(r)
 	if err != nil {

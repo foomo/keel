@@ -18,34 +18,45 @@ import (
 )
 
 type (
+	// TrackingIDOptions configures the [TrackingID] middleware.
 	TrackingIDOptions struct {
-		// Header to look up the tracking id
+		// Header is the request header the tracking ID is read from and, with
+		// SetHeader, written to.
 		Header string
-		// Cookie how to set the cookie
+		// Cookie is the cookie the tracking ID is read from and, with SetCookie,
+		// written to.
 		Cookie cookie.Cookie
-		// Generator for the tracking ids
+		// Generator creates a tracking ID when SetCookie is enabled and the
+		// request carries none.
 		Generator TrackingIDGenerator
-		// SetCookie if true it will create a cookie if not exists
+		// SetCookie reports whether a tracking ID is generated and set as cookie
+		// when the request carries neither header nor cookie.
 		SetCookie bool
-		// SetHeader if true it will set add a request header
+		// SetHeader reports whether the tracking ID is set as request header.
 		SetHeader bool
-		// SetContext if true it will set the context key
+		// SetContext reports whether the tracking ID is stored in the request
+		// context.
 		SetContext bool
 	}
-	TrackingIDOption    func(*TrackingIDOptions)
+	// TrackingIDOption configures [TrackingIDOptions].
+	TrackingIDOption func(*TrackingIDOptions)
+	// TrackingIDGenerator returns a new tracking ID.
 	TrackingIDGenerator func() string
 )
 
 const (
+	// DefaultTrackingIDCookieName is the default name of the tracking ID cookie.
 	DefaultTrackingIDCookieName = "keel-tracking"
 )
 
-// DefaultTrackingIDGenerator function
+// DefaultTrackingIDGenerator returns a random UUID string.
 func DefaultTrackingIDGenerator() string {
 	return uuid.New().String()
 }
 
-// GetDefaultTrackingIDOptions returns the default options
+// GetDefaultTrackingIDOptions returns the default options: the X-Tracking-ID header, a
+// cookie named "keel-tracking", UUID generation, SetHeader and SetContext enabled
+// and SetCookie disabled.
 func GetDefaultTrackingIDOptions() TrackingIDOptions {
 	return TrackingIDOptions{
 		Header:     keelhttp.HeaderXTrackingID,
@@ -57,48 +68,53 @@ func GetDefaultTrackingIDOptions() TrackingIDOptions {
 	}
 }
 
+// TrackingIDWithHeader sets [TrackingIDOptions.Header]. Defaults to X-Tracking-ID.
 func TrackingIDWithHeader(v string) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.Header = v
 	}
 }
 
-// TrackingIDWithSetCookie middleware option
+// TrackingIDWithSetCookie sets [TrackingIDOptions.SetCookie]. Defaults to false.
 func TrackingIDWithSetCookie(v bool) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.SetCookie = v
 	}
 }
 
-// TrackingIDWithSetHeader middleware option
+// TrackingIDWithSetHeader sets [TrackingIDOptions.SetHeader]. Defaults to true.
 func TrackingIDWithSetHeader(v bool) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.SetHeader = v
 	}
 }
 
-// TrackingIDWithSetContext middleware option
+// TrackingIDWithSetContext sets [TrackingIDOptions.SetContext]. Defaults to true.
 func TrackingIDWithSetContext(v bool) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.SetContext = v
 	}
 }
 
-// TrackingIDWithCookie middleware option
+// TrackingIDWithCookie sets [TrackingIDOptions.Cookie].
 func TrackingIDWithCookie(v cookie.Cookie) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.Cookie = v
 	}
 }
 
-// TrackingIDWithGenerator middleware option
+// TrackingIDWithGenerator sets [TrackingIDOptions.Generator]. Defaults to
+// [DefaultTrackingIDGenerator].
 func TrackingIDWithGenerator(v TrackingIDGenerator) TrackingIDOption {
 	return func(o *TrackingIDOptions) {
 		o.Generator = v
 	}
 }
 
-// TrackingID middleware
+// TrackingID returns a middleware that resolves the tracking ID from the request
+// header or, failing that, the cookie. With SetCookie, a missing cookie is
+// generated and set on both response and request. Cookie errors are answered
+// with 500 Internal Server Error.
 func TrackingID(opts ...TrackingIDOption) keelhttp.Middleware {
 	options := GetDefaultTrackingIDOptions()
 
@@ -111,7 +127,7 @@ func TrackingID(opts ...TrackingIDOption) keelhttp.Middleware {
 	return TrackingIDWithOptions(options)
 }
 
-// TrackingIDWithOptions middleware
+// TrackingIDWithOptions is like [TrackingID] but takes fully populated options.
 func TrackingIDWithOptions(opts TrackingIDOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +173,7 @@ func TrackingIDWithOptions(opts TrackingIDOptions) keelhttp.Middleware {
 	}
 }
 
-// TrackingIDFromContext helper
+// TrackingIDFromContext returns the tracking ID stored in ctx, or "" if there is none.
 func TrackingIDFromContext(ctx context.Context) string {
 	if value, ok := keelhttpcontext.GetTrackingID(ctx); ok {
 		return value

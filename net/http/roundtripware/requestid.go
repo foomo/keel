@@ -13,15 +13,21 @@ import (
 )
 
 type (
+	// RequestIDOptions configures the [RequestID] RoundTripware.
 	RequestIDOptions struct {
-		Header    string
-		Provider  provider.RequestID
+		// Header is the name of the request header to set.
+		Header string
+		// Provider generates a request ID when the context holds none.
+		Provider provider.RequestID
+		// SetHeader is not used.
 		SetHeader bool
 	}
+	// RequestIDOption configures [RequestIDOptions].
 	RequestIDOption func(*RequestIDOptions)
 )
 
-// GetDefaultRequestIDOptions returns the default options
+// GetDefaultRequestIDOptions returns the default options using the
+// X-Request-ID header and [provider.DefaultRequestID].
 func GetDefaultRequestIDOptions() RequestIDOptions {
 	return RequestIDOptions{
 		Header:   "X-Request-ID",
@@ -29,21 +35,23 @@ func GetDefaultRequestIDOptions() RequestIDOptions {
 	}
 }
 
-// RequestIDWithHeader middleware option
+// RequestIDWithHeader sets the request header name. Defaults to X-Request-ID.
 func RequestIDWithHeader(v string) RequestIDOption {
 	return func(o *RequestIDOptions) {
 		o.Header = v
 	}
 }
 
-// RequestIDWithProvider middleware option
+// RequestIDWithProvider sets the request ID provider. Defaults to
+// [provider.DefaultRequestID].
 func RequestIDWithProvider(v provider.RequestID) RequestIDOption {
 	return func(o *RequestIDOptions) {
 		o.Provider = v
 	}
 }
 
-// RequestID returns a RoundTripper which prints out the request & response object
+// RequestID returns a RoundTripware that sets a request ID header, unless
+// already present, using the ID from the request context or a generated one.
 func RequestID(opts ...RequestIDOption) RoundTripware {
 	o := GetDefaultRequestIDOptions()
 

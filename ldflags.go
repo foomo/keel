@@ -1,10 +1,17 @@
 package keel
 
+// Build information, intended to be set at link time.
 var (
-	// Version usage -ldflags "-X github.com/foomo/keel/server.Version=$VERSION"
+	// Version is the build version, set with:
+	//
+	//	-ldflags "-X github.com/foomo/keel.Version=$VERSION"
 	Version string
-	// GitCommit usage -ldflags "-X github.com/foomo/keel/server.GitCommit=$GIT_COMMIT"
+	// GitCommit is the build commit, set with:
+	//
+	//	-ldflags "-X github.com/foomo/keel.GitCommit=$GIT_COMMIT"
 	GitCommit string
-	// BuildTime usage -ldflags "-X 'github.com/foomo/keel/server.BuildTime=$(date -u '+%Y-%m-%d %H:%M:%S')'"
+	// BuildTime is the build time, set with:
+	//
+	//	-ldflags "-X 'github.com/foomo/keel.BuildTime=$(date -u '+%Y-%m-%d %H:%M:%S')'"
 	BuildTime string
 )

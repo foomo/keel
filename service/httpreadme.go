@@ -8,13 +8,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// Default name, address and path of the service returned by
+// [NewDefaultHTTPReadme].
 var (
 	DefaultHTTPReadmeName = "readme"
 	DefaultHTTPReadmeAddr = "localhost:9001"
 	DefaultHTTPReadmePath = "/readme"
 )
 
-// Deprecated: will be removed in upcoming releases
+// NewHTTPReadme returns an [HTTP] service that responds to GET requests on path
+// with the concatenated markdown of the readmers returned by readmers.
+//
+// Deprecated: Readme support will be removed in a future release.
 func NewHTTPReadme(l *zap.Logger, name, addr, path string, readmers func() []interfaces.Readmer) *HTTP {
 	handler := http.NewServeMux()
 	handler.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +42,10 @@ func NewHTTPReadme(l *zap.Logger, name, addr, path string, readmers func() []int
 	return NewHTTP(l, name, addr, handler)
 }
 
-// Deprecated: will be removed in upcoming releases
+// NewDefaultHTTPReadme returns [NewHTTPReadme] using [DefaultHTTPReadmeName],
+// [DefaultHTTPReadmeAddr] and [DefaultHTTPReadmePath].
+//
+// Deprecated: Readme support will be removed in a future release.
 func NewDefaultHTTPReadme(l *zap.Logger, readmers func() []interfaces.Readmer) *HTTP {
 	return NewHTTPReadme(
 		l,

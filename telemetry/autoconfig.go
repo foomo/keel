@@ -12,7 +12,8 @@ import (
 	"github.com/foomo/keel/env"
 )
 
-// Exporter env var values (OpenTelemetry spec). "console" maps to keel's StdOut providers.
+// Exporter env var values (OpenTelemetry spec). "console" maps to keel's
+// StdOut providers.
 const (
 	exporterNone       = "none"
 	exporterConsole    = "console"
@@ -26,9 +27,11 @@ const (
 	protocolHTTP = "http/protobuf"
 )
 
-// otlpProtocol resolves the OTLP protocol for the given signal ("traces", "metrics", "logs").
-// It honours the per-signal override OTEL_EXPORTER_OTLP_<SIGNAL>_PROTOCOL, then the global
-// OTEL_EXPORTER_OTLP_PROTOCOL, defaulting to "http/protobuf" per the OpenTelemetry spec.
+// otlpProtocol resolves the OTLP protocol for the given signal ("traces",
+// "metrics", "logs"). It honours the per-signal override
+// OTEL_EXPORTER_OTLP_<SIGNAL>_PROTOCOL, then the global
+// OTEL_EXPORTER_OTLP_PROTOCOL, defaulting to "http/protobuf" per the
+// OpenTelemetry spec.
 func otlpProtocol(signal string) string {
 	key := "OTEL_EXPORTER_OTLP_" + strings.ToUpper(signal) + "_PROTOCOL"
 	return env.Get(key, env.Get("OTEL_EXPORTER_OTLP_PROTOCOL", protocolHTTP))

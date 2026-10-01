@@ -12,14 +12,21 @@ import (
 )
 
 type (
+	// RefererOptions configures the [Referer] middleware.
 	RefererOptions struct {
+		// RequestHeader lists the request headers checked in order; the first
+		// non-empty value is used.
 		RequestHeader []string
-		SetContext    bool
+		// SetContext reports whether the referer is stored in the request
+		// context.
+		SetContext bool
 	}
+	// RefererOption configures [RefererOptions].
 	RefererOption func(*RefererOptions)
 )
 
-// GetDefaultRefererOptions returns the default options
+// GetDefaultRefererOptions returns the default options, which read the
+// X-Referer and Referer headers and set the context.
 func GetDefaultRefererOptions() RefererOptions {
 	return RefererOptions{
 		RequestHeader: []string{"X-Referer", "Referer"},
@@ -27,21 +34,23 @@ func GetDefaultRefererOptions() RefererOptions {
 	}
 }
 
-// RefererWithRequestHeader middleware option
+// RefererWithRequestHeader appends headers to [RefererOptions.RequestHeader].
 func RefererWithRequestHeader(v ...string) RefererOption {
 	return func(o *RefererOptions) {
 		o.RequestHeader = append(o.RequestHeader, v...)
 	}
 }
 
-// RefererWithSetContext middleware option
+// RefererWithSetContext sets [RefererOptions.SetContext]. Defaults to true.
 func RefererWithSetContext(v bool) RefererOption {
 	return func(o *RefererOptions) {
 		o.SetContext = v
 	}
 }
 
-// Referer middleware
+// Referer returns a middleware that reads the referer from the first
+// non-empty configured request header, records it on the span and stores it
+// in the request context.
 func Referer(opts ...RefererOption) keelhttp.Middleware {
 	options := GetDefaultRefererOptions()
 
@@ -54,7 +63,7 @@ func Referer(opts ...RefererOption) keelhttp.Middleware {
 	return RefererWithOptions(options)
 }
 
-// RefererWithOptions middleware
+// RefererWithOptions is like [Referer] but takes fully populated options.
 func RefererWithOptions(opts RefererOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

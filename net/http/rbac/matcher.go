@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-// Matcher is a validated, compiled Config ready to drive the
-// middleware. Build one via NewMatcher and pass it to RBAC.
+// Matcher is a validated, compiled [Config] ready to drive the
+// middleware. Build one via [NewMatcher] and pass it to
+// [github.com/foomo/keel/net/http/middleware.RBAC].
 //
 // Matcher is safe for concurrent use: it is read-only after
 // construction.
@@ -77,7 +78,9 @@ func NewMatcher(cfg Config) (*Matcher, error) {
 }
 
 // Evaluate classifies the request against the compiled rule set. The
-// 401-vs-403 split is driven by the extractor's authenticated flag.
+// roles and authenticated flag are obtained from extract. A denied request
+// is classified as [OutcomeUnauthenticated] (401) when the caller is not
+// authenticated, and as [OutcomeDeny] or [OutcomeNoRuleDeny] (403) otherwise.
 func (m *Matcher) Evaluate(extract RolesExtractor, r *http.Request) Decision {
 	roles, authed := extract(r)
 

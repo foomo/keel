@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
+// EntityWithVersionsIndex is a unique index on the id and version fields.
 var (
 	EntityWithVersionsIndex = mongo.IndexModel{
 		Keys: bson.D{
@@ -16,22 +17,22 @@ var (
 	}
 )
 
-// EntityWithVersions type
+// EntityWithVersions holds the version of a document used to detect dirty writes.
 type EntityWithVersions struct {
 	Version uint32 `json:"version" bson:"version"  yaml:"version"`
 }
 
-// GetVersion api implementation
+// GetVersion returns the version.
 func (e *EntityWithVersions) GetVersion() uint32 {
 	return e.Version
 }
 
-// SetVersion api implementation
+// SetVersion sets the version.
 func (e *EntityWithVersions) SetVersion(value uint32) {
 	e.Version = value
 }
 
-// IncreaseVersion api implementation
+// IncreaseVersion increments the version and returns it.
 func (e *EntityWithVersions) IncreaseVersion() uint32 {
 	e.Version++
 	return e.GetVersion()

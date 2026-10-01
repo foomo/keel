@@ -12,8 +12,12 @@ import (
 	"github.com/nats-io/nats-server/v2/server"
 )
 
+// DefaultEmbeddedServerURL is the client URL of an [EmbeddedServer] with the
+// default host and port.
 const DefaultEmbeddedServerURL = "nats://0.0.0.0:4222"
 
+// EmbeddedServer is an in-process NATS server usable as a keel service.
+// Create it with [NewEmbeddedServer].
 type EmbeddedServer struct {
 	server      *server.Server
 	port        int
@@ -27,24 +31,30 @@ type EmbeddedServer struct {
 // ~ Options
 // ------------------------------------------------------------------------------------------------
 
+// EmbeddedServerWithPort sets the listen port. Defaults to 4222.
 func EmbeddedServerWithPort(v int) options.Option[*EmbeddedServer] {
 	return func(o *EmbeddedServer) {
 		o.port = v
 	}
 }
 
+// EmbeddedServerWithMaxPending sets the maximum number of bytes buffered per
+// client connection. Defaults to 64 MiB.
 func EmbeddedServerWithMaxPending(v int64) options.Option[*EmbeddedServer] {
 	return func(o *EmbeddedServer) {
 		o.maxPending = v
 	}
 }
 
+// EmbeddedServerWithHost sets the listen host. Defaults to "0.0.0.0".
 func EmbeddedServerWithHost(v string) options.Option[*EmbeddedServer] {
 	return func(o *EmbeddedServer) {
 		o.host = v
 	}
 }
 
+// EmbeddedServerWithNatsOptions adds options applied to the NATS server
+// options after host, port and max pending have been set.
 func EmbeddedServerWithNatsOptions(v ...options.Option[*server.Options]) options.Option[*EmbeddedServer] {
 	return func(o *EmbeddedServer) {
 		o.natsOptions = append(o.natsOptions, v...)
@@ -55,6 +65,8 @@ func EmbeddedServerWithNatsOptions(v ...options.Option[*server.Options]) options
 // ~ Constructor
 // ------------------------------------------------------------------------------------------------
 
+// NewEmbeddedServer creates, but does not start, an embedded NATS server
+// configured by opts. Server logging and signal handling are disabled.
 func NewEmbeddedServer(opts ...options.Option[*EmbeddedServer]) (*EmbeddedServer, error) {
 	inst := &EmbeddedServer{
 		port:       4222,
@@ -87,6 +99,7 @@ func NewEmbeddedServer(opts ...options.Option[*EmbeddedServer]) (*EmbeddedServer
 	return &EmbeddedServer{server: ns, clientURL: u.String()}, nil
 }
 
+// MustNewEmbeddedServer is like [NewEmbeddedServer] but panics on error.
 func MustNewEmbeddedServer(opts ...options.Option[*EmbeddedServer]) *EmbeddedServer {
 	s, err := NewEmbeddedServer(opts...)
 	if err != nil {
@@ -105,6 +118,7 @@ func (s *EmbeddedServer) ClientURL() string {
 	return s.clientURL
 }
 
+// Server returns the underlying NATS server.
 func (s *EmbeddedServer) Server() *server.Server {
 	return s.server
 }
@@ -113,6 +127,8 @@ func (s *EmbeddedServer) Server() *server.Server {
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
+// Start starts the server and blocks until it shuts down. It returns an error
+// if the server is not ready for connections within 5 seconds.
 func (s *EmbeddedServer) Start(ctx context.Context) error {
 	s.server.Start()
 
@@ -126,6 +142,8 @@ func (s *EmbeddedServer) Start(ctx context.Context) error {
 	return nil
 }
 
+// Close shuts the server down and waits for the shutdown to complete. It
+// returns an error wrapping ctx.Err() if ctx is done first.
 func (s *EmbeddedServer) Close(ctx context.Context) error {
 	if s.server == nil {
 		return nil

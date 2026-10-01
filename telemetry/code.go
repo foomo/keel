@@ -6,6 +6,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
 )
 
+// CodeCaller returns the code.function.name, code.file.path and
+// code.line.number attributes of the caller skip frames above the caller of
+// CodeCaller, or nil if the frame cannot be resolved.
 func CodeCaller(skip int) []attribute.KeyValue {
 	if fr := goruntime.CallFrame(skip + 1); !fr.Zero() {
 		return []attribute.KeyValue{
@@ -18,6 +21,8 @@ func CodeCaller(skip int) []attribute.KeyValue {
 	return nil
 }
 
+// CodeStacktrace returns a code.stacktrace attribute with up to num frames,
+// skipping skip frames above the caller of CodeStacktrace.
 func CodeStacktrace(num, skip int) attribute.KeyValue {
 	return semconv.CodeStacktrace(goruntime.StackTrace(num, skip+1))
 }

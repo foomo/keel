@@ -5,8 +5,7 @@ import (
 	"time"
 )
 
-// Watch callback
-
+// WatchBool is [Watch] for bool values.
 func WatchBool(ctx context.Context, fn func() bool, callback func(bool)) {
 	current := fn()
 
@@ -18,6 +17,7 @@ func WatchBool(ctx context.Context, fn func() bool, callback func(bool)) {
 	})
 }
 
+// WatchTime is [Watch] for time.Time values.
 func WatchTime(ctx context.Context, fn func() time.Time, callback func(time.Time)) {
 	current := fn()
 
@@ -29,6 +29,7 @@ func WatchTime(ctx context.Context, fn func() time.Time, callback func(time.Time
 	})
 }
 
+// WatchDuration is [Watch] for time.Duration values.
 func WatchDuration(ctx context.Context, fn func() time.Duration, callback func(time.Duration)) {
 	current := fn()
 
@@ -40,6 +41,7 @@ func WatchDuration(ctx context.Context, fn func() time.Duration, callback func(t
 	})
 }
 
+// WatchInt is [Watch] for int values.
 func WatchInt(ctx context.Context, fn func() int, callback func(int)) {
 	current := fn()
 
@@ -51,6 +53,7 @@ func WatchInt(ctx context.Context, fn func() int, callback func(int)) {
 	})
 }
 
+// WatchInt32 is [Watch] for int32 values.
 func WatchInt32(ctx context.Context, fn func() int32, callback func(int32)) {
 	current := fn()
 
@@ -62,6 +65,7 @@ func WatchInt32(ctx context.Context, fn func() int32, callback func(int32)) {
 	})
 }
 
+// WatchInt64 is [Watch] for int64 values.
 func WatchInt64(ctx context.Context, fn func() int64, callback func(int64)) {
 	current := fn()
 
@@ -73,6 +77,7 @@ func WatchInt64(ctx context.Context, fn func() int64, callback func(int64)) {
 	})
 }
 
+// WatchFloat64 is [Watch] for float64 values.
 func WatchFloat64(ctx context.Context, fn func() float64, callback func(float64)) {
 	current := fn()
 
@@ -84,6 +89,7 @@ func WatchFloat64(ctx context.Context, fn func() float64, callback func(float64)
 	})
 }
 
+// WatchString is [Watch] for string values.
 func WatchString(ctx context.Context, fn func() string, callback func(string)) {
 	current := fn()
 
@@ -95,8 +101,7 @@ func WatchString(ctx context.Context, fn func() string, callback func(string)) {
 	})
 }
 
-// Watch channel
-
+// WatchBoolChan is [WatchChan] for bool values.
 func WatchBoolChan(ctx context.Context, fn func() bool, ch chan bool) {
 	current := fn()
 
@@ -108,6 +113,7 @@ func WatchBoolChan(ctx context.Context, fn func() bool, ch chan bool) {
 	})
 }
 
+// WatchTimeChan is [WatchChan] for time.Time values.
 func WatchTimeChan(ctx context.Context, fn func() time.Time, ch chan time.Time) {
 	current := fn()
 
@@ -119,6 +125,7 @@ func WatchTimeChan(ctx context.Context, fn func() time.Time, ch chan time.Time) 
 	})
 }
 
+// WatchDurationChan is [WatchChan] for time.Duration values.
 func WatchDurationChan(ctx context.Context, fn func() time.Duration, ch chan time.Duration) {
 	current := fn()
 
@@ -130,6 +137,7 @@ func WatchDurationChan(ctx context.Context, fn func() time.Duration, ch chan tim
 	})
 }
 
+// WatchIntChan is [WatchChan] for int values.
 func WatchIntChan(ctx context.Context, fn func() int, ch chan int) {
 	current := fn()
 
@@ -141,6 +149,7 @@ func WatchIntChan(ctx context.Context, fn func() int, ch chan int) {
 	})
 }
 
+// WatchInt32Chan is [WatchChan] for int32 values.
 func WatchInt32Chan(ctx context.Context, fn func() int32, ch chan int32) {
 	current := fn()
 
@@ -152,6 +161,7 @@ func WatchInt32Chan(ctx context.Context, fn func() int32, ch chan int32) {
 	})
 }
 
+// WatchInt64Chan is [WatchChan] for int64 values.
 func WatchInt64Chan(ctx context.Context, fn func() int64, ch chan int64) {
 	current := fn()
 
@@ -163,6 +173,7 @@ func WatchInt64Chan(ctx context.Context, fn func() int64, ch chan int64) {
 	})
 }
 
+// WatchFloat64Chan is [WatchChan] for float64 values.
 func WatchFloat64Chan(ctx context.Context, fn func() float64, ch chan float64) {
 	current := fn()
 
@@ -174,6 +185,7 @@ func WatchFloat64Chan(ctx context.Context, fn func() float64, ch chan float64) {
 	})
 }
 
+// WatchStringChan is [WatchChan] for string values.
 func WatchStringChan(ctx context.Context, fn func() string, ch chan string) {
 	current := fn()
 
@@ -185,6 +197,7 @@ func WatchStringChan(ctx context.Context, fn func() string, ch chan string) {
 	})
 }
 
+// watch calls fn every second in a new goroutine until ctx is done.
 func watch(ctx context.Context, fn func()) {
 	go func(ctx context.Context, fn func()) {
 		for {

@@ -18,10 +18,10 @@ import (
 //
 // Typical wiring:
 //
-//	cfg, err := middleware.LoadRBACConfigFromFile("/etc/rbac.yaml")
+//	cfg, err := rbac.LoadConfigFromFile("/etc/rbac.yaml")
 //	keellog.Must(l, err, "load rbac config")
 //
-//	matcher, err := middleware.NewRBACMatcher(cfg)
+//	matcher, err := rbac.NewMatcher(cfg)
 //	keellog.Must(l, err, "compile rbac config")
 //
 //	mw := middleware.RBAC(matcher, extractRoles)

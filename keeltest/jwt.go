@@ -8,7 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// NewJWT returns a new JWT instance with test keys for testing purposes.
+// NewJWT returns a [keeljwt.JWT] signing with a freshly generated RSA key
+// pair. It fails the test on error.
 func NewJWT(t *testing.T) *keeljwt.JWT {
 	t.Helper()
 

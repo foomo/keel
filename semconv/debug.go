@@ -9,7 +9,7 @@ const (
 	DebugEnabledKey = attribute.Key("debug.enabled")
 )
 
-// DebugEnabled returns a new attribute.KeyValue for keel.service.type.
+// DebugEnabled returns a new attribute.KeyValue for debug.enabled.
 func DebugEnabled(v bool) attribute.KeyValue {
 	return DebugEnabledKey.Bool(v)
 }

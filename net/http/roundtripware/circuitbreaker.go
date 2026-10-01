@@ -13,22 +13,22 @@ import (
 )
 
 var (
-	// ErrCircuitBreaker is returned when the request failed because the circuit breaker did not let it go to the next
-	// RoundTripware. It wraps the two gobreaker errors (ErrTooManyRequests & ErrOpenState) so only one comparison is
-	// needed
+	// ErrCircuitBreaker is returned when the circuit breaker did not let the request pass to the next
+	// RoundTripware. It is joined with the underlying gobreaker error (ErrTooManyRequests or ErrOpenState) so a
+	// single [errors.Is] comparison is needed.
 	ErrCircuitBreaker = errors.New("circuit breaker triggered")
 
-	// ErrIgnoreSuccessfulness can be returned by the IsSuccessful callback in order for the RoundTripware to ignore the
-	// result of the function
+	// ErrIgnoreSuccessfulness can be returned by the IsSuccessful callback to have the request counted neither as
+	// success nor as failure.
 	ErrIgnoreSuccessfulness = errors.New("ignored successfulness")
 
-	// ErrReadFromActualBody when it is attempted to read from a body in the IsSuccessful callback that has not
-	// previously been copied.
+	// ErrReadFromActualBody is returned when the IsSuccessful callback reads a request or response body that was not
+	// copied (see [CircuitBreakerWithIsSuccessful]).
 	ErrReadFromActualBody = errors.New("read from actual body")
 )
 
-// CircuitBreakerSettings is a copy of the gobreaker.Settings, except that the IsSuccessful function is omitted since we
-// want to allow access to the request and response. See `CircuitBreakerWithIsSuccessful` for more.
+// CircuitBreakerSettings is a copy of [gobreaker.Settings] without the IsSuccessful function, which is replaced by
+// one with access to the request and response. See [CircuitBreakerWithIsSuccessful].
 type CircuitBreakerSettings struct {
 	// Name is the name of the CircuitBreaker.
 	Name string
@@ -53,14 +53,22 @@ type CircuitBreakerSettings struct {
 	OnStateChange func(name string, from gobreaker.State, to gobreaker.State)
 }
 
+// CircuitBreakerOptions configures the [CircuitBreaker] RoundTripware.
 type CircuitBreakerOptions struct {
+	// Counter, when non-nil, counts requests with state and error attributes.
 	Counter metric.Int64Counter
 
+	// IsSuccessful decides whether a request counts as success (nil error) or
+	// failure. It receives copies of the request and response.
 	IsSuccessful func(err error, req *http.Request, resp *http.Response) error
-	CopyReqBody  bool
+	// CopyReqBody reports whether the request body is copied for IsSuccessful.
+	CopyReqBody bool
+	// CopyRespBody reports whether the response body is copied for IsSuccessful.
 	CopyRespBody bool
 }
 
+// NewDefaultCircuitBreakerOptions returns the default options: no counter, no
+// body copies and an IsSuccessful that treats every transport error as failure.
 func NewDefaultCircuitBreakerOptions() *CircuitBreakerOptions {
 	return &CircuitBreakerOptions{
 		Counter: nil,
@@ -73,9 +81,11 @@ func NewDefaultCircuitBreakerOptions() *CircuitBreakerOptions {
 	}
 }
 
+// CircuitBreakerOption configures [CircuitBreakerOptions].
 type CircuitBreakerOption func(opts *CircuitBreakerOptions)
 
-// CircuitBreakerWithMetric adds a metric that counts the (un-)successful requests
+// CircuitBreakerWithMetric adds an Int64Counter named meterName that counts
+// successful and failed requests. It panics if the counter cannot be created.
 func CircuitBreakerWithMetric(
 	meter metric.Meter,
 	meterName string,
@@ -95,6 +105,11 @@ func CircuitBreakerWithMetric(
 	}
 }
 
+// CircuitBreakerWithIsSuccessful sets the callback that classifies a request
+// as success (nil) or failure (non-nil); returning [ErrIgnoreSuccessfulness]
+// ignores the request. copyReqBody and copyRespBody enable copying the bodies
+// so the callback can read them; reading a body that was not copied makes the
+// RoundTripware return [ErrReadFromActualBody].
 func CircuitBreakerWithIsSuccessful(
 	isSuccessful func(err error, req *http.Request, resp *http.Response) error,
 	copyReqBody bool,
@@ -107,10 +122,11 @@ func CircuitBreakerWithIsSuccessful(
 	}
 }
 
-// CircuitBreaker returns a RoundTripper which wraps all the following RoundTripwares and the Handler with a circuit
-// breaker. This will prevent further request once a certain number of requests failed.
-// NOTE: It's strongly advised to add this Roundripware before the metric middleware (if both are used). As the measure-
-// ments of the execution time will otherwise be falsified
+// CircuitBreaker returns a RoundTripware which wraps all the following RoundTripwares and the Handler with a circuit
+// breaker. It rejects requests with [ErrCircuitBreaker] once the breaker trips and logs state changes.
+//
+// It is strongly advised to add this RoundTripware before the metric RoundTripware (if both are used), as the
+// execution time measurements will otherwise be falsified.
 func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) RoundTripware {
 	// intitialize the options
 	o := NewDefaultCircuitBreakerOptions()

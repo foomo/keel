@@ -12,27 +12,32 @@ import (
 )
 
 type (
+	// RefererOptions configures the [Referer] RoundTripware.
 	RefererOptions struct {
+		// Header is the name of the request header to set.
 		Header string
 	}
+	// RefererOption configures [RefererOptions].
 	RefererOption func(*RefererOptions)
 )
 
-// GetDefaultRefererOptions returns the default options
+// GetDefaultRefererOptions returns the default options using the X-Referer
+// header.
 func GetDefaultRefererOptions() RefererOptions {
 	return RefererOptions{
 		Header: "X-Referer",
 	}
 }
 
-// RefererWithHeader middleware option
+// RefererWithHeader sets the request header name. Defaults to X-Referer.
 func RefererWithHeader(v string) RefererOption {
 	return func(o *RefererOptions) {
 		o.Header = v
 	}
 }
 
-// Referer returns a RoundTripper which prints out the request & response object
+// Referer returns a RoundTripware that sets the referer stored in the request
+// context as request header, unless the header is already present.
 func Referer(opts ...RefererOption) RoundTripware {
 	o := GetDefaultRefererOptions()
 

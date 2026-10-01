@@ -1,6 +1,6 @@
 package rbac
 
-// CompiledRule is an Rule prepared for matching. For prefix
+// CompiledRule is a [Rule] prepared for matching. For prefix
 // rules the trailing "*" is stripped once at compile-time so the hot
 // path only does prefix comparisons.
 //

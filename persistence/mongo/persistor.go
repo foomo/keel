@@ -17,47 +17,66 @@ import (
 	"go.uber.org/zap"
 )
 
-// Persistor exported to used also for embedding into other types in foreign packages.
 type (
+	// Persistor holds a MongoDB client and the database named in its
+	// connection URI. It is exported so it can be embedded into types in
+	// other packages.
 	Persistor struct {
 		client *mongo.Client
 		db     *mongo.Database
 	}
+	// Options configures [New].
 	Options struct {
-		OtelEnabled         bool
-		OtelOptions         []otelmongo.Option
-		ClientOptions       []ClientOption
+		// OtelEnabled enables the OpenTelemetry command monitor.
+		OtelEnabled bool
+		// OtelOptions configure the OpenTelemetry command monitor.
+		OtelOptions []otelmongo.Option
+		// ClientOptions are applied to the client options after the URI.
+		ClientOptions []ClientOption
+		// ClientLoggerOptions configure the driver logger. They are only
+		// applied if no logger options were set via ClientOptions.
 		ClientLoggerOptions []ClientLoggerOption
-		DatabaseOptions     []DatabaseOption
+		// DatabaseOptions are applied to the database options.
+		DatabaseOptions []DatabaseOption
 	}
-	Option             func(o *Options)
-	ClientOption       func(*options.ClientOptions)
+	// Option configures [Options].
+	Option func(o *Options)
+	// ClientOption configures the driver's client options.
+	ClientOption func(*options.ClientOptions)
+	// ClientLoggerOption configures the driver's logger options.
 	ClientLoggerOption func(*options.LoggerOptions)
-	DatabaseOption     func(*options.DatabaseOptionsBuilder)
+	// DatabaseOption configures the driver's database options.
+	DatabaseOption func(*options.DatabaseOptionsBuilder)
 )
 
 // ------------------------------------------------------------------------------------------------
 // ~ Options
 // ------------------------------------------------------------------------------------------------
 
+// WithOtelEnabled sets whether OpenTelemetry instrumentation is enabled.
+// Defaults to the OTEL_MONGO_ENABLED environment variable, falling back to
+// OTEL_ENABLED, or false.
 func WithOtelEnabled(v bool) Option {
 	return func(o *Options) {
 		o.OtelEnabled = v
 	}
 }
 
+// WithOtelOptions appends options for the OpenTelemetry command monitor.
 func WithOtelOptions(v ...otelmongo.Option) Option {
 	return func(o *Options) {
 		o.OtelOptions = append(o.OtelOptions, v...)
 	}
 }
 
+// WithClientOptions appends client options.
 func WithClientOptions(v ...ClientOption) Option {
 	return func(o *Options) {
 		o.ClientOptions = append(o.ClientOptions, v...)
 	}
 }
 
+// WithClientLogger routes the driver's log output to the given zap logger.
 func WithClientLogger(v *zap.Logger) Option {
 	return func(o *Options) {
 		o.ClientLoggerOptions = append(o.ClientLoggerOptions, func(o *options.LoggerOptions) {
@@ -66,6 +85,7 @@ func WithClientLogger(v *zap.Logger) Option {
 	}
 }
 
+// WithClientLoggerComponentLevel sets the driver log level for component c.
 func WithClientLoggerComponentLevel(c options.LogComponent, l options.LogLevel) Option {
 	return func(o *Options) {
 		o.ClientLoggerOptions = append(o.ClientLoggerOptions, func(o *options.LoggerOptions) {
@@ -74,18 +94,24 @@ func WithClientLoggerComponentLevel(c options.LogComponent, l options.LogLevel) 
 	}
 }
 
+// WithClientCompression is an [Option] enabling snappy and zstd wire
+// compression.
 func WithClientCompression(o *Options) {
 	o.ClientOptions = append(o.ClientOptions, func(o *options.ClientOptions) {
 		o.SetCompressors([]string{"snappy", "zstd"})
 	})
 }
 
+// WithDatabaseOptions appends database options.
 func WithDatabaseOptions(v ...DatabaseOption) Option {
 	return func(o *Options) {
 		o.DatabaseOptions = append(o.DatabaseOptions, v...)
 	}
 }
 
+// DefaultOptions returns the default [Options]: majority read and write
+// concern, OpenTelemetry enabled per OTEL_MONGO_ENABLED or OTEL_ENABLED, and
+// command attributes disabled per OTEL_MONGO_COMMAND_ATTRIBUTE_DISABLED.
 func DefaultOptions() Options {
 	return Options{
 		OtelEnabled: env.GetBool("OTEL_MONGO_ENABLED", env.GetBool("OTEL_ENABLED", false)),
@@ -107,6 +133,9 @@ func DefaultOptions() Options {
 // ~ Constructor
 // ------------------------------------------------------------------------------------------------
 
+// New connects to MongoDB using uri, pings the server and returns a
+// [Persistor] for the database named in uri. It returns an error if uri is
+// invalid, names no database, or the connection or ping fails.
 func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	o := DefaultOptions()
 
@@ -166,23 +195,27 @@ func New(ctx context.Context, uri string, opts ...Option) (*Persistor, error) {
 	}, nil
 }
 
+// DB returns the database.
 func (p Persistor) DB() *mongo.Database {
 	return p.db
 }
 
+// Client returns the underlying [mongo.Client].
 func (p Persistor) Client() *mongo.Client {
 	return p.client
 }
 
+// Ping verifies the connection to the server.
 func (p Persistor) Ping(ctx context.Context) error {
 	return p.client.Ping(ctx, nil)
 }
 
+// Collection returns the named [Collection] via [NewCollection].
 func (p Persistor) Collection(name string, opts ...CollectionOption) (*Collection, error) {
 	return NewCollection(p.db, name, opts...)
 }
 
-// HasCollection checks if the given collection exists
+// HasCollection reports whether a collection with the given name exists.
 func (p Persistor) HasCollection(ctx context.Context, name string) (bool, error) {
 	names, err := p.db.ListCollectionNames(ctx, bson.D{})
 	if err != nil {
@@ -196,6 +229,7 @@ func (p Persistor) HasCollection(ctx context.Context, name string) (bool, error)
 	return false, nil
 }
 
+// Close disconnects the client.
 func (p Persistor) Close(ctx context.Context) error {
 	return p.client.Disconnect(ctx)
 }

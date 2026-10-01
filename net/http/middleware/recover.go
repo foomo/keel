@@ -14,27 +14,34 @@ import (
 )
 
 type (
+	// RecoverOptions configures the [Recover] middleware.
 	RecoverOptions struct {
+		// DisablePrintStack reports whether the stack trace is omitted from
+		// the log entry.
 		DisablePrintStack bool
 	}
+	// RecoverOption configures [RecoverOptions].
 	RecoverOption func(*RecoverOptions)
 )
 
-// GetDefaultRecoverOptions returns the default options
+// GetDefaultRecoverOptions returns the default options, which include the
+// stack trace.
 func GetDefaultRecoverOptions() RecoverOptions {
 	return RecoverOptions{
 		DisablePrintStack: false,
 	}
 }
 
-// RecoverWithDisablePrintStack middleware option
+// RecoverWithDisablePrintStack sets [RecoverOptions.DisablePrintStack].
 func RecoverWithDisablePrintStack(v bool) RecoverOption {
 	return func(o *RecoverOptions) {
 		o.DisablePrintStack = v
 	}
 }
 
-// Recover middleware
+// Recover returns a middleware that recovers panics from the next handler,
+// logs them and responds with 500 Internal Server Error. Panics with
+// [http.ErrAbortHandler] are re-raised.
 func Recover(opts ...RecoverOption) keelhttp.Middleware {
 	options := GetDefaultRecoverOptions()
 
@@ -47,7 +54,7 @@ func Recover(opts ...RecoverOption) keelhttp.Middleware {
 	return RecoverWithOptions(options)
 }
 
-// RecoverWithOptions middleware
+// RecoverWithOptions is like [Recover] but takes fully populated options.
 func RecoverWithOptions(opts RecoverOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

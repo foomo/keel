@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// Skip returns a middleware that applies mw unless one of skippers reports
+// true for the request, in which case next is called directly.
 func Skip(mw keelhttp.Middleware, skippers ...Skipper) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		wrapped := mw(l, name, next)

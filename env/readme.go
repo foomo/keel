@@ -6,7 +6,9 @@ import (
 	"github.com/foomo/keel/markdown"
 )
 
-// Deprecated: will be removed in future releases
+// Readme returns a markdown table of all accessed environment variables.
+//
+// Deprecated: Readme will be removed in a future release.
 func Readme() string {
 	var rows [][]string
 

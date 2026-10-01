@@ -7,15 +7,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// Generic log field keys.
 const (
-	// NumKey - generic number attribute
-	NumKey = "num"
-	// NameKey - generic name attribute
-	NameKey = "name"
-	// ValueKey - generic value attribute
+	NumKey   = "num"
+	NameKey  = "name"
 	ValueKey = "value"
-	// JSONKey - generic json attribute
-	JSONKey = "json"
+	JSONKey  = "json"
 )
 
 // FNum creates a zap.Field with a given number under the key "num".
@@ -28,12 +25,13 @@ func FName(name string) zap.Field {
 	return zap.String(NameKey, name)
 }
 
-// FValue creates a zap.Field with a given value under the key "value".
+// FValue creates a zap.Field with value formatted by %v under the key "value".
 func FValue(value any) zap.Field {
 	return zap.String(ValueKey, fmt.Sprintf("%v", value))
 }
 
-// FJSON creates a zap.Field with a given value under the key "json".
+// FJSON creates a zap.Field with v marshaled as raw JSON under the key "json".
+// If marshaling fails, the error message is logged under "json_error" instead.
 func FJSON(v any) zap.Field {
 	if out, err := json.Marshal(v); err != nil {
 		return zap.String(JSONKey+"_error", err.Error())

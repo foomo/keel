@@ -15,57 +15,84 @@ import (
 )
 
 type (
+	// JWTOptions configures the [JWT] middleware.
 	JWTOptions struct {
-		SetContext          bool
-		TokenProvider       TokenProvider
-		ClaimsProvider      JWTClaimsProvider
-		ClaimsHandler       JWTClaimsHandler
+		// SetContext reports whether a present token is parsed, validated and
+		// its claims stored in the request context. When false, a present
+		// token is neither parsed nor validated and the request is passed on
+		// unchanged.
+		SetContext bool
+		// TokenProvider extracts the token from the request.
+		TokenProvider TokenProvider
+		// ClaimsProvider returns the claims value a token is parsed into.
+		ClaimsProvider JWTClaimsProvider
+		// ClaimsHandler is called with the claims of a valid token.
+		ClaimsHandler JWTClaimsHandler
+		// MissingTokenHandler is called when the request carries no token.
 		MissingTokenHandler JWTMissingTokenHandler
+		// InvalidTokenHandler is called when a token parses but is not valid.
 		InvalidTokenHandler JWTInvalidTokenHandler
-		ErrorHandler        JWTErrorHandler
+		// ErrorHandler is called when parsing or validating a token fails.
+		ErrorHandler JWTErrorHandler
 	}
-	JWTOption              func(*JWTOptions)
-	JWTClaimsProvider      func() gojwt.Claims
-	JWTClaimsHandler       func(*zap.Logger, http.ResponseWriter, *http.Request, gojwt.Claims) bool
-	JWTErrorHandler        func(*zap.Logger, http.ResponseWriter, *http.Request, error) bool
+	// JWTOption configures [JWTOptions].
+	JWTOption func(*JWTOptions)
+	// JWTClaimsProvider returns a new, empty claims value to parse a token
+	// into. It is called once per request.
+	JWTClaimsProvider func() gojwt.Claims
+	// JWTClaimsHandler is called with the claims of a valid token and reports
+	// whether the request continues, with the claims in its context.
+	JWTClaimsHandler func(*zap.Logger, http.ResponseWriter, *http.Request, gojwt.Claims) bool
+	// JWTErrorHandler is called when parsing a token fails and reports whether
+	// the request continues without claims.
+	JWTErrorHandler func(*zap.Logger, http.ResponseWriter, *http.Request, error) bool
+	// JWTMissingTokenHandler is called when the request carries no token. It
+	// returns optional claims to store in the context and reports whether the
+	// request continues.
 	JWTMissingTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request) (gojwt.Claims, bool)
+	// JWTInvalidTokenHandler is called when a token parses but is not valid
+	// and reports whether the request continues without claims.
 	JWTInvalidTokenHandler func(*zap.Logger, http.ResponseWriter, *http.Request, *gojwt.Token) bool
 )
 
-// DefaultJWTErrorHandler function
+// DefaultJWTErrorHandler responds with 500 Internal Server Error and stops
+// the request.
 func DefaultJWTErrorHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, err error) bool {
 	httputils.InternalServerError(l, w, r, errors.Wrap(err, "failed parse claims"))
 	return false
 }
 
-// DefaultJWTMissingTokenHandler function
+// DefaultJWTMissingTokenHandler lets the request continue without claims.
 func DefaultJWTMissingTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request) (gojwt.Claims, bool) {
 	return nil, true
 }
 
-// RequiredJWTMissingTokenHandler function
+// RequiredJWTMissingTokenHandler responds with 400 Bad Request and stops the
+// request. Use it to make a token mandatory.
 func RequiredJWTMissingTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request) (gojwt.Claims, bool) {
 	httputils.BadRequestServerError(l, w, r, errors.New("missing jwt token"))
 	return nil, false
 }
 
-// DefaultJWTInvalidTokenHandler function
+// DefaultJWTInvalidTokenHandler responds with 400 Bad Request and stops the
+// request.
 func DefaultJWTInvalidTokenHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, token *gojwt.Token) bool {
 	httputils.BadRequestServerError(l, w, r, errors.New("invalid jwt token"))
 	return false
 }
 
-// DefaultJWTClaimsProvider function
+// DefaultJWTClaimsProvider returns an empty [gojwt.RegisteredClaims].
 func DefaultJWTClaimsProvider() gojwt.Claims {
 	return &gojwt.RegisteredClaims{}
 }
 
-// DefaultJWTClaimsHandler function
+// DefaultJWTClaimsHandler accepts all claims.
 func DefaultJWTClaimsHandler(l *zap.Logger, w http.ResponseWriter, r *http.Request, claims gojwt.Claims) bool {
 	return true
 }
 
-// GetDefaultJWTOptions returns the default options
+// GetDefaultJWTOptions returns the default options: SetContext enabled, a
+// [HeaderTokenProvider] and the Default* handlers of this package.
 func GetDefaultJWTOptions() JWTOptions {
 	return JWTOptions{
 		SetContext:          true,
@@ -78,55 +105,60 @@ func GetDefaultJWTOptions() JWTOptions {
 	}
 }
 
-// JWTWithTokenProvider middleware option
+// JWTWithTokenProvider sets [JWTOptions.TokenProvider].
 func JWTWithTokenProvider(v TokenProvider) JWTOption {
 	return func(o *JWTOptions) {
 		o.TokenProvider = v
 	}
 }
 
-// JWTWithClaimsProvider middleware option
+// JWTWithClaimsProvider sets [JWTOptions.ClaimsProvider].
 func JWTWithClaimsProvider(v JWTClaimsProvider) JWTOption {
 	return func(o *JWTOptions) {
 		o.ClaimsProvider = v
 	}
 }
 
-// JWTWithClaimsHandler middleware option
+// JWTWithClaimsHandler sets [JWTOptions.ClaimsHandler].
 func JWTWithClaimsHandler(v JWTClaimsHandler) JWTOption {
 	return func(o *JWTOptions) {
 		o.ClaimsHandler = v
 	}
 }
 
-// JWTWithInvalidTokenHandler middleware option
+// JWTWithInvalidTokenHandler sets [JWTOptions.InvalidTokenHandler].
 func JWTWithInvalidTokenHandler(v JWTInvalidTokenHandler) JWTOption {
 	return func(o *JWTOptions) {
 		o.InvalidTokenHandler = v
 	}
 }
 
-// JWTWithMissingTokenHandler middleware option
+// JWTWithMissingTokenHandler sets [JWTOptions.MissingTokenHandler].
 func JWTWithMissingTokenHandler(v JWTMissingTokenHandler) JWTOption {
 	return func(o *JWTOptions) {
 		o.MissingTokenHandler = v
 	}
 }
 
-// JWTWithErrorHandler middleware option
+// JWTWithErrorHandler sets [JWTOptions.ErrorHandler].
 func JWTWithErrorHandler(v JWTErrorHandler) JWTOption {
 	return func(o *JWTOptions) {
 		o.ErrorHandler = v
 	}
 }
 
+// JWTWithSetContext sets [JWTOptions.SetContext]. Defaults to true.
 func JWTWithSetContext(v bool) JWTOption {
 	return func(o *JWTOptions) {
 		o.SetContext = v
 	}
 }
 
-// JWT middleware
+// JWT returns a middleware that parses and validates the request's JWT with v
+// and stores the claims in the request context under contextKey. Requests
+// whose context already holds a value for contextKey are passed on unchanged.
+// A failing [TokenProvider] is answered with 400 Bad Request; all other
+// outcomes are delegated to the handlers in [JWTOptions].
 func JWT(v *jwt.JWT, contextKey any, opts ...JWTOption) keelhttp.Middleware {
 	options := GetDefaultJWTOptions()
 
@@ -139,7 +171,7 @@ func JWT(v *jwt.JWT, contextKey any, opts ...JWTOption) keelhttp.Middleware {
 	return JWTWithOptions(v, contextKey, options)
 }
 
-// JWTWithOptions middleware
+// JWTWithOptions is like [JWT] but takes fully populated options.
 func JWTWithOptions(v *jwt.JWT, contextKey any, opts JWTOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

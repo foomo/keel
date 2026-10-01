@@ -4,22 +4,34 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Deprecated: use otelhttp
+// NewHTTPRequestSizeSummaryVec returns [NewRequestSizeSummaryVec] with
+// subsystem "http" and labels "method" and "code".
+//
+// Deprecated: Use otelhttp instrumentation instead.
 func NewHTTPRequestSizeSummaryVec(namespace string) *prometheus.SummaryVec {
 	return NewRequestSizeSummaryVec(namespace, "http", []string{"method", "code"})
 }
 
-// Deprecated: use otelhttp
+// NewHTTPResponseSizeSummaryVec returns [NewResponseSizeSummaryVec] with
+// subsystem "http" and labels "method" and "code".
+//
+// Deprecated: Use otelhttp instrumentation instead.
 func NewHTTPResponseSizeSummaryVec(namespace string) *prometheus.SummaryVec {
 	return NewResponseSizeSummaryVec(namespace, "http", []string{"method", "code"})
 }
 
-// Deprecated: use otelhttp
+// NewHTTPRequestsCounterVec returns [NewRequestsCounterVec] with
+// subsystem "http" and labels "method" and "code".
+//
+// Deprecated: Use otelhttp instrumentation instead.
 func NewHTTPRequestsCounterVec(namespace string) *prometheus.CounterVec {
 	return NewRequestsCounterVec(namespace, "http", []string{"method", "code"})
 }
 
-// Deprecated: use otelhttp
+// NewHTTPRequestDurationHistogram returns [NewRequestDurationHistogram]
+// with subsystem "http".
+//
+// Deprecated: Use otelhttp instrumentation instead.
 func NewHTTPRequestDurationHistogram(namespace string) prometheus.Histogram {
 	return NewRequestDurationHistogram(namespace, "http")
 }

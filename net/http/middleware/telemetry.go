@@ -14,22 +14,33 @@ import (
 )
 
 type (
+	// TelemetryOptions configures the [Telemetry] middleware.
 	TelemetryOptions struct {
-		Name                    string
-		OtelOpts                []otelhttp.Option
+		// Name is the operation name passed to otelhttp. When empty, the
+		// service name is used.
+		Name string
+		// OtelOpts are passed to [otelhttp.NewHandler].
+		OtelOpts []otelhttp.Option
+		// InjectPropagationHeader reports whether the trace context is
+		// injected into the response headers.
 		InjectPropagationHeader bool
 	}
+	// TelemetryOption configures [TelemetryOptions].
 	TelemetryOption func(*TelemetryOptions)
 )
 
-// GetDefaultTelemetryOptions returns the default options
+// GetDefaultTelemetryOptions returns the default options, which inject the
+// propagation header.
 func GetDefaultTelemetryOptions() TelemetryOptions {
 	return TelemetryOptions{
 		InjectPropagationHeader: true,
 	}
 }
 
-// Telemetry middleware
+// Telemetry returns a middleware that instruments the handler with
+// [otelhttp.NewHandler]. It optionally injects the trace context into the
+// response headers and, for sampled spans, adds the trace and span IDs to the
+// request's log labeler.
 func Telemetry(opts ...TelemetryOption) keelhttp.Middleware {
 	options := GetDefaultTelemetryOptions()
 
@@ -42,26 +53,30 @@ func Telemetry(opts ...TelemetryOption) keelhttp.Middleware {
 	return TelemetryWithOptions(options)
 }
 
+// TelemetryWithName sets [TelemetryOptions.Name]. Defaults to the service
+// name.
 func TelemetryWithName(v string) TelemetryOption {
 	return func(o *TelemetryOptions) {
 		o.Name = v
 	}
 }
 
+// TelemetryWithInjectPropagationHeader sets
+// [TelemetryOptions.InjectPropagationHeader]. Defaults to true.
 func TelemetryWithInjectPropagationHeader(v bool) TelemetryOption {
 	return func(o *TelemetryOptions) {
 		o.InjectPropagationHeader = v
 	}
 }
 
-// TelemetryWithOtelOpts middleware options
+// TelemetryWithOtelOpts appends options passed to [otelhttp.NewHandler].
 func TelemetryWithOtelOpts(v ...otelhttp.Option) TelemetryOption {
 	return func(o *TelemetryOptions) {
 		o.OtelOpts = append(o.OtelOpts, v...)
 	}
 }
 
-// TelemetryWithOptions middleware
+// TelemetryWithOptions is like [Telemetry] but takes fully populated options.
 func TelemetryWithOptions(opts TelemetryOptions) keelhttp.Middleware {
 	return func(l *zap.Logger, name string, next http.Handler) http.Handler {
 		if opts.Name != "" {

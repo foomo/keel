@@ -14,7 +14,8 @@ import (
 )
 
 type (
-	// Subscription is a Service that manages the lifecycle of a goflux subscriber.
+	// Subscription is a service that manages the lifecycle of a goflux subscriber.
+	// Create it with [NewSubscription].
 	Subscription[T any] struct {
 		running    atomic.Bool
 		subscriber goflux.Subscriber[T]
@@ -26,11 +27,12 @@ type (
 		wg         errgroup.Group
 		l          *zap.Logger
 	}
+	// SubscriptionOption configures a [Subscription] in [NewSubscription].
 	SubscriptionOption[T any] func(*Subscription[T])
 )
 
-// NewSubscription creates a new Subscription service that runs the given
-// subscriber as a managed keel service.
+// NewSubscription returns a [Subscription] named name that subscribes
+// subscriber to subject with handler. A nil l defaults to [log.Logger].
 func NewSubscription[T any](
 	l *zap.Logger,
 	name string,
@@ -67,10 +69,13 @@ func NewSubscription[T any](
 // ~ Public methods
 // ------------------------------------------------------------------------------------------------
 
+// Name returns the service name.
 func (s *Subscription[T]) Name() string {
 	return s.name
 }
 
+// Healthz returns [ErrServiceNotRunning] unless [Subscription.Start] is in
+// progress.
 func (s *Subscription[T]) Healthz() error {
 	if !s.running.Load() {
 		return ErrServiceNotRunning
@@ -79,10 +84,13 @@ func (s *Subscription[T]) Healthz() error {
 	return nil
 }
 
+// String returns a short description of the subject used in the readme.
 func (s *Subscription[T]) String() string {
 	return fmt.Sprintf("subject: `%s`", s.subject)
 }
 
+// Start subscribes to the subject and blocks until the subscription ends,
+// returning the error from the subscriber.
 func (s *Subscription[T]) Start(ctx context.Context) error {
 	s.l.Info("starting keel service")
 
@@ -107,6 +115,9 @@ func (s *Subscription[T]) Start(ctx context.Context) error {
 	return s.wg.Wait()
 }
 
+// Close cancels the subscription context with cause [ErrServiceShutdown],
+// closes the subscriber (logging a failure) and waits for the subscription to
+// end. ctx is not used. Close must not be called before [Subscription.Start].
 func (s *Subscription[T]) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
 

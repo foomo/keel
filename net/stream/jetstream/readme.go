@@ -5,11 +5,15 @@ import (
 )
 
 type (
+	// publisher records a publisher created through [Stream.Publisher] for
+	// [Readme].
 	publisher struct {
 		Namespace string
 		Stream    string
 		Subject   string
 	}
+	// subscriber records a subscriber created through [Stream.Subscriber]
+	// for [Readme].
 	subscriber struct {
 		Namespace string
 		Stream    string
@@ -17,11 +21,15 @@ type (
 	}
 )
 
+// publishers and subscribers hold the process wide, deduplicated registry
+// read by [Readme]. Access is not synchronized.
 var (
 	publishers  []publisher
 	subscribers []subscriber
 )
 
+// Readme returns a markdown table of all publishers and subscribers created
+// in this process, or an empty string if there are none.
 func Readme() string {
 	if len(publishers) == 0 && len(subscribers) == 0 {
 		return ""

@@ -14,7 +14,7 @@ import (
 	"github.com/foomo/keel/env"
 )
 
-// TracerProvider returns the global TracerProvider instance used for creating tracers.
+// TracerProvider returns the global [trace.TracerProvider].
 func TracerProvider() trace.TracerProvider {
 	return otel.GetTracerProvider()
 }
@@ -26,7 +26,7 @@ func NewNoopTraceProvider() trace.TracerProvider {
 
 // NewStdOutTraceProvider creates a new stdout trace provider with optional configurations from the environment variables.
 // It uses pretty print and timestamps by default unless overridden by the respective environment variables.
-// Returns a configured trace.TracerProvider or an error if the setup fails.
+// The provider is installed as the global tracer provider.
 func NewStdOutTraceProvider(ctx context.Context) (trace.TracerProvider, error) {
 	var opts []stdouttrace.Option
 	if env.GetBool("OTEL_EXPORTER_STDOUT_PRETTY_PRINT", true) {
@@ -47,7 +47,7 @@ func NewStdOutTraceProvider(ctx context.Context) (trace.TracerProvider, error) {
 
 // NewOTLPHTTPTraceProvider creates an OTLP HTTP trace provider using the given context and options.
 // It configures the provider based on environment variables, such as endpoint and insecure transport.
-// Returns a configured trace.TracerProvider instance or an error if the initialization fails.
+// The provider is installed as the global tracer provider.
 func NewOTLPHTTPTraceProvider(ctx context.Context, opts ...otlptracehttp.Option) (trace.TracerProvider, error) {
 	exporter, err := otlptracehttp.New(ctx, opts...)
 	if err != nil {
@@ -59,7 +59,7 @@ func NewOTLPHTTPTraceProvider(ctx context.Context, opts ...otlptracehttp.Option)
 
 // NewOTLPGRPCTraceProvider creates a new trace provider configured for OTLP over gRPC with optional settings.
 // It uses environment variables for settings like endpoint and insecure mode if not provided explicitly.
-// Returns a configured TracerProvider or an error if initialization fails.
+// The provider is installed as the global tracer provider.
 func NewOTLPGRPCTraceProvider(ctx context.Context, opts ...otlptracegrpc.Option) (trace.TracerProvider, error) {
 	exporter, err := otlptracegrpc.New(ctx, opts...)
 	if err != nil {
@@ -69,6 +69,9 @@ func NewOTLPGRPCTraceProvider(ctx context.Context, opts ...otlptracegrpc.Option)
 	return newTracerProvider(ctx, exporter)
 }
 
+// newTracerProvider creates an SDK tracer provider batching to exp with the
+// default resource and a parent based sampler using OTEL_TRACE_RATIO
+// (default 1), and installs it as the global tracer provider.
 func newTracerProvider(ctx context.Context, exp sdktrace.SpanExporter) (trace.TracerProvider, error) {
 	resource, err := NewResource(ctx)
 	if err != nil {

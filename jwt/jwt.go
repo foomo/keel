@@ -5,25 +5,30 @@ import (
 )
 
 type (
+	// JWT signs and parses RS256 tokens. Create it with [New].
 	JWT struct {
-		// key for signing
+		// Key is the current key used for signing and verification.
 		Key Key
-		// KeyFunc provider
+		// KeyFunc resolves the verification key for a parsed token.
 		KeyFunc jwt.Keyfunc
-		// DeprecatedKeys  e.g. due to rotation
+		// DeprecatedKeys holds verification-only keys indexed by key ID,
+		// e.g. kept after a key rotation.
 		DeprecatedKeys map[string]Key
 	}
+	// Option configures a [JWT].
 	Option func(*JWT)
 )
 
-// WithKeyFun middleware option
+// WithKeyFun sets the key function used to verify tokens. Defaults to
+// [DefaultKeyFunc] over the current and deprecated keys.
 func WithKeyFun(v jwt.Keyfunc) Option {
 	return func(o *JWT) {
 		o.KeyFunc = v
 	}
 }
 
-// WithDeprecatedKeys middleware option
+// WithDeprecatedKeys adds keys that are still accepted for verification,
+// indexed by their [Key.ID].
 func WithDeprecatedKeys(v ...Key) Option {
 	return func(o *JWT) {
 		if len(v) > 0 {
@@ -38,7 +43,9 @@ func WithDeprecatedKeys(v ...Key) Option {
 	}
 }
 
-// New returns a new JWT for the given key and optional old keys e.g. due to rotation
+// New returns a [JWT] that signs with key. If no key function is set via
+// [WithKeyFun], [DefaultKeyFunc] is used with key and any keys added via
+// [WithDeprecatedKeys]. Nil options are ignored.
 func New(key Key, opts ...Option) *JWT {
 	inst := &JWT{
 		Key: key,
@@ -57,6 +64,9 @@ func New(key Key, opts ...Option) *JWT {
 	return inst
 }
 
+// GetSignedToken returns claims as a token signed with RS256 using the
+// private part of [JWT.Key], with the "kid" header set to its ID. It
+// returns an error if signing fails, e.g. when no private key is set.
 func (j *JWT) GetSignedToken(claims jwt.Claims) (string, error) {
 	// create token
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
@@ -65,6 +75,8 @@ func (j *JWT) GetSignedToken(claims jwt.Claims) (string, error) {
 	return token.SignedString(j.Key.Private)
 }
 
+// ParseWithClaims parses and validates token into claims, resolving the
+// verification key with [JWT.KeyFunc].
 func (j *JWT) ParseWithClaims(token string, claims jwt.Claims) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(token, claims, j.KeyFunc)
 }

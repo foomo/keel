@@ -8,11 +8,15 @@ import (
 	"github.com/foomo/keel/env"
 )
 
+// config is the zap configuration of the last logger built by [NewLogger];
+// atomicLevel is the level shared by all loggers built from it.
 var (
 	config      zap.Config
 	atomicLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 )
 
+// init installs a logger configured from LOG_LEVEL (default "info") and
+// LOG_FORMAT (default "json") as the zap global logger.
 func init() {
 	zap.ReplaceGlobals(NewLogger(
 		env.Get("LOG_LEVEL", "info"),
@@ -20,7 +24,13 @@ func init() {
 	))
 }
 
-// NewLogger return a new logger instance
+// NewLogger builds a production zap logger with the given level (e.g. "info")
+// and encoding ("json" or "console") and stores its configuration as the
+// package configuration. It sets the shared [AtomicLevel] to level. Caller
+// and stack traces are disabled unless level enables debug, overridable via
+// LOG_DISABLE_CALLER and LOG_DISABLE_STACKTRACE. It panics if level is
+// invalid or the logger cannot be built. The result is not installed as the
+// global logger.
 func NewLogger(level, encoding string) *zap.Logger {
 	config = zap.NewProductionConfig()
 
@@ -54,27 +64,30 @@ func NewLogger(level, encoding string) *zap.Logger {
 	return logger
 }
 
-// Logger return the logger instance
+// Logger returns the zap global logger.
 func Logger() *zap.Logger {
 	return zap.L()
 }
 
-// AtomicLevel return the configured atomic level
+// AtomicLevel returns the level shared by loggers built with [NewLogger].
+// Changing it adjusts their level at runtime.
 func AtomicLevel() zap.AtomicLevel {
 	return atomicLevel
 }
 
-// IsDisableCaller returns the configured disabled caller value
+// IsDisableCaller reports whether caller annotation is disabled.
 func IsDisableCaller() bool {
 	return config.DisableCaller
 }
 
-// IsDisableStacktrace returns the configured disabled stacktrace value
+// IsDisableStacktrace reports whether automatic stack traces are disabled.
 func IsDisableStacktrace() bool {
 	return config.DisableStacktrace
 }
 
-// SetDisableCaller sets the given value and re-configures the logger
+// SetDisableCaller sets whether caller annotation is disabled and, if the
+// value changed, rebuilds and installs the zap global logger. It returns an
+// error if the logger cannot be built.
 func SetDisableCaller(value bool) error {
 	if value == config.DisableCaller {
 		return nil
@@ -92,7 +105,9 @@ func SetDisableCaller(value bool) error {
 	return nil
 }
 
-// SetDisableStacktrace sets the given value and re-configures the logger
+// SetDisableStacktrace sets whether automatic stack traces are disabled and,
+// if the value changed, rebuilds and installs the zap global logger. It
+// returns an error if the logger cannot be built.
 func SetDisableStacktrace(value bool) error {
 	if value == config.DisableStacktrace {
 		return nil

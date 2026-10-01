@@ -18,12 +18,14 @@ import (
 	httputils "github.com/foomo/keel/utils/net/http"
 )
 
+// CustomClaims are the JWT claims stored in the cookie.
 type CustomClaims struct {
 	gojwt.RegisteredClaims
 	Name     string `json:"name"`
 	Language string `json:"language"`
 }
 
+// ContextKey is the request context key holding the parsed CustomClaims.
 const (
 	ContextKey = "custom"
 )

@@ -5,109 +5,169 @@ import (
 )
 
 const (
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPServerNameKey is the log field key "http_server_name".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPServerNameKey = "http_server_name"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPMethodKey is the log field key "http_method".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPMethodKey = "http_method"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPTargetKey is the log field key "http_target".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPTargetKey = "http_target"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPHostKey is the log field key "http_host".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPHostKey = "http_host"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPStatusCodeKey is the log field key "http_status_code".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPStatusCodeKey = "http_status_code"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPUserAgentKey is the log field key "http_user_agent".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPUserAgentKey = "http_user_agent"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPClientIPKey is the log field key "http_client_ip".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPClientIPKey = "http_client_ip"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPRequestContentLengthKey is the log field key "http_read_bytes".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPRequestContentLengthKey = "http_read_bytes"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPWroteBytesKey is the log field key "http_wrote_bytes".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPWroteBytesKey = "http_wrote_bytes" // #nosec
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPSchemeKey is the log field key "http_scheme".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPSchemeKey = "http_scheme"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPFlavorKey is the log field key "http_flavor".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPFlavorKey = "http_flavor"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPRequestIDKey is the log field key "http_request_id".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPRequestIDKey = "http_request_id"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPSessionIDKey is the log field key "http_session_id".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPSessionIDKey = "http_session_id"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPTrackingIDKey is the log field key "http_tracking_id".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPTrackingIDKey = "http_tracking_id"
-	// Deprecated: use semconv messaging attributes instead.
+	// HTTPRefererKey is the log field key "http_referer".
+	//
+	// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 	HTTPRefererKey = "http_referer"
 )
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPServerName returns a field with the given value under [HTTPServerNameKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPServerName(id string) zap.Field {
 	return zap.String(HTTPServerNameKey, id)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPRequestID returns a field with the given value under [HTTPRequestIDKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPRequestID(id string) zap.Field {
 	return zap.String(HTTPRequestIDKey, id)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPSessionID returns a field with the given value under [HTTPSessionIDKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPSessionID(id string) zap.Field {
 	return zap.String(HTTPSessionIDKey, id)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPTrackingID returns a field with the given value under [HTTPTrackingIDKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPTrackingID(id string) zap.Field {
 	return zap.String(HTTPTrackingIDKey, id)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPRequestContentLength returns a field with the given value under [HTTPRequestContentLengthKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPRequestContentLength(bytes int64) zap.Field {
 	return zap.Int64(HTTPRequestContentLengthKey, bytes)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPWroteBytes returns a field with the given value under [HTTPWroteBytesKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPWroteBytes(bytes int64) zap.Field {
 	return zap.Int64(HTTPWroteBytesKey, bytes)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPStatusCode returns a field with the given value under [HTTPStatusCodeKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPStatusCode(status int) zap.Field {
 	return zap.Int(HTTPStatusCodeKey, status)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPTarget returns a field with the given value under [HTTPTargetKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPTarget(target string) zap.Field {
 	return zap.String(HTTPTargetKey, target)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPClientIP returns a field with the given value under [HTTPClientIPKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPClientIP(clientIP string) zap.Field {
 	return zap.String(HTTPClientIPKey, clientIP)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPFlavor returns a field with the given value under [HTTPFlavorKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPFlavor(flavor string) zap.Field {
 	return zap.String(HTTPFlavorKey, flavor)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPScheme returns a field with the given value under [HTTPSchemeKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPScheme(scheme string) zap.Field {
 	return zap.String(HTTPSchemeKey, scheme)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPUserAgent returns a field with the given value under [HTTPUserAgentKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPUserAgent(userAgent string) zap.Field {
 	return zap.String(HTTPUserAgentKey, userAgent)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPReferer returns a field with the given value under [HTTPRefererKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPReferer(host string) zap.Field {
 	return zap.String(HTTPRefererKey, host)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPHost returns a field with the given value under [HTTPHostKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPHost(host string) zap.Field {
 	return zap.String(HTTPHostKey, host)
 }
 
-// Deprecated: use semconv messaging attributes instead.
+// FHTTPMethod returns a field with the given value under [HTTPMethodKey].
+//
+// Deprecated: Use OpenTelemetry semconv attributes with [Attribute] instead.
 func FHTTPMethod(name string) zap.Field {
 	return zap.String(HTTPMethodKey, name)
 }

@@ -43,8 +43,8 @@ type (
 
 // Job runs a keel workload to completion, as suited for a Kubernetes Job.
 //
-// Unlike Server (which blocks until a shutdown signal), a Job runs its steps in
-// order, then exits: RunE returns the step error (or nil), and Run translates that
+// Unlike [Server] (which blocks until a shutdown signal), a Job runs its steps in
+// order, then exits: [Job.RunE] returns the step error (or nil), and [Job.Run] translates that
 // into a process exit code so Kubernetes can apply backoffLimit. SIGINT/SIGTERM are
 // treated as an abnormal interruption that cancels the running step. No init HTTP
 // services are started; metrics are pushed/flushed on exit rather than exposed.
@@ -66,9 +66,9 @@ type Job struct {
 	c               *viper.Viper
 }
 
-// NewJob creates a new Job with the given options. The job name defaults to the
-// OTEL_SERVICE_NAME (falling back to telemetry.DefaultServiceName) and can be
-// overridden with JobWithName. It is used as the root routine/span label, the
+// NewJob creates a [Job] configured by opts. The job name defaults to
+// OTEL_SERVICE_NAME (falling back to [telemetry.DefaultServiceName]) and can be
+// overridden with [JobWithName]. It is used as the root routine/span label, the
 // Pushgateway group, and a log field.
 func NewJob(opts ...JobOption) *Job {
 	inst := &Job{
@@ -129,22 +129,25 @@ func (j *Job) Context() context.Context {
 	return j.ctx
 }
 
-// Meter returns the job meter.
+// Meter returns the global OpenTelemetry meter from [telemetry.Meter].
 func (j *Job) Meter() metric.Meter {
 	return telemetry.Meter()
 }
 
-// Tracer returns the job tracer.
+// Tracer returns the global OpenTelemetry tracer from [telemetry.Tracer].
 func (j *Job) Tracer() trace.Tracer {
 	return telemetry.Tracer()
 }
 
-// AddStep adds a step to be run in registration order.
+// AddStep adds a step to be run in registration order. It is not safe for
+// concurrent use.
 func (j *Job) AddStep(name string, fn StepFn) {
 	j.steps = append(j.steps, jobStep{name: name, fn: fn})
 }
 
-// AddCloser registers a closer to be called during job finalization.
+// AddCloser registers closer to be called during job finalization. Values that
+// do not satisfy [IsCloser] are ignored with a warning; adding the same closer
+// twice is a no-op.
 func (j *Job) AddCloser(closer any) {
 	if !IsCloser(closer) {
 		j.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
@@ -158,7 +161,7 @@ func (j *Job) AddCloser(closer any) {
 	j.syncClosers = append(j.syncClosers, closer)
 }
 
-// AddClosers registers the given closers to be called during job finalization.
+// AddClosers calls [Job.AddCloser] for each of closers.
 func (j *Job) AddClosers(closers ...any) {
 	for _, closer := range closers {
 		j.AddCloser(closer)
@@ -166,7 +169,7 @@ func (j *Job) AddClosers(closers ...any) {
 }
 
 // Run executes the job and exits the process: 0 on success, 1 on failure. This is
-// the convenience entrypoint for a job's main(); use RunE if you need to handle the
+// the convenience entrypoint for a job's main(); use [Job.RunE] if you need to handle the
 // error yourself.
 func (j *Job) Run() {
 	if err := j.RunE(); err != nil {
@@ -225,7 +228,7 @@ func (j *Job) run(ctx context.Context) error {
 	return err
 }
 
-// runSteps runs the steps sequentially (default) or concurrently (JobWithParallel).
+// runSteps runs the steps sequentially (default) or concurrently ([JobWithParallel]).
 func (j *Job) runSteps(ctx context.Context) error {
 	if j.parallel {
 		g := gofuncy.NewGroup(ctx,

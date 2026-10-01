@@ -4,7 +4,8 @@ import (
 	"context"
 )
 
-// Service interface
+// Service is a service managed by a [Server]. URL returns the address the
+// service is reachable at once started.
 type Service interface {
 	URL() string
 	Name() string

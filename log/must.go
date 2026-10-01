@@ -6,7 +6,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// Must logs a fatal error if given
+// Must logs err at fatal level and exits the process if err is not nil. The
+// optional msgAndArgs are a format string followed by its arguments and
+// default to "Must". A nil l selects [Logger].
 func Must(l *zap.Logger, err error, msgAndArgs ...any) {
 	if err != nil {
 		if l == nil {
