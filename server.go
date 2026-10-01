@@ -98,7 +98,7 @@ func NewServer(opts ...Option) *Server {
 
 		inst.ctx, inst.cancel = context.WithCancel(inst.ctx)
 		inst.g, inst.gCtx = errgroup.WithContext(inst.ctx)
-		inst.gracefulCtx, inst.gracefulCancel = signal.NotifyContext(inst.ctx, inst.shutdownSignals...)
+		inst.gracefulCtx, inst.gracefulCancel = signal.NotifyContext(inst.gCtx, inst.shutdownSignals...)
 
 		// gracefully shutdown
 		inst.g.Go(func() error {
@@ -407,7 +407,6 @@ func (s *Server) startService(services ...Service) {
 				log.WithError(s.l, err).Debug("server has closed")
 			} else if err != nil {
 				log.WithError(s.l, err).Error("failed to start service")
-				s.gracefulCancel()
 
 				return err
 			}
