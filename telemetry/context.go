@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap/zapcore"
 )
@@ -152,7 +153,8 @@ func (c Context) DeferEndSpan(err *error, opts ...trace.SpanEndOption) {
 	DeferEndSpan(c.Span(), err, opts...)
 }
 
-// SetSpanStatusOK sets the status of the current span to ok.
+// SetSpanStatusOK sets the status of the current span to ok, see
+// [SetSpanStatusOK] for when to use it.
 func (c Context) SetSpanStatusOK() {
 	c.Span().SetStatus(codes.Ok, "")
 }
@@ -160,7 +162,6 @@ func (c Context) SetSpanStatusOK() {
 // SetSpanStatusError sets the status of the current span to error with the
 // given description.
 func (c Context) SetSpanStatusError(description string) {
-	c.Span().SetStatus(codes.Error, description)
 	SetSpanStatusError(c.Span(), description)
 }
 
@@ -176,7 +177,7 @@ func (c Context) SetSpanAttributes(kv ...attribute.KeyValue) {
 
 // RecordError records a non-nil err with kv and a stack trace on the
 // current span and sets the span status to error with the root cause
-// message. It does not log the error.
+// message and error.type. It does not log the error.
 func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 	if err != nil {
 		sp := c.Span()
@@ -185,6 +186,7 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 			trace.WithAttributes(CodeStacktrace(5, 1)),
 		)
 		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
+		sp.SetAttributes(semconv.ErrorType(err))
 	}
 }
 

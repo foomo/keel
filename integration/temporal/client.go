@@ -173,7 +173,10 @@ func NewClient(ctx context.Context, endpoint string, opts ...ClientOption) (clie
 		}
 
 		clientOpts.Interceptors = append(clientOpts.Interceptors, tracingInterceptor)
-		clientOpts.MetricsHandler = NewMetricsHandler(telemetry.Meter())
+		clientOpts.MetricsHandler = opentelemetry.NewMetricsHandler(opentelemetry.MetricsHandlerOptions{
+			Meter:   telemetry.Meter(),
+			OnError: otel.Handle,
+		})
 	}
 
 	return client.Dial(clientOpts)

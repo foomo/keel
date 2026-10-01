@@ -7,7 +7,7 @@ import (
 	httplog "github.com/foomo/keel/net/http/log"
 	"github.com/foomo/keel/telemetry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"

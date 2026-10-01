@@ -11,8 +11,9 @@ import (
 	"github.com/foomo/keel/log"
 	"github.com/foomo/opentelemetry-go/semconv/natsconv"
 	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
 
@@ -28,21 +29,21 @@ func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, er
 	l := s.Logger().Named("nats")
 	m := s.Meter()
 
-	// Build instruments once; each returns a noop on nil meter, so errors here
-	// only surface real meter-provider problems and should not block Connect.
+	// Build instruments once; each falls back to a noop on error, so errors are
+	// only reported and never block Connect.
 	disconnects, err := natsconv.NewClientDisconnects(m)
 	if err != nil {
-		return nil, err
+		otel.Handle(err)
 	}
 
 	reconnects, err := natsconv.NewClientReconnects(m)
 	if err != nil {
-		return nil, err
+		otel.Handle(err)
 	}
 
 	asyncErrors, err := natsconv.NewClientAsyncErrors(m)
 	if err != nil {
-		return nil, err
+		otel.Handle(err)
 	}
 
 	// Background context for callbacks — NATS invokes these outside any request

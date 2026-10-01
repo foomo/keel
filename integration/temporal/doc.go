@@ -3,9 +3,8 @@
 //
 // It covers client construction with optional namespace registration and
 // OpenTelemetry instrumentation ([NewClient]), a keel service wrapper for
-// Temporal workers ([NewService]), adapters bridging Temporal's logger and
-// metrics interfaces to zap and OpenTelemetry ([NewLogger],
-// [NewMetricsHandler]), activity option helpers ([WithActivityOptions]) and
+// Temporal workers ([NewService]), an adapter bridging Temporal's logger to
+// zap ([NewLogger]), activity option helpers ([WithActivityOptions]) and
 // error classification helpers ([NewActivityError], [IsActivityError],
 // [AsApplicationError]).
 //

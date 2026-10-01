@@ -44,7 +44,7 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 			attributes := append(labeler.Get(), attribute.String("method", r.Method))
 
 			if resp != nil {
-				attributes = append(labeler.Get(), attribute.Int("status_code", resp.StatusCode))
+				attributes = append(attributes, attribute.Int("status_code", resp.StatusCode))
 			}
 
 			histogram.Record(ctx, duration.Seconds(), metric.WithAttributes(attributes...))

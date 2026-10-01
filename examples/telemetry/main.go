@@ -61,8 +61,9 @@ func main() {
 
 	{ // counter
 		counter, err := meter.Int64Counter(
-			"a.counter",
-			metric.WithDescription("Count things"),
+			"demo.count",
+			metric.WithDescription("Number of calls to the count endpoint."),
+			metric.WithUnit("{call}"),
 		)
 		log.Must(l, err, "failed to create counter meter")
 
@@ -83,8 +84,9 @@ func main() {
 
 	{ // up down
 		upDown, err := meter.Int64UpDownCounter(
-			"a.updown",
-			metric.WithDescription("Up down values"),
+			"demo.level",
+			metric.WithDescription("Current level raised by the up and lowered by the down endpoint."),
+			metric.WithUnit("{level}"),
 		)
 		log.Must(l, err, "failed to create up down meter")
 
@@ -101,25 +103,25 @@ func main() {
 	}
 
 	{ // histogram
-		histogram, err := meter.Int64Histogram(
-			"a.histogram",
-			metric.WithDescription("Up down values"),
-			metric.WithUnit("ms"),
+		histogram, err := meter.Float64Histogram(
+			"demo.request.duration",
+			metric.WithDescription("Duration of histogram endpoint requests."),
+			metric.WithUnit("s"),
 		)
-		log.Must(l, err, "failed to create up down meter")
+		log.Must(l, err, "failed to create histogram meter")
 
 		svs.HandleFunc("/histogram", func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
 			time.Sleep(time.Second)
 
-			traceID := trace.SpanContextFromContext(r.Context())
-			histogram.Record(r.Context(), int64(rand.Int()),
-				metric.WithAttributes(
-					attribute.String("key", "value"),
-					attribute.String("traceID", traceID.TraceID().String()),
-				),
+			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+
+			histogram.Record(r.Context(), time.Since(start).Seconds(),
+				metric.WithAttributes(attribute.String("key", "value")),
 			)
+
+			traceID := trace.SpanContextFromContext(r.Context())
 
 			metricRequestLatency.(prometheus.ExemplarObserver).ObserveWithExemplar(
 				time.Since(start).Seconds(), prometheus.Labels{"traceID": traceID.TraceID().String()},

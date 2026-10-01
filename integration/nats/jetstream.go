@@ -8,6 +8,7 @@ import (
 	"github.com/foomo/opentelemetry-go/semconv/natsconv"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +25,7 @@ func NewJetStream(s keel.Runtime, nc *nats.Conn, opts ...jetstream.JetStreamOpt)
 
 	asyncErrors, err := natsconv.NewClientAsyncErrors(m)
 	if err != nil {
-		return nil, err
+		otel.Handle(err)
 	}
 
 	ctx := context.Background()
@@ -35,9 +36,7 @@ func NewJetStream(s keel.Runtime, nc *nats.Conn, opts ...jetstream.JetStreamOpt)
 		jetstream.WithPublishAsyncMaxPending(256),
 		jetstream.WithPublishAsyncTimeout(10 * time.Second),
 		jetstream.WithPublishAsyncErrHandler(func(_ jetstream.JetStream, msg *nats.Msg, err error) {
-			asyncErrors.Add(ctx, 1, natsconv.AsyncErrorKindOther,
-				asyncErrors.AttrSubject(msg.Subject),
-			)
+			asyncErrors.Add(ctx, 1, natsconv.AsyncErrorKindOther)
 			l.Error("publish async error",
 				zap.Error(err),
 				zap.String("subject", msg.Subject),
