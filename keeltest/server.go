@@ -44,6 +44,8 @@ func NewServer(tb testing.TB, opts ...Option) *Server {
 		opt(inst)
 	}
 
+	tb.Cleanup(inst.Close)
+
 	return inst
 }
 
@@ -107,6 +109,16 @@ func (s *Server) Start() {
 		s.serviceMap[service.Name()] = service
 		if err := service.Start(s.Context()); err != nil {
 			s.l.Error("failed to start service", log.FError(err))
+		}
+	}
+}
+
+// Close closes all registered services. It is registered as cleanup on the
+// given testing.TB, but must be called explicitly in examples.
+func (s *Server) Close() {
+	for _, service := range s.services {
+		if err := service.Close(context.WithoutCancel(s.Context())); err != nil {
+			s.l.Error("failed to close service", log.FError(err))
 		}
 	}
 }

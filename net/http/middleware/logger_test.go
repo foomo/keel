@@ -13,6 +13,7 @@ import (
 
 func ExampleLogger() {
 	svr := keeltest.NewExampleServer()
+	defer svr.Close()
 
 	// get logger
 	l := svr.Logger()
@@ -44,6 +45,7 @@ func ExampleLogger() {
 
 func ExampleLoggerWithInjectLabeler() {
 	svr := keeltest.NewExampleServer()
+	defer svr.Close()
 
 	// get logger
 	l := svr.Logger()
