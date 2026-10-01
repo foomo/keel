@@ -21,7 +21,6 @@ import (
 	internalotel "github.com/foomo/keel/internal/otel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
-	"github.com/foomo/keel/metrics"
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/service"
 	"github.com/foomo/keel/telemetry"
@@ -165,7 +164,7 @@ func NewServer(opts ...Option) *Server {
 		interfaces.ReadmeFunc(env.Readme),
 		interfaces.ReadmeFunc(config.Readme),
 		inst,
-		interfaces.ReadmeFunc(metrics.Readme),
+		interfaces.ReadmeFunc(telemetry.Readme),
 	)
 
 	// start init services

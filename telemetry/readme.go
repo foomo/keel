@@ -1,4 +1,4 @@
-package metrics
+package telemetry
 
 import (
 	"github.com/foomo/keel/markdown"
