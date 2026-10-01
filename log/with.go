@@ -80,7 +80,7 @@ func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
 }
 
 func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
-	if id := r.Header.Get("X-Request-Id"); id != "" {
+	if id := r.Header.Get("X-Request-ID"); id != "" {
 		return With(l, Attribute(foomosemconv.HTTPXRequestID(id)))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
 		return With(l, Attribute(foomosemconv.HTTPXRequestID(id)))
