@@ -23,12 +23,6 @@ tmp/
 ## Lefthook
 !.lefthook.yaml
 
-## VSCode
-!.vscode/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.default.json
-
 ## Editorconfig
 !.editorconfig
 
