@@ -10,4 +10,4 @@ runs:
         path: ~/.cache/golangci-lint
         key: golangci-lint-${{ runner.os }}-${{ hashFiles('**/go.mod') }}
         restore-keys: |
-          golangci-lint-${{ runner.os }}--
+          golangci-lint-${{ runner.os }}-
