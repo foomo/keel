@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/foomo/keel"
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
-	"go.uber.org/zap"
 )
 
 // Connect establishes a connection to the NATS server at rawURL with OTel
@@ -50,6 +50,23 @@ func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, er
 	// context, and metric recording shouldn't be cancelled by request teardown.
 	ctx := context.Background()
 
+	// ConnectedUrlRedacted is empty unless connected, so remember the last
+	// connected server for the disconnect, reconnect error and closed handlers.
+	var lastURL atomic.Pointer[string]
+
+	serverURL := func(conn *nats.Conn) string {
+		if v := conn.ConnectedUrlRedacted(); v != "" {
+			lastURL.Store(&v)
+			return v
+		}
+
+		if v := lastURL.Load(); v != nil {
+			return *v
+		}
+
+		return ""
+	}
+
 	opts = append(opts,
 		nats.MaxReconnects(-1),
 		nats.ReconnectWait(2*time.Second),
@@ -57,25 +74,25 @@ func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, er
 		nats.PingInterval(20*time.Second),
 
 		nats.ConnectHandler(func(conn *nats.Conn) {
-			l.Debug("connected", log.Attributes(serverAttrs(conn)...)...)
+			l.Debug("connected", log.Attributes(serverAttrs(serverURL(conn))...)...)
 		}),
 
 		nats.DisconnectErrHandler(func(conn *nats.Conn, err error) {
-			addr, port := serverAddrPort(conn)
+			u := serverURL(conn)
+			addr, port := serverAddrPort(u)
 			disconnects.Add(ctx, 1, addr, disconnects.AttrServerPort(port))
-			l.Warn("disconnected", zap.Error(err),
-				zap.String("addr", conn.ConnectedUrlRedacted()),
-				zap.String("server_id", conn.ConnectedServerId()),
-			)
+			log.WithError(l, err).Warn("disconnected", log.Attributes(serverAttrs(u)...)...)
+		}),
+
+		nats.ReconnectHandler(func(conn *nats.Conn) {
+			u := serverURL(conn)
+			addr, port := serverAddrPort(u)
+			reconnects.Add(ctx, 1, addr, reconnects.AttrServerPort(port))
+			l.Info("reconnected", log.Attributes(serverAttrs(u)...)...)
 		}),
 
 		nats.ReconnectErrHandler(func(conn *nats.Conn, err error) {
-			addr, port := serverAddrPort(conn)
-			reconnects.Add(ctx, 1, addr, reconnects.AttrServerPort(port))
-			l.Info("reconnect", zap.Error(err),
-				zap.String("addr", conn.ConnectedUrlRedacted()),
-				zap.String("server_id", conn.ConnectedServerId()),
-			)
+			log.WithError(l, err).Warn("reconnect failed", log.Attributes(serverAttrs(serverURL(conn))...)...)
 		}),
 
 		nats.ErrorHandler(func(conn *nats.Conn, sub *nats.Subscription, err error) {
@@ -86,35 +103,31 @@ func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, er
 				extraAttrs = append(extraAttrs, asyncErrors.AttrSubject(sub.Subject))
 			}
 
-			if addr, _ := serverAddrPort(conn); addr != "" {
+			u := serverURL(conn)
+			if addr, _ := serverAddrPort(u); addr != "" {
 				extraAttrs = append(extraAttrs, asyncErrors.AttrServerAddress(addr))
 			}
 
 			asyncErrors.Add(ctx, 1, kind, extraAttrs...)
 
-			fields := []zap.Field{
-				zap.Error(err),
-				zap.String("kind", string(kind)),
-				zap.String("addr", conn.ConnectedUrlRedacted()),
-			}
+			// kind is the error.type; WithError would add the Go type name instead
+			attrs := append(serverAttrs(u),
+				semconv.ErrorTypeKey.String(string(kind)),
+				semconv.ExceptionMessage(err.Error()),
+			)
 			if sub != nil {
-				fields = append(fields, zap.String("subject", sub.Subject))
+				attrs = append(attrs, semconv.MessagingDestinationName(sub.Subject))
 			}
 
-			l.Warn("async error", fields...)
+			l.Warn("async error", log.Attributes(attrs...)...)
 		}),
 
 		nats.ClosedHandler(func(conn *nats.Conn) {
-			l.Debug("closed",
-				zap.String("addr", conn.ConnectedUrlRedacted()),
-				zap.String("server_id", conn.ConnectedServerId()),
-			)
+			l.Debug("closed", log.Attributes(serverAttrs(serverURL(conn))...)...)
 		}),
 
 		nats.LameDuckModeHandler(func(conn *nats.Conn) {
-			l.Info("server lame-duck mode",
-				zap.String("addr", conn.ConnectedUrlRedacted()),
-			)
+			l.Info("server lame-duck mode", log.Attributes(serverAttrs(serverURL(conn))...)...)
 		}),
 
 		nats.NoCallbacksAfterClientClose(),
@@ -130,27 +143,25 @@ func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, er
 	return conn, nil
 }
 
-// serverAttrs returns OTel semconv attributes describing the connected server.
-// Returns nil if the connected URL cannot be parsed.
-func serverAttrs(nc *nats.Conn) []attribute.KeyValue {
-	u, err := url.Parse(nc.ConnectedUrlRedacted())
-	if err != nil {
+// serverAttrs returns OTel semconv attributes describing the server at
+// rawURL. Returns nil if rawURL is empty or cannot be parsed.
+func serverAttrs(rawURL string) []attribute.KeyValue {
+	addr, port := serverAddrPort(rawURL)
+	if addr == "" {
 		return nil
 	}
 
-	port, _ := strconv.Atoi(u.Port())
-
 	return []attribute.KeyValue{
-		semconv.ServerAddress(u.Hostname()),
+		semconv.ServerAddress(addr),
 		semconv.ServerPort(port),
 		semconv.NetworkProtocolName("nats"),
 	}
 }
 
-// serverAddrPort extracts just the address and port from the connected URL.
+// serverAddrPort extracts just the address and port from rawURL.
 // Returns zero values if parsing fails.
-func serverAddrPort(nc *nats.Conn) (string, int) {
-	u, err := url.Parse(nc.ConnectedUrlRedacted())
+func serverAddrPort(rawURL string) (string, int) {
+	u, err := url.Parse(rawURL)
 	if err != nil {
 		return "", 0
 	}
