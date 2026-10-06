@@ -7,6 +7,7 @@ import (
 	goerrors "github.com/foomo/go/errors"
 	goruntime "github.com/foomo/go/runtime"
 	keelsemconv "github.com/foomo/keel/semconv"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
@@ -29,7 +30,12 @@ func StartSpan(ctx context.Context, opts ...trace.SpanStartOption) (context.Cont
 
 // StartDebugSpan is like [StartSpan] but marks the span as a debug span.
 func StartDebugSpan(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return StartSpanWithSkip(ctx, 1, append(opts, trace.WithAttributes(keelsemconv.DebugEnabled(true)))...)
+	return StartSpanWithSkip(ctx, 1, append(opts,
+		trace.WithAttributes(
+			keelsemconv.DebugEnabled(true), //nolint:staticcheck // TODO deprecated in favor of sampling priority.
+			foomosemconv.SamplingPriority(1),
+		),
+	)...)
 }
 
 // SpanFromContext returns the current span of ctx, or a non-recording span
@@ -68,7 +74,15 @@ func IsSpanRecording(sp trace.Span) bool {
 
 // SetSpanDebug marks sp as a debug span.
 func SetSpanDebug(sp trace.Span) {
-	sp.SetAttributes(keelsemconv.DebugEnabled(true))
+	sp.SetAttributes(
+		keelsemconv.DebugEnabled(true), //nolint:staticcheck // TODO deprecated in favor of sampling priority.
+		foomosemconv.SamplingPriority(1),
+	)
+}
+
+// SetSpanSamplingPriority sets the sampling priority of span.
+func SetSpanSamplingPriority(sp trace.Span, v int) {
+	sp.SetAttributes(foomosemconv.SamplingPriority(v))
 }
 
 // SetSpanStatusOK sets the status of sp to ok.
@@ -94,7 +108,7 @@ func End(sp trace.Span, err error) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
 		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
-		sp.SetAttributes(semconv.ErrorType(err))
+		sp.SetAttributes(foomosemconv.ErrorType(err))
 	}
 
 	sp.End()
@@ -106,7 +120,7 @@ func EndSpan(sp trace.Span, err error, opts ...trace.SpanEndOption) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
 		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
-		sp.SetAttributes(semconv.ErrorType(err))
+		sp.SetAttributes(foomosemconv.ErrorType(err))
 	}
 
 	sp.End(opts...)

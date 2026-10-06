@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	keelsemconv "github.com/foomo/keel/semconv"
 )
 
 type (
@@ -92,7 +93,7 @@ func ResponseTimeWithOptions(opts ResponseTimeOptions) keelhttp.Middleware {
 
 			duration := time.Since(start)
 			if opts.MaxDuration > 0 && duration > opts.MaxDuration {
-				l.Warn(opts.MaxDurationMessage, log.FDuration(opts.MaxDuration), log.FValue(duration.Microseconds()))
+				l.Warn(opts.MaxDurationMessage, log.Attributes(keelsemconv.MaxDuration(opts.MaxDuration), keelsemconv.Duration(duration))...)
 			}
 		})
 	}

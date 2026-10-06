@@ -81,5 +81,5 @@ func (s *Subscriber) Unmarshal(msg *nats.Msg, v any) error {
 
 // errorHandler logs a handler error.
 func (s *Subscriber) errorHandler(err error) {
-	s.stream.l.Error("failed to handle message", log.FError(err))
+	log.WithError(s.stream.l, err).Error("failed to handle message")
 }

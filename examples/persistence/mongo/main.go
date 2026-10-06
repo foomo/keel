@@ -77,9 +77,9 @@ func main() {
 	if err := repo.Insert(context.Background(), &store.Dummy{
 		Entity: store.NewEntity(newEntity.ID),
 	}); mongo.IsDuplicateKeyError(err) {
-		l.Info("OK: expected error", log.FValue(err.Error()))
+		log.WithError(l, err).Info("OK: expected error")
 	} else if err != nil {
-		l.Error("unexpected error", log.FValue(err.Error()))
+		log.WithError(l, err).Error("unexpected error")
 	} else {
 		l.Error("unexpected success")
 	}
@@ -90,9 +90,9 @@ func main() {
 	if err := repo.Upsert(context.Background(), &store.Dummy{
 		Entity: store.NewEntity(newEntity.ID),
 	}); mongo.IsDuplicateKeyError(err) {
-		l.Info("OK: expected error", log.FValue(err.Error()))
+		log.WithError(l, err).Info("OK: expected error")
 	} else if err != nil {
-		l.Error("unexpected error", log.FValue(err.Error()))
+		log.WithError(l, err).Error("unexpected error")
 	} else {
 		l.Error("unexpected success")
 	}
@@ -102,9 +102,9 @@ func main() {
 	if err := repo.UpsertMany(context.Background(), []*store.Dummy{{
 		Entity: store.NewEntity(newEntity.ID),
 	}}); mongo.IsDuplicateKeyError(err) {
-		l.Info("OK: expected error", log.FValue(err.Error()))
+		log.WithError(l, err).Info("OK: expected error")
 	} else if err != nil {
-		l.Error("unexpected error", log.FValue(err.Error()))
+		log.WithError(l, err).Error("unexpected error")
 	} else {
 		l.Error("unexpected success")
 	}
@@ -123,9 +123,9 @@ func main() {
 
 	// update entity B
 	if err := repo.Upsert(context.Background(), newEntityB); errors.Is(err, keelpersistence.ErrDirtyWrite) {
-		l.Info("OK: expected error", log.FValue(err.Error()))
+		log.WithError(l, err).Info("OK: expected error")
 	} else if err != nil {
-		l.Error("unexpected error", log.FValue(err.Error()))
+		log.WithError(l, err).Error("unexpected error")
 	} else {
 		l.Error("unexpected success")
 	}
@@ -144,9 +144,9 @@ func main() {
 	l.Info("Try to upsert many with dirty write")
 
 	if err := repo.UpsertMany(context.Background(), []*store.Dummy{newEntityB}); errors.Is(err, keelpersistence.ErrDirtyWrite) {
-		l.Info("OK: expected error", log.FValue(err.Error()))
+		log.WithError(l, err).Info("OK: expected error")
 	} else if err != nil {
-		l.Error("unexpected error", log.FValue(err.Error()))
+		log.WithError(l, err).Error("unexpected error")
 	} else {
 		l.Error("unexpected success")
 	}

@@ -38,7 +38,7 @@ func ResponseController(h func(rc *http.ResponseController) error) keelhttp.Midd
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if h != nil {
 				if err := h(http.NewResponseController(w)); err != nil {
-					l.Warn("failed to apply response controller", log.FError(err))
+					log.WithError(l, err).Warn("failed to apply response controller")
 				}
 			}
 

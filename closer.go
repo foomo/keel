@@ -2,10 +2,10 @@ package keel
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/foomo/keel/interfaces"
 	"github.com/foomo/keel/log"
+	keelsemconv "github.com/foomo/keel/semconv"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +21,7 @@ func closeAll(ctx context.Context, l *zap.Logger, closers []any) {
 
 		var err error
 
-		cl := l.With(log.FName(fmt.Sprintf("%T", closer)))
+		cl := log.WithAttributes(l, keelsemconv.KeelCloserType(closer))
 		switch c := closer.(type) {
 		case interfaces.Closer:
 			c.Close()
@@ -58,7 +58,7 @@ func closeAll(ctx context.Context, l *zap.Logger, closers []any) {
 		}
 
 		if err != nil {
-			cl.Warn("keel closer failed", zap.Error(err))
+			log.WithError(cl, err).Warn("keel closer failed")
 		} else {
 			cl.Debug("keel closer closed")
 		}

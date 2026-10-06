@@ -27,9 +27,9 @@ func (c *Config) Logger() *zap.Logger {
 	return c.l
 }
 
-// Error adds err using [FError].
+// Error adds err using [WithError].
 func (c *Config) Error(err error) *Config {
-	c.l = c.l.With(FError(err))
+	c.l = WithError(c.l, err)
 	return c
 }
 

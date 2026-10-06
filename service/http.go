@@ -38,7 +38,7 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 	}
 	// enrich the log
 	l = log.WithAttributes(l,
-		keelsemconv.KeelServiceType("http"),
+		keelsemconv.KeelServiceType(keelsemconv.KeelServiceTypeHTTP),
 		keelsemconv.KeelServiceName(name),
 	)
 

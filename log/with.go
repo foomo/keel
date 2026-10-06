@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	keelhttpcontext "github.com/foomo/keel/net/http/context"
+	keelsemconv "github.com/foomo/keel/semconv"
 )
 
 // With returns a child of l with fields added. A nil l selects [Logger].
@@ -40,10 +41,14 @@ func WithAttributes(l *zap.Logger, attrs ...attribute.KeyValue) *zap.Logger {
 	return l.With(fields...)
 }
 
-// WithError returns a child of l with the error type and message of err.
-// It panics if err is nil.
+// WithError returns a child of l with the semconv error type and exception
+// message of err. A nil err adds nothing.
 func WithError(l *zap.Logger, err error) *zap.Logger {
-	return With(l, FErrorType(err), FError(err))
+	if err == nil {
+		return With(l)
+	}
+
+	return WithAttributes(l, foomosemconv.ErrorType(err), semconv.ExceptionMessage(err.Error()))
 }
 
 // WithServiceName returns a child of l with the semconv service name.
@@ -55,7 +60,10 @@ func WithServiceName(l *zap.Logger, name string) *zap.Logger {
 // in ctx, or l unchanged if that span is invalid or not sampled.
 func WithTraceID(l *zap.Logger, ctx context.Context) *zap.Logger {
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() && spanCtx.IsSampled() {
-		l = With(l, FTraceID(spanCtx.TraceID().String()), FSpanID(spanCtx.SpanID().String()))
+		l = WithAttributes(l,
+			keelsemconv.TraceID(spanCtx.TraceID().String()),
+			keelsemconv.SpanID(spanCtx.SpanID().String()),
+		)
 	}
 
 	return l
@@ -98,9 +106,9 @@ func WithHTTPSessionID(l *zap.Logger, r *http.Request) *zap.Logger {
 // X-Request-ID header or the request context, or l unchanged if none is set.
 func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 	if id := r.Header.Get("X-Request-ID"); id != "" {
-		return With(l, Attribute(foomosemconv.HTTPXRequestID(id)))
+		return WithAttributes(l, semconv.HTTPRequestHeader("x-request-id", id))
 	} else if id, ok := keelhttpcontext.GetRequestID(r.Context()); ok && id != "" {
-		return With(l, Attribute(foomosemconv.HTTPXRequestID(id)))
+		return WithAttributes(l, semconv.HTTPRequestHeader("x-request-id", id))
 	} else {
 		return l
 	}
@@ -110,9 +118,9 @@ func WithHTTPRequestID(l *zap.Logger, r *http.Request) *zap.Logger {
 // or Referer header, or l unchanged if none is set.
 func WithHTTPReferer(l *zap.Logger, r *http.Request) *zap.Logger {
 	if value := r.Header.Get("X-Referer"); value != "" {
-		return With(l, Attribute(foomosemconv.HTTPXRequestReferer(value)))
+		return WithAttributes(l, semconv.HTTPRequestHeader("referer", value))
 	} else if value := r.Referer(); value != "" {
-		return With(l, Attribute(foomosemconv.HTTPXRequestReferer(value)))
+		return WithAttributes(l, semconv.HTTPRequestHeader("referer", value))
 	} else {
 		return l
 	}

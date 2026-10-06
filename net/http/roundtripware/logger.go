@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	keelsemconv "github.com/foomo/keel/semconv"
 )
 
 type (
@@ -109,7 +110,7 @@ func Logger(opts ...LoggerOption) RoundTripware {
 				statusCode = resp.StatusCode
 			}
 
-			l = l.With(log.FDuration(time.Since(start)))
+			l = log.WithAttributes(l, keelsemconv.Duration(time.Since(start)))
 
 			switch {
 			case err != nil:

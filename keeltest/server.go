@@ -119,7 +119,7 @@ func (s *Server) Start() {
 	for _, service := range s.services {
 		s.serviceMap[service.Name()] = service
 		if err := service.Start(s.Context()); err != nil {
-			s.l.Error("failed to start service", log.FError(err))
+			log.WithError(s.l, err).Error("failed to start service")
 		}
 	}
 }
@@ -129,7 +129,7 @@ func (s *Server) Start() {
 func (s *Server) Close() {
 	for _, service := range s.services {
 		if err := service.Close(context.WithoutCancel(s.Context())); err != nil {
-			s.l.Error("failed to close service", log.FError(err))
+			log.WithError(s.l, err).Error("failed to close service")
 		}
 	}
 }

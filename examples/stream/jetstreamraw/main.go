@@ -10,7 +10,9 @@ import (
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/net/stream/jetstream"
+	keelsemconv "github.com/foomo/keel/semconv"
 	httputils "github.com/foomo/keel/utils/net/http"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 func main() {
@@ -67,7 +69,7 @@ func main() {
 
 	// subscribe to the subject
 	subscription, err := sub.JS().Subscribe(sub.Subject(), func(msg *nats.Msg) {
-		l.Info("received message", log.FValue(string(msg.Data)), log.FMessagingDestination(msg.Subject))
+		l.Info("received message", log.Attribute(keelsemconv.Value(string(msg.Data))), log.Attribute(semconv.MessagingDestinationName(msg.Subject)))
 	}, sub.SubOpts()...)
 	log.Must(l, err, "failed to subscribe to subject")
 

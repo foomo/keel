@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 )
 
 // InternalServerError responds with status [http.StatusInternalServerError] using [ServerError].
@@ -224,7 +225,7 @@ func NetworkAuthenticationRequiredServerError(l *zap.Logger, w http.ResponseWrit
 // When errs is empty or contains only nil errors, nothing is written to w.
 func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int, errs ...error) {
 	if err := errors.Join(errs...); err != nil {
-		errType := semconv.ErrorType(err)
+		errType := foomosemconv.ErrorType(err)
 		telemetry.Ctx(r.Context()).RecordError(err)
 
 		if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
@@ -233,7 +234,7 @@ func ServerError(l *zap.Logger, w http.ResponseWriter, r *http.Request, code int
 
 		// add log entry
 		if labeler, ok := httplog.LabelerFromRequest(r); ok {
-			labeler.Add(log.Attribute(errType), log.FError(err))
+			labeler.Add(log.Attributes(errType, semconv.ExceptionMessage(err.Error()))...)
 		} else if l != nil {
 			l = log.WithError(l, err)
 			l = log.WithHTTPRequest(l, r)

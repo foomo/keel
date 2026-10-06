@@ -20,6 +20,6 @@ func Must(l *zap.Logger, err error, msgAndArgs ...any) {
 			msg, msgAndArgs = fmt.Sprintf("%v", msgAndArgs[0]), msgAndArgs[1:]
 		}
 
-		l.WithOptions(zap.AddCallerSkip(1)).Fatal(fmt.Sprintf(msg, msgAndArgs...), FError(err))
+		WithError(l, err).WithOptions(zap.AddCallerSkip(1)).Fatal(fmt.Sprintf(msg, msgAndArgs...))
 	}
 }

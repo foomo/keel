@@ -10,7 +10,6 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap/zapcore"
 )
@@ -186,7 +185,7 @@ func (c Context) RecordError(err error, kv ...attribute.KeyValue) {
 			trace.WithAttributes(CodeStacktrace(5, 1)),
 		)
 		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
-		sp.SetAttributes(semconv.ErrorType(err))
+		sp.SetAttributes(foomosemconv.ErrorType(err))
 	}
 }
 

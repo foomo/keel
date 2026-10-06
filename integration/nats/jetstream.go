@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/foomo/keel"
+	"github.com/foomo/keel/log"
 	"github.com/foomo/opentelemetry-go/semconv/natsconv"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // NewJetStream creates a JetStream context on nc with production-sensible
@@ -37,9 +38,8 @@ func NewJetStream(s keel.Runtime, nc *nats.Conn, opts ...jetstream.JetStreamOpt)
 		jetstream.WithPublishAsyncTimeout(10 * time.Second),
 		jetstream.WithPublishAsyncErrHandler(func(_ jetstream.JetStream, msg *nats.Msg, err error) {
 			asyncErrors.Add(ctx, 1, natsconv.AsyncErrorKindOther)
-			l.Error("publish async error",
-				zap.Error(err),
-				zap.String("subject", msg.Subject),
+			log.WithError(l, err).Error("publish async error",
+				log.Attribute(semconv.MessagingDestinationName(msg.Subject)),
 			)
 		}),
 	}, opts...)
