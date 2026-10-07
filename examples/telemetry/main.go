@@ -113,9 +113,7 @@ func main() {
 		svs.HandleFunc("/histogram", func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			time.Sleep(time.Second)
-
-			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+			time.Sleep(time.Second + time.Duration(rand.Intn(100))*time.Millisecond)
 
 			histogram.Record(r.Context(), time.Since(start).Seconds(),
 				metric.WithAttributes(attribute.String("key", "value")),
