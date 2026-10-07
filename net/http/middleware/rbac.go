@@ -3,8 +3,12 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/foomo/keel/log"
 	keelhttp "github.com/foomo/keel/net/http"
 	"github.com/foomo/keel/net/http/rbac"
+	keelsemconv "github.com/foomo/keel/semconv"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -57,17 +61,17 @@ func RBAC(m *rbac.Matcher, extract rbac.RolesExtractor) keelhttp.Middleware {
 			}
 
 			if l != nil {
-				fields := []zap.Field{
-					zap.String("path", r.URL.Path),
-					zap.String("outcome", string(d.Outcome)),
-					zap.Bool("authenticated", d.Authed),
-					zap.Strings("roles", d.Roles),
+				attrs := []attribute.KeyValue{
+					semconv.URLPath(r.URL.Path),
+					keelsemconv.KeelRBACOutcome(string(d.Outcome)),
+					keelsemconv.KeelRBACAuthenticated(d.Authed),
+					keelsemconv.KeelRBACRoles(d.Roles),
 				}
 				if d.Rule != nil {
-					fields = append(fields, zap.String("rule_path", d.Rule.Raw.Path))
+					attrs = append(attrs, keelsemconv.KeelRBACRulePath(d.Rule.Raw.Path))
 				}
 
-				l.Warn("rbac denied request", fields...)
+				l.Warn("rbac denied request", log.Attributes(attrs...)...)
 			}
 
 			status := http.StatusForbidden

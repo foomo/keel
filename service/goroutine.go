@@ -42,7 +42,7 @@ func NewGoRoutine(l *zap.Logger, name string, handler GoRoutineFn, opts ...GoRou
 	}
 	// enrich the log
 	l = log.WithAttributes(l,
-		keelsemconv.KeelServiceType("goroutine"),
+		keelsemconv.KeelServiceType(keelsemconv.KeelServiceTypeGoRoutine),
 		keelsemconv.KeelServiceName(name),
 	)
 

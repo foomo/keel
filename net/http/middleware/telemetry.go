@@ -6,6 +6,7 @@ import (
 	"github.com/foomo/keel/log"
 	keelhttp "github.com/foomo/keel/net/http"
 	httplog "github.com/foomo/keel/net/http/log"
+	keelsemconv "github.com/foomo/keel/semconv"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -95,8 +96,8 @@ func TelemetryWithOptions(opts TelemetryOptions) keelhttp.Middleware {
 
 			if labeler, ok := httplog.LabelerFromRequest(r); ok {
 				if spanCtx := trace.SpanContextFromContext(r.Context()); spanCtx.IsValid() && spanCtx.IsSampled() {
-					labeler.Add(log.FTraceID(spanCtx.TraceID().String()))
-					labeler.Add(log.FSpanID(spanCtx.SpanID().String()))
+					labeler.Add(log.Attribute(keelsemconv.TraceID(spanCtx.TraceID().String())))
+					labeler.Add(log.Attribute(keelsemconv.SpanID(spanCtx.SpanID().String())))
 				}
 			}
 

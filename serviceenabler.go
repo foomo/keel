@@ -159,12 +159,12 @@ func (w *ServiceEnabler) watch(ctx context.Context) {
 				if value {
 					go func() {
 						if err := w.enable(ctx); err != nil {
-							w.l.Fatal("failed to dynamically start service", log.FError(err))
+							log.WithError(w.l, err).Fatal("failed to dynamically start service")
 						}
 					}()
 				} else {
 					if err := w.disable(context.TODO()); err != nil { //nolint:contextcheck
-						w.l.Fatal("failed to dynamically close service", log.FError(err))
+						log.WithError(w.l, err).Fatal("failed to dynamically close service")
 					}
 				}
 			}

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -69,6 +70,8 @@ func TestEndSpanVsDeferEndSpan(t *testing.T) {
 		assert.Equal(t, "boom", span.Status().Description)
 		require.Len(t, span.Events(), 1)
 		assert.Equal(t, "exception", span.Events()[0].Name)
+		assert.Equal(t, "telemetry_test.withDeferEndSpan", span.Name())
+		assert.Contains(t, span.Attributes(), semconv.ErrorType(errors.New("boom")))
 	})
 
 	t.Run("EndSpan called directly records the error", func(t *testing.T) {

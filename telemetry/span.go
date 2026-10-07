@@ -7,9 +7,10 @@ import (
 	goerrors "github.com/foomo/go/errors"
 	goruntime "github.com/foomo/go/runtime"
 	keelsemconv "github.com/foomo/keel/semconv"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -20,15 +21,21 @@ func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) 
 	return StartSpanWithSkip(ctx, 1, opts...)
 }
 
-// StartSpan starts a span named after the calling package, annotated with
-// the caller's function, file and line, from the global [Tracer].
+// StartSpan starts a span named <package>.<function> after the caller (e.g.
+// "keelmongo.(*Collection).Find"), annotated with the caller's function, file
+// and line, from the global [Tracer].
 func StartSpan(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
 	return StartSpanWithSkip(ctx, 1, opts...)
 }
 
 // StartDebugSpan is like [StartSpan] but marks the span as a debug span.
 func StartDebugSpan(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return StartSpanWithSkip(ctx, 1, append(opts, trace.WithAttributes(keelsemconv.DebugEnabled(true)))...)
+	return StartSpanWithSkip(ctx, 1, append(opts,
+		trace.WithAttributes(
+			keelsemconv.DebugEnabled(true), //nolint:staticcheck // TODO deprecated in favor of sampling priority.
+			foomosemconv.SamplingPriority(1),
+		),
+	)...)
 }
 
 // SpanFromContext returns the current span of ctx, or a non-recording span
@@ -67,10 +74,24 @@ func IsSpanRecording(sp trace.Span) bool {
 
 // SetSpanDebug marks sp as a debug span.
 func SetSpanDebug(sp trace.Span) {
-	sp.SetAttributes(keelsemconv.DebugEnabled(true))
+	sp.SetAttributes(
+		keelsemconv.DebugEnabled(true), //nolint:staticcheck // TODO deprecated in favor of sampling priority.
+		foomosemconv.SamplingPriority(1),
+	)
+}
+
+// SetSpanSamplingPriority sets the sampling priority of span.
+func SetSpanSamplingPriority(sp trace.Span, v int) {
+	sp.SetAttributes(foomosemconv.SamplingPriority(v))
 }
 
 // SetSpanStatusOK sets the status of sp to ok.
+//
+// Leave the status unset on success; backends treat unset as ok. Statuses
+// override in the order Ok > Error > Unset: once set to ok, later error
+// statuses are ignored. Use it only to explicitly mark an operation as
+// successful despite recorded errors, e.g. a retry that succeeded after
+// failed attempts set the status to error.
 func SetSpanStatusOK(sp trace.Span) {
 	sp.SetStatus(codes.Ok, "")
 }
@@ -87,17 +108,19 @@ func End(sp trace.Span, err error) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
 		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
+		sp.SetAttributes(foomosemconv.ErrorType(err))
 	}
 
 	sp.End()
 }
 
 // EndSpan ends sp. A non-nil err is recorded with a stack trace and sets the
-// span status to error with the root cause message.
+// span status to error with the root cause message and error.type.
 func EndSpan(sp trace.Span, err error, opts ...trace.SpanEndOption) {
 	if err != nil {
 		sp.RecordError(err, trace.WithAttributes(CodeStacktrace(3, 0)))
 		sp.SetStatus(codes.Error, goerrors.Cause(err).Error())
+		sp.SetAttributes(foomosemconv.ErrorType(err))
 	}
 
 	sp.End(opts...)
@@ -123,7 +146,7 @@ func StartSpanWithSkip(ctx context.Context, skip int, opts ...trace.SpanStartOpt
 	name := "runtime.go"
 
 	if fr := goruntime.CallFrame(skip + 1); !fr.Zero() {
-		name = path.Base(fr.Pkg)
+		name = path.Base(fr.Pkg) + "." + fr.Short()
 		opts = append(opts, trace.WithAttributes(
 			semconv.CodeFunctionName(fr.Name()),
 			semconv.CodeLineNumber(fr.Line),

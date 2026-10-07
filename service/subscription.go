@@ -9,6 +9,7 @@ import (
 	"github.com/foomo/goflux"
 	"github.com/foomo/keel/log"
 	keelsemconv "github.com/foomo/keel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -46,7 +47,7 @@ func NewSubscription[T any](
 	}
 
 	l = log.WithAttributes(l,
-		keelsemconv.KeelServiceType("sub"),
+		keelsemconv.KeelServiceType(keelsemconv.KeelServiceTypeSubscription),
 		keelsemconv.KeelServiceName(name),
 	)
 
@@ -102,7 +103,7 @@ func (s *Subscription[T]) Start(ctx context.Context) error {
 
 	l := s.l
 	s.wg.Go(func() error {
-		l.Info("subscribing", zap.String("subject", s.subject))
+		l.Info("subscribing", log.Attribute(semconv.MessagingDestinationName(s.subject)))
 		return s.subscriber.Subscribe(ctx, s.subject, s.handler)
 	})
 
@@ -126,7 +127,7 @@ func (s *Subscription[T]) Close(ctx context.Context) error {
 	s.cancelLock.Unlock()
 
 	if err := s.subscriber.Close(); err != nil {
-		s.l.Warn("subscriber close failed", zap.Error(err))
+		log.WithError(s.l, err).Warn("subscriber close failed")
 	}
 
 	return s.wg.Wait()

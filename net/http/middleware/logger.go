@@ -6,11 +6,12 @@ import (
 
 	keelhttp "github.com/foomo/keel/net/http"
 	httplog "github.com/foomo/keel/net/http/log"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	keelsemconv "github.com/foomo/keel/semconv"
 )
 
 type (
@@ -112,10 +113,10 @@ func LoggerWithOptions(opts LoggerOptions) keelhttp.Middleware {
 
 			next.ServeHTTP(wr, r)
 
-			l = l.With(
-				log.FDuration(time.Since(start)),
-				log.Attribute(semconv.HTTPResponseStatusCode(wr.StatusCode())),
-				log.Attribute(semconv.HTTPResponseSize(wr.Size())),
+			l = log.WithAttributes(l,
+				keelsemconv.Duration(time.Since(start)),
+				semconv.HTTPResponseStatusCode(wr.StatusCode()),
+				semconv.HTTPResponseSize(wr.Size()),
 			)
 
 			if labeler != nil {
@@ -123,7 +124,7 @@ func LoggerWithOptions(opts LoggerOptions) keelhttp.Middleware {
 			}
 
 			if err := r.Context().Err(); err != nil {
-				l = l.With(zap.String("error_context", err.Error()))
+				l = log.WithAttributes(l, keelsemconv.ContextError(err))
 			}
 
 			switch {

@@ -9,8 +9,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"runtime/debug"
+
 	"github.com/foomo/keel/log"
 	httputils "github.com/foomo/keel/utils/net/http"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 type (
@@ -74,7 +77,7 @@ func RecoverWithOptions(opts RecoverOptions) keelhttp.Middleware {
 
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
-						ll = ll.With(log.FStackSkip(3))
+						ll = ll.With(log.Attribute(semconv.ExceptionStacktrace(string(debug.Stack()))))
 					}
 
 					httputils.InternalServerError(ll, w, r, errors.Wrap(err, "recovering from panic"))

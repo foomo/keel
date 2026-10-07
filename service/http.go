@@ -11,7 +11,7 @@ import (
 	keelhttp "github.com/foomo/keel/net/http"
 	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/pkg/errors"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
@@ -38,7 +38,7 @@ func NewHTTP(l *zap.Logger, name, addr string, handler http.Handler, middlewares
 	}
 	// enrich the log
 	l = log.WithAttributes(l,
-		keelsemconv.KeelServiceType("http"),
+		keelsemconv.KeelServiceType(keelsemconv.KeelServiceTypeHTTP),
 		keelsemconv.KeelServiceName(name),
 	)
 

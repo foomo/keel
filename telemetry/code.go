@@ -3,7 +3,7 @@ package telemetry
 import (
 	goruntime "github.com/foomo/go/runtime"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // CodeCaller returns the code.function.name, code.file.path and

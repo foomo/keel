@@ -3,7 +3,6 @@ package keel
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +21,7 @@ import (
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/markdown"
 	keelhttp "github.com/foomo/keel/net/http"
+	keelsemconv "github.com/foomo/keel/semconv"
 	"github.com/foomo/keel/service"
 	"github.com/foomo/keel/telemetry"
 	"github.com/go-logr/logr"
@@ -119,7 +119,7 @@ func NewServer(opts ...Option) *Server {
 			defer timeoutCancel()
 
 			inst.l.Info("keel closer closed",
-				zap.Duration("graceful_period", inst.gracefulPeriod),
+				log.Attribute(keelsemconv.KeelGracefulPeriod(inst.gracefulPeriod)),
 			)
 
 			// append internal closers
@@ -257,7 +257,7 @@ func (s *Server) AddServices(services ...Service) {
 // [IsCloser]; adding the same closer twice is a no-op.
 func (s *Server) AddCloser(closer any) {
 	if !IsCloser(closer) {
-		s.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
+		s.l.Warn("unable to add closer", log.Attribute(keelsemconv.KeelCloserType(closer)))
 	}
 
 	if slices.Contains(s.closers(), closer) {
@@ -296,7 +296,7 @@ func (s *Server) AddHealthzer(typ healthz.Type, probe any) {
 	if IsHealthz(probe) {
 		s.addProbes(typ, probe)
 	} else {
-		s.l.Debug("not a healthz probe", log.FValue(fmt.Sprintf("%T", probe)))
+		s.l.Debug("not a healthz probe", log.Attribute(keelsemconv.KeelHealthzProbeType(probe)))
 	}
 }
 

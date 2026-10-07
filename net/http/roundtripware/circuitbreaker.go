@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/foomo/keel/log"
+	keelsemconv "github.com/foomo/keel/semconv"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
+	"github.com/foomo/opentelemetry-go/semconv/circuitbreakerconv"
 	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -159,24 +162,23 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				toState := circuitBreaker.State()
 				if fromState != toState {
 					l.Warn("state change occurred",
-						zap.String("state_from", fromState.String()),
-						zap.String("state_to", toState.String()),
+						log.Attributes(
+							keelsemconv.KeelCircuitBreakerPreviousState(string(circuitBreakerState(fromState))),
+							foomosemconv.CircuitBreakerState(string(circuitBreakerState(toState))),
+						)...,
 					)
 				}
 
-				attributes := []attribute.KeyValue{
-					attribute.String("current_state", toState.String()),
-					attribute.String("previous_state", fromState.String()),
-					attribute.Bool("state_change", fromState != toState),
-				}
-
-				if err != nil {
-					if o.Counter != nil {
-						attributes := append(attributes, attribute.Bool("error", true))
-						o.Counter.Add(r.Context(), 1, metric.WithAttributes(attributes...))
+				if o.Counter != nil {
+					attributes := []attribute.KeyValue{
+						foomosemconv.CircuitBreakerState(string(circuitBreakerState(toState))),
+						keelsemconv.KeelCircuitBreakerPreviousState(string(circuitBreakerState(fromState))),
+						keelsemconv.KeelCircuitBreakerStateChange(fromState != toState),
 					}
-				} else if o.Counter != nil {
-					attributes := append(attributes, attribute.Bool("error", false))
+					if err != nil {
+						attributes = append(attributes, foomosemconv.ErrorType(err))
+					}
+
 					o.Counter.Add(r.Context(), 1, metric.WithAttributes(attributes...))
 				}
 			}()
@@ -186,7 +188,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 
 			reqCopy, errCopy := copyRequest(r, o.CopyReqBody)
 			if errCopy != nil {
-				l.Error("unable to copy request", log.FError(errCopy))
+				log.WithError(l, errCopy).Error("unable to copy request")
 				return nil, errCopy
 			} else if o.CopyReqBody && reqCopy.Body != nil {
 				// make sure the body is closed again - since it is a NopCloser it does not make a difference though
@@ -200,9 +202,8 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			if errors.Is(err, gobreaker.ErrTooManyRequests) || errors.Is(err, gobreaker.ErrOpenState) {
 				return nil, errors.Join(ErrCircuitBreaker, err)
 			} else if err != nil {
-				l.Error("unexpected error in circuit breaker",
-					log.FError(err),
-					zap.String("state", fromState.String()),
+				log.WithError(l, err).Error("unexpected error in circuit breaker",
+					log.Attribute(foomosemconv.CircuitBreakerState(string(circuitBreakerState(fromState)))),
 				)
 
 				return nil, err
@@ -216,7 +217,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 				// clone the response and the body if wanted
 				respCopy, errCopy = copyResponse(resp, o.CopyRespBody)
 				if errCopy != nil {
-					l.Error("unable to copy response", log.FError(errCopy))
+					log.WithError(l, errCopy).Error("unable to copy response")
 					return nil, errCopy
 				} else if o.CopyRespBody && respCopy.Body != nil {
 					// make sure the body is closed again - since it is a NopCloser it does not make a difference though
@@ -225,10 +226,7 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			}
 
 			if errSuccess := o.IsSuccessful(err, reqCopy, respCopy); errors.Is(errSuccess, errNoBody) {
-				l.Error("encountered read from not previously copied request/response body",
-					zap.Bool("copy_request", o.CopyReqBody),
-					zap.Bool("copy_response", o.CopyRespBody),
-				)
+				l.Error("encountered read from not previously copied request/response body")
 				// we actually want to return an error instead of the original request and error since the user
 				// should be made aware that there is a misconfiguration
 				return nil, ErrReadFromActualBody
@@ -239,5 +237,18 @@ func CircuitBreaker(set *CircuitBreakerSettings, opts ...CircuitBreakerOption) R
 			// return the response and error received from the next call
 			return resp, err
 		}
+	}
+}
+
+// circuitBreakerState maps a gobreaker state to the circuit_breaker.state
+// enum value.
+func circuitBreakerState(s gobreaker.State) circuitbreakerconv.StateAttr {
+	switch s {
+	case gobreaker.StateOpen:
+		return circuitbreakerconv.StateOpen
+	case gobreaker.StateHalfOpen:
+		return circuitbreakerconv.StateHalfOpen
+	default:
+		return circuitbreakerconv.StateClosed
 	}
 }

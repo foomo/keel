@@ -3,11 +3,13 @@ package roundtripware
 import (
 	"fmt"
 	"net/http"
+	"runtime/debug"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 type (
@@ -68,7 +70,7 @@ func RecoverWithOptions(opts RecoverOptions) RoundTripware {
 
 					ll := log.WithError(l, err)
 					if !opts.DisablePrintStack {
-						ll = ll.With(log.FStackSkip(3))
+						ll = log.WithAttributes(ll, semconv.ExceptionStacktrace(string(debug.Stack())))
 					}
 
 					ll.Error("recovering from panic")

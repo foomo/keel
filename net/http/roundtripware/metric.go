@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -41,10 +41,10 @@ func Metric(meter metric.Meter, name, description string) RoundTripware {
 				return resp, err
 			}
 
-			attributes := append(labeler.Get(), attribute.String("method", r.Method))
+			attributes := append(labeler.Get(), semconv.HTTPRequestMethodKey.String(r.Method))
 
 			if resp != nil {
-				attributes = append(labeler.Get(), attribute.Int("status_code", resp.StatusCode))
+				attributes = append(attributes, semconv.HTTPResponseStatusCode(resp.StatusCode))
 			}
 
 			histogram.Record(ctx, duration.Seconds(), metric.WithAttributes(attributes...))

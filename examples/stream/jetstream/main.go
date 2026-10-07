@@ -13,7 +13,9 @@ import (
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/log"
 	"github.com/foomo/keel/net/stream/jetstream"
+	keelsemconv "github.com/foomo/keel/semconv"
 	httputils "github.com/foomo/keel/utils/net/http"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 func main() {
@@ -71,7 +73,7 @@ func main() {
 			return
 		}
 
-		l.Info("sent message", log.FValue(msg.Name))
+		l.Info("sent message", log.Attribute(keelsemconv.Value(msg.Name)))
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
@@ -83,7 +85,7 @@ func main() {
 			return errors.Wrap(err, "failed to unmarshall message data")
 		}
 
-		l.Info("received message", log.FValue(data.Name), log.FMessagingDestination(msg.Subject))
+		l.Info("received message", log.Attribute(keelsemconv.Value(data.Name)), log.Attribute(semconv.MessagingDestinationName(msg.Subject)))
 
 		return nil
 	})

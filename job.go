@@ -2,7 +2,6 @@ package keel
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"slices"
@@ -87,7 +86,7 @@ func NewJob(opts ...JobOption) *Job {
 		inst.name = env.Get("OTEL_SERVICE_NAME", telemetry.DefaultServiceName)
 	}
 
-	inst.l = log.WithAttributes(inst.l, keelsemconv.KeelServiceType("job"), keelsemconv.KeelServiceName(inst.name))
+	inst.l = log.WithAttributes(inst.l, keelsemconv.KeelServiceType(keelsemconv.KeelServiceTypeJob), keelsemconv.KeelServiceName(inst.name))
 
 	{ // setup telemetry
 		otel.SetLogger(logr.New(internalotel.NewLogger(inst.l)))
@@ -150,7 +149,7 @@ func (j *Job) AddStep(name string, fn StepFn) {
 // twice is a no-op.
 func (j *Job) AddCloser(closer any) {
 	if !IsCloser(closer) {
-		j.l.Warn("unable to add closer", log.FValue(fmt.Sprintf("%T", closer)))
+		j.l.Warn("unable to add closer", log.Attribute(keelsemconv.KeelCloserType(closer)))
 		return
 	}
 
@@ -203,9 +202,9 @@ func (j *Job) RunE() error {
 
 	err := j.run(ctx)
 	if err != nil {
-		log.WithError(j.l, err).Error("keel job failed", log.FDuration(time.Since(start)))
+		log.WithError(j.l, err).Error("keel job failed", log.Attribute(keelsemconv.Duration(time.Since(start))))
 	} else {
-		j.l.Info("keel job completed", log.FDuration(time.Since(start)))
+		j.l.Info("keel job completed", log.Attribute(keelsemconv.Duration(time.Since(start))))
 	}
 
 	return err
@@ -265,17 +264,17 @@ func (j *Job) runSteps(ctx context.Context) error {
 // execStep adapts a StepFn to gofuncy's Func, adding the per-step logger and
 // completion logging. The span, panic recovery, and metrics are gofuncy's.
 func (j *Job) execStep(ctx context.Context, step jobStep) error {
-	l := j.l.With(zap.String("keel_job_step", step.name))
+	l := j.l.With(log.Attribute(keelsemconv.KeelJobStep(step.name)))
 	l.Info("starting keel job step")
 
 	start := time.Now()
 
 	if err := step.fn(ctx, l); err != nil {
-		log.WithError(l, err).Error("keel job step failed", log.FDuration(time.Since(start)))
+		log.WithError(l, err).Error("keel job step failed", log.Attribute(keelsemconv.Duration(time.Since(start))))
 		return err
 	}
 
-	l.Info("keel job step completed", log.FDuration(time.Since(start)))
+	l.Info("keel job step completed", log.Attribute(keelsemconv.Duration(time.Since(start))))
 
 	return nil
 }
@@ -287,7 +286,7 @@ func (j *Job) finalize() {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(j.ctx), j.gracefulPeriod)
 	defer cancel()
 
-	j.l.Info("keel job finalize", zap.Duration("graceful_period", j.gracefulPeriod))
+	j.l.Info("keel job finalize", log.Attribute(keelsemconv.KeelGracefulPeriod(j.gracefulPeriod)))
 
 	for _, push := range j.pushers {
 		if err := push(ctx); err != nil {

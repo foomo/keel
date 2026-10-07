@@ -2,15 +2,19 @@ package jetstream
 
 import (
 	"encoding/json"
+	"net/url"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/foomo/keel/log"
+	foomosemconv "github.com/foomo/opentelemetry-go/semconv"
 )
 
 type (
@@ -147,9 +151,9 @@ func SubscriberWithUnmarshal(unmarshal UnmarshalFn) SubscriberOption {
 // reconnect options. It returns an error if the initial connect fails.
 func New(l *zap.Logger, name, addr string, opts ...Option) (*Stream, error) {
 	stream := &Stream{
-		l: l.With(
-			log.Attribute(semconv.MessagingSystemKey.String("jetstream")),
-			log.FName(name),
+		l: log.WithAttributes(l,
+			foomosemconv.MessagingSystemNats,
+			foomosemconv.MessagingNATSStream(name),
 		),
 		name: name,
 		addr: addr,
@@ -274,6 +278,34 @@ func (s *Stream) Close() {
 	s.conn.Close()
 }
 
+// serverAttrs returns OTel semconv attributes describing the server at
+// rawURL. Returns nil if rawURL is empty or cannot be parsed.
+func serverAttrs(rawURL string) []attribute.KeyValue {
+	addr, port := serverAddrPort(rawURL)
+	if addr == "" {
+		return nil
+	}
+
+	return []attribute.KeyValue{
+		semconv.ServerAddress(addr),
+		semconv.ServerPort(port),
+		semconv.NetworkProtocolName("jetstream"),
+	}
+}
+
+// serverAddrPort extracts just the address and port from rawURL.
+// Returns zero values if parsing fails.
+func serverAddrPort(rawURL string) (string, int) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", 0
+	}
+
+	port, _ := strconv.Atoi(u.Port())
+
+	return u.Hostname(), port
+}
+
 // connect establishes the NATS connection and JetStream context and creates
 // or updates the stream if a config is set.
 func (s *Stream) connect() error {
@@ -283,14 +315,15 @@ func (s *Stream) connect() error {
 		return errors.Wrap(err, "failed to connect to nats addr "+s.addr)
 	}
 
-	s.l.Info("nats connected", zap.String("addr", s.addr))
+	l := log.WithAttributes(s.l, serverAttrs(conn.ConnectedUrlRedacted())...)
+	l.Debug("jetstream connected")
 
 	// create jet stream
 	js, err := conn.JetStream(
 		append(
 			[]nats.JSOpt{
 				nats.PublishAsyncErrHandler(func(js nats.JetStream, msg *nats.Msg, err error) {
-					s.l.Error("nats async publish error", log.FError(err))
+					log.WithError(l, err).Error("nats async publish error")
 				}),
 			},
 			s.jsOptions...,
@@ -300,7 +333,7 @@ func (s *Stream) connect() error {
 		return err
 	}
 
-	s.l.Info("jetstream created", zap.String("namespace", s.namespace))
+	l.Debug("jetstream created")
 
 	// create / update stream if config exists
 	if s.config != nil {
@@ -308,8 +341,6 @@ func (s *Stream) connect() error {
 		if _, err = js.StreamInfo(s.Name(), s.configJSOptions...); errors.Is(err, nats.ErrStreamNotFound) {
 			if info, err := js.AddStream(s.config, s.configJSOptions...); err != nil {
 				return errors.Wrap(err, "failed to add stream")
-			} else if err != nil {
-				return errors.Wrap(err, "failed to retrieve stream info")
 			} else {
 				s.info = info
 			}
@@ -322,7 +353,7 @@ func (s *Stream) connect() error {
 		}
 	}
 
-	s.l.Info("jetstream configured")
+	l.Info("jetstream configured")
 
 	s.js = js
 	s.conn = conn
@@ -335,15 +366,14 @@ func (s *Stream) connect() error {
 func (s *Stream) initNatsOptions() {
 	natsOpts := append([]nats.Option{
 		nats.ErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-			s.l.Error("nats error",
-				log.FError(err),
+			log.WithError(s.l, err).Error("nats error",
 				log.Attribute(semconv.MessagingDestinationName(subscription.Queue)),
 				log.Attribute(semconv.MessagingDestinationSubscriptionName(subscription.Subject)),
 			)
 		}),
 		nats.ClosedHandler(func(conn *nats.Conn) {
 			if err := conn.LastError(); err != nil {
-				s.l.Error("nats closed", log.FError(err))
+				log.WithError(s.l, err).Error("nats closed")
 			} else {
 				s.l.Info("nats closed")
 			}
@@ -353,13 +383,13 @@ func (s *Stream) initNatsOptions() {
 		}),
 		nats.DisconnectErrHandler(func(conn *nats.Conn, err error) {
 			if err != nil {
-				s.l.Error("nats disconnected error", log.FError(err))
+				log.WithError(s.l, err).Error("nats disconnected error")
 
 				var errRetry error
 				for range s.reconnectMaxRetries {
 					errRetry = s.connect()
 					if errRetry != nil {
-						s.l.Error("nats reconnect failed", log.FError(errRetry))
+						log.WithError(s.l, errRetry).Error("nats reconnect failed")
 						time.Sleep(s.reconnectTimeout)
 					} else {
 						break

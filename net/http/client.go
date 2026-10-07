@@ -274,6 +274,10 @@ func HTTPClientWithRoundTripware(l *zap.Logger, roundTripware ...roundtripware.R
 //
 // If a retrying round tripper is also in play, put telemetry outermost so it
 // reports one span per logical call rather than one per attempt.
+//
+// Spans are named "HTTP GET" by default. Pass [otelhttp.WithSpanNameFormatter]
+// returning "{method} {url.template}" (e.g. "GET /prices/{sku}"); never use
+// the URL path, as it makes span names unbounded.
 func HTTPClientWithTelemetry(opts ...otelhttp.Option) HTTPClientOption {
 	return func(v *http.Client) {
 		v.Transport = otelhttp.NewTransport(v.Transport, opts...)

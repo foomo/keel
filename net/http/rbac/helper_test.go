@@ -106,7 +106,7 @@ func TestRBAC_outcomes(t *testing.T) {
 				entry := logs.All()[0]
 				assert.Equal(t, "rbac denied request", entry.Message)
 				assert.Equal(t, zap.WarnLevel, entry.Level)
-				assert.Equal(t, tc.path, entry.ContextMap()["path"])
+				assert.Equal(t, tc.path, entry.ContextMap()["url_path"])
 			} else {
 				assert.Equal(t, 0, logs.Len(), "expected no log entries")
 			}
@@ -204,7 +204,7 @@ func TestRBAC_pathMatching(t *testing.T) {
 
 			if tc.wantRule != "" {
 				require.Equal(t, 1, logs.Len(), "expected one deny log entry")
-				assert.Equal(t, tc.wantRule, logs.All()[0].ContextMap()["rule_path"])
+				assert.Equal(t, tc.wantRule, logs.All()[0].ContextMap()["keel_rbac_rule_path"])
 			}
 		})
 	}
