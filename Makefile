@@ -88,7 +88,7 @@ test.bench:
 ## Run security audit
 audit:
 	@echo "〉security audit"
-	@find . -name "go.mod" -execdir osv-scanner --call-analysis=all . \;
+	@osv-scanner --call-analysis=all -r .
 
 ### Dependencies
 
