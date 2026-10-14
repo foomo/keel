@@ -138,6 +138,10 @@ func Connect(s keel.Runtime, rawURL string, opts ...nats.Option) (*nats.Conn, er
 		return nil, err
 	}
 
+	// ConnectHandler runs asynchronously and may only see the connection after
+	// a disconnect, so seed the last connected server synchronously.
+	serverURL(conn)
+
 	s.AddCloser(conn)
 
 	return conn, nil

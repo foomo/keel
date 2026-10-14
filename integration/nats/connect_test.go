@@ -49,7 +49,7 @@ func TestConnect_disconnectServerAttrs(t *testing.T) {
 
 	go func() { _ = srv.Start(t.Context()) }()
 
-	require.Eventually(t, srv.Server().Running, time.Second, 10*time.Millisecond)
+	require.True(t, srv.Server().ReadyForConnections(5*time.Second))
 
 	reader := sdkmetric.NewManualReader()
 	core, logs := observer.New(zap.DebugLevel)
