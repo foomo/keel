@@ -88,7 +88,7 @@ test.bench:
 ## Run security audit
 audit:
 	@echo "〉security audit"
-	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && govulncheck ./...) &&) true
+	@find . -name "go.mod" -execdir osv-scanner --call-analysis=all . \;
 
 ### Dependencies
 

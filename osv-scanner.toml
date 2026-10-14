@@ -1,0 +1,4 @@
+# https://google.github.io/osv-scanner/configuration/
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "Flags all of golang.org/x/crypto for the deprecated openpgp package, which this library does not import."
