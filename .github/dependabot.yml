@@ -1,32 +1,30 @@
 # yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
 version: 2
 
+multi-ecosystem-groups:
+  deps:
+    schedule:
+      day: sunday
+      interval: weekly
+      timezone: Europe/Berlin
+    commit-message: { prefix: 'chore(deps)' }
+
 updates:
   - package-ecosystem: github-actions
-    open-pull-requests-limit: 0
-    commit-message: { prefix: 'sec(gha)' }
     directory: '/'
-    schedule:
-      interval: daily
-      timezone: Europe/Berlin
-    groups:
-      security:
-        applies-to: security-updates
-        group-by: dependency-name
-        patterns: [ '*' ]
+    patterns: [ '*' ]
+    multi-ecosystem-group: deps
+    commit-message: { prefix: 'sec(gha)' }
     cooldown:
-      default-days: 3
+      default-days: 7
 
   - package-ecosystem: gomod
-    open-pull-requests-limit: 0
-    commit-message: { prefix: 'sec(gomod)' }
     directories: [ '**/*' ]
-    schedule:
-      interval: daily
-    groups:
-      security:
-        applies-to: security-updates
-        group-by: dependency-name
-        patterns: [ '*' ]
+    patterns: [ '*' ]
+    multi-ecosystem-group: deps
+    commit-message: { prefix: 'sec(gomod)' }
     cooldown:
-      default-days: 3
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
