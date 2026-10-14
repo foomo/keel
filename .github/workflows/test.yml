@@ -36,6 +36,9 @@ jobs:
       - name: Run tidy
         run: make tidy && git diff --exit-code
 
+      - name: Run audit
+        run: make audit
+
       - name: Run generate
         run: make generate && git diff --exit-code
 

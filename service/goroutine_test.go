@@ -4,11 +4,13 @@ import (
 	"context"
 	"os"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/foomo/keel"
 	"github.com/foomo/keel/service"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -57,4 +59,16 @@ func ExampleNewGoRoutine() {
 	// {"level":"debug","msg":"keel closer closed","keel_closer_type":"noop.LoggerProvider"}
 	// {"level":"info","msg":"keel closer closed: complete"}
 	// {"level":"info","msg":"keel server stopped"}
+}
+
+func TestGoRoutine_CloseBeforeStart(t *testing.T) {
+	t.Parallel()
+
+	s := service.NewGoRoutine(zap.NewNop(), "test", func(ctx context.Context, l *zap.Logger) error {
+		<-ctx.Done()
+		return context.Cause(ctx)
+	})
+
+	require.NoError(t, s.Close(t.Context()))
+	require.ErrorIs(t, s.Start(t.Context()), service.ErrServiceShutdown)
 }

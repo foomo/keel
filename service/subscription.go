@@ -24,6 +24,7 @@ type (
 		handler    goflux.Handler[T]
 		cancel     context.CancelCauseFunc
 		cancelLock sync.Mutex
+		closed     bool
 		name       string
 		wg         errgroup.Group
 		l          *zap.Logger
@@ -98,7 +99,11 @@ func (s *Subscription[T]) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancelCause(ctx)
 
 	s.cancelLock.Lock()
+
 	s.cancel = cancel
+	if s.closed {
+		cancel(ErrServiceShutdown)
+	}
 	s.cancelLock.Unlock()
 
 	l := s.l
@@ -118,12 +123,17 @@ func (s *Subscription[T]) Start(ctx context.Context) error {
 
 // Close cancels the subscription context with cause [ErrServiceShutdown],
 // closes the subscriber (logging a failure) and waits for the subscription to
-// end. ctx is not used. Close must not be called before [Subscription.Start].
+// end. ctx is not used. If called before [Subscription.Start], Start cancels
+// the subscription context immediately.
 func (s *Subscription[T]) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
 
 	s.cancelLock.Lock()
-	s.cancel(ErrServiceShutdown)
+
+	s.closed = true
+	if s.cancel != nil {
+		s.cancel(ErrServiceShutdown)
+	}
 	s.cancelLock.Unlock()
 
 	if err := s.subscriber.Close(); err != nil {

@@ -21,6 +21,7 @@ type (
 		handler    GoRoutineFn
 		cancel     context.CancelCauseFunc
 		cancelLock sync.Mutex
+		closed     bool
 		parallel   int
 		name       string
 		wg         errgroup.Group
@@ -103,7 +104,11 @@ func (s *GoRoutine) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancelCause(ctx)
 
 	s.cancelLock.Lock()
+
 	s.cancel = cancel
+	if s.closed {
+		cancel(ErrServiceShutdown)
+	}
 	s.cancelLock.Unlock()
 
 	for i := range s.parallel {
@@ -124,11 +129,16 @@ func (s *GoRoutine) Start(ctx context.Context) error {
 
 // Close cancels the handler context with cause [ErrServiceShutdown] and waits
 // for all goroutines to return, returning the first non-nil handler error. ctx
-// is not used. Close must not be called before [GoRoutine.Start].
+// is not used. If called before [GoRoutine.Start], Start cancels the handler
+// context immediately.
 func (s *GoRoutine) Close(ctx context.Context) error {
 	s.l.Info("stopping keel service")
 	s.cancelLock.Lock()
-	s.cancel(ErrServiceShutdown)
+
+	s.closed = true
+	if s.cancel != nil {
+		s.cancel(ErrServiceShutdown)
+	}
 	s.cancelLock.Unlock()
 
 	return s.wg.Wait()

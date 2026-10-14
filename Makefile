@@ -88,7 +88,7 @@ test.bench:
 ## Run security audit
 audit:
 	@echo "〉security audit"
-	@$(foreach mod,$(GOMODS), (cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && govulncheck ./...) &&) true
+	@osv-scanner --call-analysis=all --config=.osv-scanner.toml -r .
 
 ### Dependencies
 
@@ -103,13 +103,13 @@ tidy:
 ## Show outdated direct dependencies
 outdated:
 	@echo "〉go mod outdated"
-	@$(foreach mod,$(GOMODS),(cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go-mod-upgrade --list) &&) true
+	@$(foreach mod,$(GOMODS),(cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go-mod-upgrade --cooldown 7d --ignore '^github\.com/foomo/keel' --list) &&) true
 
 .PHONY: upgrade
 ## Upgrade direct dependencies
 upgrade:
 	@echo "〉go mod upgrade"
-	@$(foreach mod,$(GOMODS),(cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go-mod-upgrade }) &&) true
+	@$(foreach mod,$(GOMODS),(cd $(dir $(mod)) && echo "📂 $(dir $(mod))" && GOWORK=off go-mod-upgrade --cooldown 7d --ignore '^github\.com/foomo/keel' }) &&) true
 	@$(MAKE) tidy
 
 ### Release
