@@ -35,3 +35,6 @@ go.work.sum
 ## Vitepress
 node_modules/
 !docs/.vitepress
+
+## OSV Scanner
+!.osv-scanner.toml
