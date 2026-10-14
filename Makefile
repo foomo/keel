@@ -88,7 +88,7 @@ test.bench:
 ## Run security audit
 audit:
 	@echo "〉security audit"
-	@osv-scanner --call-analysis=all -r .
+	@osv-scanner --call-analysis=all --config=osv-scanner.toml -r .
 
 ### Dependencies
 
