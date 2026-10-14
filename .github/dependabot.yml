@@ -14,7 +14,6 @@ updates:
     directory: '/'
     patterns: [ '*' ]
     multi-ecosystem-group: deps
-    commit-message: { prefix: 'sec(gha)' }
     cooldown:
       default-days: 7
 
@@ -22,7 +21,6 @@ updates:
     directories: [ '**/*' ]
     patterns: [ '*' ]
     multi-ecosystem-group: deps
-    commit-message: { prefix: 'sec(gomod)' }
     cooldown:
       default-days: 7
       semver-major-days: 30
