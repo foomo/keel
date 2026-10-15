@@ -1,36 +1,47 @@
 # yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
 version: 2
 
-multi-ecosystem-groups:
-  deps:
+updates:
+  - package-ecosystem: github-actions
+    commit-message: { prefix: 'chore(deps)' }
+    directory: '/'
     schedule:
       day: sunday
       interval: weekly
       timezone: Europe/Berlin
-    commit-message: { prefix: 'chore(deps)' }
-
-updates:
-  - package-ecosystem: github-actions
-    directory: '/'
-    patterns: [ '*' ]
-    multi-ecosystem-group: deps
-    cooldown:
-      default-days: 7
     groups:
+      deps:
+        applies-to: version-updates
+        patterns: [ '*' ]
       security:
         applies-to: security-updates
         patterns: [ '*' ]
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: gomod
+    commit-message: { prefix: 'chore(deps)' }
     directories: [ '**/*' ]
-    patterns: [ '*' ]
-    multi-ecosystem-group: deps
-    cooldown:
-      default-days: 7
-      semver-major-days: 30
-      semver-minor-days: 7
-      semver-patch-days: 3
+    schedule:
+      day: sunday
+      interval: weekly
+      timezone: Europe/Berlin
+    ignore:
+      - dependency-name: '*'
+        update-types: [ 'version-update:semver-major' ]
     groups:
+      deps:
+        applies-to: version-updates
+        patterns: [ '*' ]
+        exclude-patterns: [ 'github.com/foomo/*' ]
+      foomo:
+        applies-to: version-updates
+        patterns: [ 'github.com/foomo/*' ]
       security:
         applies-to: security-updates
         patterns: [ '*' ]
+    cooldown:
+      default-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 3
+      exclude: [ 'github.com/foomo/*' ]

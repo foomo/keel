@@ -2,7 +2,6 @@
 version: "2"
 
 run:
-  go: "1.26"
   build-tags: [ safe ]
   modules-download-mode: readonly
 
@@ -29,7 +28,7 @@ linters:
     - gocognit # complexity caps land arbitrarily; review catches this
     - gocyclo # as above
     - godot # comment punctuation is not worth a build failure
-    - godox # TODO/FIXME are tracked in the issue tracker, not the linter
+    - godox # TODOs/FIXMEs are tracked in the issue tracker, not the linter
     - interfacebloat # interface size is a design call
     - intrange # range-over-int is a rewrite, not a defect
     - ireturn # returning interfaces is sometimes the right design
@@ -97,7 +96,6 @@ linters:
           disabled: true
   exclusions:
     generated: lax
-    warn-unused: true
     presets:
       - comments
       - common-false-positives

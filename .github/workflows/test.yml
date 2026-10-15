@@ -1,10 +1,9 @@
 name: Test Branch
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
   merge_group:
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
