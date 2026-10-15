@@ -16,6 +16,10 @@ updates:
     multi-ecosystem-group: deps
     cooldown:
       default-days: 7
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: [ '*' ]
 
   - package-ecosystem: gomod
     directories: [ '**/*' ]
@@ -26,3 +30,7 @@ updates:
       semver-major-days: 30
       semver-minor-days: 7
       semver-patch-days: 3
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: [ '*' ]
