@@ -9,7 +9,7 @@ require (
 	github.com/foomo/mongo-lock v0.2.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/pkg/errors v0.9.1
-	go.mongodb.org/mongo-driver/v2 v2.9.1
+	go.mongodb.org/mongo-driver/v2 v2.9.2
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/v2/mongo/otelmongo v0.0.0-20260826095902-c4c6248ec228
 	go.uber.org/zap v1.28.0
 )
@@ -21,7 +21,7 @@ require (
 	github.com/foomo/opentelemetry-go v0.5.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/klauspost/compress v1.20.1 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/moby/go-archive v0.3.0 // indirect
 	github.com/testcontainers/testcontainers-go v0.44.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -35,6 +35,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 )
