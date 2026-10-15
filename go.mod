@@ -6,7 +6,7 @@ require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/fbiville/markdown-table-formatter v0.3.0
 	github.com/foomo/go v0.17.1
-	github.com/foomo/goflux v0.10.0
+	github.com/foomo/goflux v0.11.0
 	github.com/foomo/gofuncy v0.4.0
 	github.com/foomo/gostandards v0.3.0
 	github.com/foomo/opentelemetry-go v0.5.0

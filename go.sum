@@ -78,8 +78,8 @@ github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeO
 github.com/felixge/httpsnoop v1.1.0/go.mod h1:Zqxgdd+1Rkcz8euOqdr7lqgCRJztwr5hp9vDSi5UZCE=
 github.com/foomo/go v0.17.1 h1:tDrovWbh1dOzsBX19pII6nAPIECswhBmNSPEGBYNawY=
 github.com/foomo/go v0.17.1/go.mod h1:Zz5aBFte6ayLEJ17n4L1bqYmEEja9xTeLKC0Z1wAy+0=
-github.com/foomo/goflux v0.10.0 h1:vCjX1GiMI0yXeKj0pIDGPUxkLBbkSogJMpLS2cnWhRA=
-github.com/foomo/goflux v0.10.0/go.mod h1:gMTTPIlKnTwAESqfke7vNt0lr8to67bbRjju/DidLpo=
+github.com/foomo/goflux v0.11.0 h1:u8CmBZm+QXJ9zcixybNQaFM+Aeq0jSIoC/Qr05WjIsk=
+github.com/foomo/goflux v0.11.0/go.mod h1:gMTTPIlKnTwAESqfke7vNt0lr8to67bbRjju/DidLpo=
 github.com/foomo/gofuncy v0.4.0 h1:wxfFOQSp+eZYy9YFXY7A8PPu0n51t4Xhvd6tOm0OSSs=
 github.com/foomo/gofuncy v0.4.0/go.mod h1:ulEUpkz38K6trv71GM7fHjaUqa/NbWOZUE5MAbfe/Kk=
 github.com/foomo/gostandards v0.3.0 h1:Ev88Tdu0+52UH/d0l2KcAWx542A13o42d++LSTG0DC4=
