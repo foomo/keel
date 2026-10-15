@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html"
 	"net/http"
 
 	"github.com/foomo/keel"
@@ -24,7 +25,7 @@ func main() {
 	svs := http.NewServeMux()
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(r.Header.Get(keelhttp.HeaderXRequestID)))
+		_, _ = w.Write([]byte(html.EscapeString(r.Header.Get(keelhttp.HeaderXRequestID))))
 	})
 
 	svr.AddService(

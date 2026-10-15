@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html"
 	"net/http"
 	"time"
 
@@ -40,8 +41,8 @@ func main() {
 	svs := http.NewServeMux()
 	svs.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(r.Header.Get(keelhttp.HeaderXSessionID)))
-		_, _ = w.Write([]byte(middleware.SessionIDFromContext(r.Context())))
+		_, _ = w.Write([]byte(html.EscapeString(r.Header.Get(keelhttp.HeaderXSessionID))))
+		_, _ = w.Write([]byte(html.EscapeString(middleware.SessionIDFromContext(r.Context()))))
 	})
 
 	svr.AddService(

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html"
 	"net/http"
 
 	"github.com/foomo/keel"
@@ -43,7 +44,7 @@ func main() {
 
 			w.WriteHeader(http.StatusOK)
 			log.WithHTTPRequest(l, r).Info("handled request")
-			_, _ = w.Write([]byte(r.Header.Get(keelhttp.HeaderXRequestID) + " - " + resp.Header.Get(keelhttp.HeaderXRequestID)))
+			_, _ = w.Write([]byte(html.EscapeString(r.Header.Get(keelhttp.HeaderXRequestID) + " - " + resp.Header.Get(keelhttp.HeaderXRequestID))))
 
 			log.WithHTTPRequestOut(l, req).Info("sent internal request")
 		}
