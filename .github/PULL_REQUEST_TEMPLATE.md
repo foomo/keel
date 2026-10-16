@@ -18,11 +18,11 @@
 
 ### Related Issues
 
-<!-- Optional: List of links to related issues: Fixes #123, Closes #456 -->
+<!-- Optional: List of links to related issues (Fixes #123, Closes #456), remove if empty -->
 
 ### Changes
 
-<!-- Optional: List of one-line key changes -->
+<!-- Optional: List of one-line key changes, remove if empty -->
 
 ### Checklist
 
@@ -33,4 +33,4 @@
 
 #### Notes
 
-<!-- Optional: Add additional context -->
+<!-- Optional: Add additional context, remove if empty -->
