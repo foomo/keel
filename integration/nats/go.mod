@@ -39,7 +39,7 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
-	github.com/foomo/goflux v0.10.0 // indirect
+	github.com/foomo/goflux v0.11.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
