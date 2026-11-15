@@ -6,7 +6,7 @@ replace github.com/foomo/keel => ../../
 
 require (
 	github.com/foomo/go v0.17.1
-	github.com/foomo/gofuncy v0.4.0
+	github.com/foomo/gofuncy v0.5.0
 	github.com/foomo/keel v0.31.0
 	github.com/foomo/opentelemetry-go v0.5.0
 	github.com/nats-io/nats-server/v2 v2.15.0
@@ -39,7 +39,7 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fbiville/markdown-table-formatter v0.3.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
-	github.com/foomo/goflux v0.10.0 // indirect
+	github.com/foomo/goflux v0.11.0 // indirect
 	github.com/foomo/gostandards v0.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -134,7 +134,7 @@ require (
 	golang.org/x/exp v0.0.0-20260529124908-c761662dc8c9 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect

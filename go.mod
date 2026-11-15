@@ -6,8 +6,8 @@ require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/fbiville/markdown-table-formatter v0.3.0
 	github.com/foomo/go v0.17.1
-	github.com/foomo/goflux v0.10.0
-	github.com/foomo/gofuncy v0.4.0
+	github.com/foomo/goflux v0.11.0
+	github.com/foomo/gofuncy v0.5.0
 	github.com/foomo/gostandards v0.3.0
 	github.com/foomo/opentelemetry-go v0.5.0
 	github.com/go-logr/logr v1.4.4
@@ -51,7 +51,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.57.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.25.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
